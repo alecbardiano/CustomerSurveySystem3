@@ -15,7 +15,13 @@
         <q-route-tab to="/" label="Dashboard" />
         <q-route-tab to="/Survey" label="Survey" />
         <q-route-tab to="/Question" label="Questions" />
-        <q-route-tab align="right" to="/Admin" label="Admin" />
+       
+        <q-btn-dropdown auto-close stretch flat label="Admin">
+          <q-list>
+               <q-route-tab align="right" to="/Admin" label="Admin" />
+               <q-route-tab align="right" to="/AdminDivision" label="Per Division" />
+          </q-list>
+        </q-btn-dropdown>
       </q-tabs>
     </q-header>
 

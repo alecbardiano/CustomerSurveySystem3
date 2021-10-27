@@ -14,3 +14,127 @@
 .surveyquestions{
     padding-left: 50px;
 }
+
+.overallAverage {
+
+    td:first-child, tr:last-child {    /* bg color is important for td; just specify one */
+        background-color: #c1f4cd !important;
+      }
+      tr th {
+        position: sticky;
+          /* higher than z-index for td below */
+        z-index: 2;
+          /* bg color is important; just specify one */
+        background: #fff;
+      }
+        /* this will be the loading indicator */
+      thead tr:last-child th {    /* height of all previous header rows */
+        top: 48px;
+          /* highest z-index */
+        z-index: 3;
+      }
+      thead tr:first-child th {
+        top: 0;
+        z-index: 1;
+      }
+      tr:first-child th:first-child {    /* highest z-index */
+        z-index: 3;
+      }
+      td:first-child {
+        z-index: 1;
+      }
+      td:first-child,
+      th:first-child {
+        position: sticky;
+        left: 0;
+      }
+    /* height or max-height is important */
+
+    
+    /* this is when the loading indicator appears */ }
+
+    .overallAverage .q-table__top {
+        /* bg color is important for th; just specify one */
+        background-color: #1976D2; 
+        color: white;
+        }
+      .overallAverage thead tr th {
+        position: sticky;
+        color: white;
+        z-index: 1; }
+      .overallAverage thead tr:first-child th {
+        background-color: #1976D2; 
+        top: 0; }
+      .overallAverage.q-table--loading thead tr:last-child th {
+        /* height of all previous header rows */
+        top: 48px; 
+      }
+
+    .overallAverage .q-table__top {
+      /* bg color is important for th; just specify one */
+      background-color: #1976D2; 
+      color: white;
+      }
+    .overallAverage thead tr th {
+      position: sticky;
+      color: white;
+      z-index: 1; }
+    .overallAverage thead tr:first-child th {
+      background-color: #1976D2; 
+      top: 0; }
+    .overallAverage.q-table--loading thead tr:last-child th {
+      /* height of all previous header rows */
+      top: 48px; 
+    }
+
+    .my-sticky-header-table .q-table__top {
+        /* bg color is important for th; just specify one */
+        background-color: #1976D2; 
+        color: white;
+        }
+      .my-sticky-header-table thead tr th {
+        position: sticky;
+        color: white;
+        z-index: 1; }
+      .my-sticky-header-table thead tr:first-child th {
+        background-color: #1976D2; 
+        top: 0; }
+      .my-sticky-header-table.q-table--loading thead tr:last-child th {
+        /* height of all previous header rows */
+        top: 48px; 
+      }
+
+    .my-sticky-header-table .q-table__top {
+      /* bg color is important for th; just specify one */
+      background-color: #1976D2; 
+      color: white;
+      }
+    .my-sticky-header-table thead tr th {
+      position: sticky;
+      color: white;
+      z-index: 1; }
+    .my-sticky-header-table thead tr:first-child th {
+      background-color: #1976D2; 
+      top: 0; }
+    .my-sticky-header-table.q-table--loading thead tr:last-child th {
+      /* height of all previous header rows */
+      top: 48px; 
+    }
+
+
+        
+
+.searchClass{
+    color: white;
+}
+
+.placeholderClass input {
+    color: white;
+}
+
+.placeholderClass input::placeholder {
+
+    color: white;
+    opacity: 1; /* Firefox */
+}
+      

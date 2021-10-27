@@ -66,7 +66,7 @@
               label="Generate Raw Data"
               class="q-mt-md"
               color="primary"
-              @click="exportTable(rowsTable)"
+              @click="exportTable(rows)"
               style="margin-left: 15px"
           />
           <!-- <div class=col-1></div> -->
@@ -84,7 +84,8 @@
   <div class="q-pa-md">
 
     <q-table
-    v-if="rows"
+      class="overallAverage"
+      v-if="rows"
       title="Survey Results"
       :rows="rows"
       :columns="cols"
@@ -95,20 +96,44 @@
       v-model:pagination="pagination"
       @request="onRequest"
       binary-state-sort
+      separator="cell"
     >
     <template v-slot:top-right>
-      <q-input borderless dense debounce="300" v-model="filter" placeholder="Search">
+      <q-input class="placeholderClass" borderless dense debounce="300" v-model="filter" placeholder="Search">
         <template v-slot:append>
-          <q-icon name="search" />
+          <q-icon class="searchClass" name="search" />
         </template>
       </q-input>
     </template>
 
+
+    <!-- to follow code for red green orange color of answers -->
+    <!-- <template v-slot:body="props">
+        <q-tr :props="props">
+          <q-td key="calories" :props="props">
+            <q-badge color="green">
+              {{ props.row.calories }}
+            </q-badge>
+          </q-td>
+          <q-td key="calories" :props="props">
+            <q-badge color="green">
+              {{ props.row.calories }}
+            </q-badge>
+          </q-td>
+          <q-td key="calories" :props="props">
+            <q-badge color="green">
+              {{ props.row.calories }}
+            </q-badge>
+          </q-td>
+        </q-tr>
+    </template> -->
+      
       <template v-slot:bottom-row>
         <q-tr>
-          <q-td v-bind:key="column.key" v-for="column in finalAverageDataRow">
+          <q-td v-bind:key="column.key" v-for="column in finalAverageDataRow">  
               <p v-if="column.tsrNo">Average: </p>
               <!-- nan values remove -->
+              
               <p v-else-if="column.value != 0 && !(isNaN(column.value))">{{ column.value }}</p>
             </q-td>
         </q-tr>
@@ -119,22 +144,25 @@
   <div class="q-pa-md">
     <!-- :loading="loading" -->
     <q-table
+        
         title="Overall Agency Citizen/ Client Satisfaction Score"
         :rows="rowsOverall"
         :columns="colsOverall"
+        :loading="overallLoading"
         row-key="name"
-        
+        separator="cell"
+        class="overallAverage"
         binary-state-sort
         style="height: 500px"
         :rows-per-page-options="[0]"
       >
-      <template v-slot:top-right>
-        <q-input borderless dense debounce="300" v-model="filter" placeholder="Search">
+      <!-- <template v-slot:top-right>
+        <q-input class ="placeholderClass" borderless dense debounce="300" v-model="filter" placeholder="Search">
           <template v-slot:append>
-            <q-icon name="search" />
+            <q-icon class="searchClass" name="search" />
           </template>
         </q-input>
-      </template>
+      </template> -->
       <template v-slot:bottom-row>
         <q-tr>
           <q-td v-bind:key="column.key" v-for="column in overAllAverage">
@@ -223,13 +251,6 @@ export default defineComponent({
   const startDataFromApi = ref(1)
   const endDataFromApi = ref(100)
 
-  watch(beforeDate, (newValue, oldValue) => {
-
-    dateform.value.validate().then(success => {
-        // filterTable(newValue,0)
-    })
-  })
-
   watch(afterDate, (newValue, oldValue) => {
 
     dateform.value.validate().then(success => {
@@ -253,6 +274,8 @@ export default defineComponent({
   const overAllAverage = ref(null)
   const colsOverall = ref([])
   const rowsOverall = ref([])
+  const overallLoading = ref(true)
+  
 
   
   
@@ -265,9 +288,7 @@ export default defineComponent({
         // upon startup we can initialize data to 1 - rows per page which is 50
         
         // lengthOfAnswers.value = answers.value.length
-        console.log("hello",answers.value)
-        console.log("hellolengthOfAnswers",lengthOfAnswers.value)
-        return await getTSRs()
+        return await getTSRs("","","","")
       }
       catch(err) {
         throw(err)
@@ -284,6 +305,7 @@ export default defineComponent({
     if(cols.value.length == 0){
       cols.value.push({ name: 'tsrNo', align: 'left', label: 'TSR', field: 'tsrNo', sortable: true })
       cols.value.push({ name: 'Division', align: 'left', label: 'Division', field: 'division', sortable: true })
+      cols.value.push({ name: 'Section', align: 'left', label: 'Section', field: 'section', sortable: true })
       cols.value.push({ name: 'Service', align: 'left ', label: 'Service', field: 'service', sortable: true })
       cols.value.push({ name: 'Industry', align: 'left', label: 'Industry', field: 'industry', sortable: true })
       
@@ -340,7 +362,8 @@ export default defineComponent({
         publishedDate:dateTime(item.published_at),
         division: item.division,
         industry: item.industry,
-        service: item.service
+        service: item.service,
+        section: item.section
       }
       let result = item.answers.map(a => a.question);
       for (let i=0 ; i < result.length; i++){
@@ -352,44 +375,91 @@ export default defineComponent({
     // let keysObject = Object.keys(averageColumns.value)
 
       // load overall
-    divisionList.value = [...new Set(tsrList.value.map(item => item.division))].filter(function(val) { return val !== null; });
-    loadDivisionDataOverall(divisionList.value)
-    console.log("divdiv", divisionList)
+    
     
     return rowData
 
   }
   async function loadDivisionDataOverall(divlist){
+    overallLoading.value = true
     if(colsOverall.value.length > 0){
       colsOverall.value = []
     }
     colsOverall.value.push({ name: 'Dimension' ,align: 'left', label: 'Dimension', field: 'dimension' , sortable: true })
   
     let dataDivision = []
-    let temp = []
-    console.log("hellodivlistload divisin data", divlist.length)
+    // console.log("hellodivlistload divisin data", rowsOverall.value)
+    // console.log("hellodivlistload divisin data", divlist)
+    colsOverall.value.push({ name: 'Score' ,align: 'left', label: 'Score All in Service', field: 'scoreservice' , sortable: true })
     for(let i =0; i<divlist.length; i++){
-      colsOverall.value.push({name: divlist[i] ,align: 'left', label: divlist[i], field: 'divName' , sortable: true })
+      colsOverall.value.push({name: divlist[i] ,align: 'left', label: divlist[i], field: divlist[i] , sortable: true })
       for (let j=0; j<rowsOverall.value.length; j++){
-        dataDivision = await getOverall(divlist[i],rowsOverall.value[j].id,beforeDate.value,afterDate.value)
-        dataDivision = dataDivision.map(a => a.value)
-        const sum = dataDivision.reduce((a, b) => a + b, 0);
-        const avg = (sum / dataDivision.length) || 0;
-        // set divName for mapping of column to row
-        rowsOverall.value[j].divName = avg
-        // rowsOverall.value[j].divlist[i] = avg
-        temp.push(dataDivision)
+        
+        dataDivision = await getOverall(divlist[i],"",rowsOverall.value[j].id,beforeDate.value,afterDate.value)
+        if(dataDivision.length != 0){
+          dataDivision = dataDivision.map(a => a.value)
+          dataDivision = dataDivision.map(function (x) { 
+            return parseInt(x, 10); 
+          });
+          dataDivision = dataDivision.filter(function(x) {
+            if ( x != undefined || x == '' || !isNaN(x)){
+              return x
+            }
+          });
+          // console.log("Datadiv", dataDivision)
+          const sum = dataDivision.reduce((a, b) => a + b, 0);
+          console.log("sum", sum)
+          console.log("sum", dataDivision)
+          let avg = parseFloat((Math.round((sum/dataDivision.length) * 100) / 100).toFixed(2));
+          if(isNaN(avg)){
+            avg = 0
+          }
+          // console.log("avg",avg)
+          // set divName for mapping of column to row
+          //rows of average
+          rowsOverall.value[j][divlist[i]] = avg
+          // rowsOverall.value[j].divlist[i] = avg
+        }else{
+          rowsOverall.value[j][divlist[i]] = 0
+          rowsOverall.value[j]["scoreservice"] = 0
+        }
       }
     }
-    console.log("temp",temp)
+    // score in all service
+    for (let i = 0; i<rowsOverall.value.length; i++){
+      console.log("rowsoverall.value[i]", rowsOverall.value[i])
+      const {dimension, id, scoreservice, ...partialObject} = rowsOverall.value[i];
+      
+      let total = 0
+      let length = 0
+      console.log("partial", partialObject)
+      for (var div in partialObject){
+        if((partialObject[div]) == 0){
+          break;
+        }
+        if(isNaN(partialObject[div])){
+          total += 0;
+        }else{
+          total += partialObject[div];
+        }
+        length++
+        
+      }
+      console.log("total",total)
+      console.log("length",length)
+      let avg = parseFloat((Math.round((total/length) * 100) / 100).toFixed(2));
+      if(isNaN(avg)){
+        avg = 0
+      }
+      rowsOverall.value[i]["scoreservice"] = avg
+    }
     
-    colsOverall.value.push({ name: 'Score' ,align: 'left', label: 'Score All in Service', field: 'scoreservice' , sortable: true })
 
-    console.log("roworworworow")
-    console.log(rowsOverall.value)
+    // console.log("roworworworow")
+    // console.log(rowsOverall.value)
 
-    overAllAverage.value = averageLastTable(colsOverall.value,rowsOverall.value)
-    
+    overAllAverage.value = await averageLastTable(colsOverall.value,rowsOverall.value)
+    overallLoading.value = false
     // api call from axioshelper
 
   }
@@ -499,7 +569,7 @@ export default defineComponent({
 
   function filterDateBet(row,beforeDate,afterDate){
     row.publishedDate = dateTime(row.publishedDate) // convert to readable date time mm/dd/yyyy
-    if ( beforeDate <= row.publishedDate && row.publishedDate <= afterDate ){
+    if ( beforeDate < row.publishedDate && row.publishedDate < afterDate ){
       return row
     }
   }
@@ -549,9 +619,13 @@ export default defineComponent({
 
       return data.slice(startRow, startRow + count)
     }
-    function averageLastTable (cols,rows){
+    async function averageLastTable (cols,rows){
       let x = cols.map(a => a.field);
+      
+      // const unique = [...new Set(cols.map(item => item.group))]; // [ 'A', 'B']
+      // name of all columns
       console.log("xxxxx", x)
+      console.log("x", cols)
       let avgArrayWithKeys = []
       // console.log("keysObject",keysObject)
       for(let i =0; i< x.length; i++){
@@ -564,18 +638,21 @@ export default defineComponent({
         let xy = rows.map(function(item){ 
           return item[x[i]]; 
           });
+        console.log("xy", xy)
 
           // remove undefined
         var filtered = xy.filter(function(x) {
-            return x !== undefined;
+            if ( x != undefined || x == '' || !isNaN(x)){
+              return x
+            }
         });
         let sum = 0
         for(let j=0 ; j<filtered.length ; j++){
           if (!isNaN(filtered[j])){
-            sum = sum+parseInt(filtered[j])
+            sum = sum+parseFloat(filtered[j])
           }
         }
-        avgObv['value'] = sum/filtered.length
+        avgObv['value'] = parseFloat((Math.round((sum/filtered.length) * 100) / 100).toFixed(2));
         
       }
       return avgArrayWithKeys
@@ -629,6 +706,8 @@ export default defineComponent({
         const startRow = (page - 1) * rowsPerPage
         // fetch data from "server"
         const returnedData = fetchFromServer(startRow, fetchCount, filter, sortBy, descending)
+        divisionList.value = [...new Set(tsrList.value.map(item => item.division))].filter(function(val) { return val !== null; });
+        loadDivisionDataOverall(divisionList.value)
 
         
         // console.log("rettt", returnedData)
@@ -636,9 +715,7 @@ export default defineComponent({
 
         // clear out existing data and add new
         rows.value.splice(0, rows.value.length, ...returnedData)
-        finalAverageDataRow.value  = averageLastTable(cols.value,rows.value)
-
-        console.log("rows", rows)
+        finalAverageDataRow.value  = await averageLastTable(cols.value,rows.value)
 
         // don't forget to update local pagination object
         pagination.value.page = page
@@ -720,8 +797,10 @@ export default defineComponent({
       rows,
       loading,
       finalAverageDataRow,
+      //overall
       rowsOverall,
       colsOverall,
+      overallLoading,
       overAllAverage,
       //file upload
       importFile,
