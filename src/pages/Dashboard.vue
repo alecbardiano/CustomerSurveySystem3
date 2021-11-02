@@ -27,17 +27,102 @@
 
   </div> -->
 
+  <!-- <div class="q-pa-md">
+    <q-table
+      :rows="tableData"
+      :columns="columns2"
+      row-key="col1"
+      separator="cell"
+    >
+      <template v-slot:header="props">
+          <q-tr>
+            <q-th colspan="2" class="bg-teal-9 text-white">col type1</q-th>
+            <q-th colspan="1" class="bg-deep-orange-9 text-white">col type2</q-th>
+            <q-th colspan="3" class="bg-light-blue-9 text-white">col type3</q-th>
+          </q-tr>
+          <q-tr>
+            <q-th key="col1" :props="props" class="bg-teal-9 text-white">col1</q-th>
+            <q-th key="col2" :props="props" class="bg-deep-orange-9 text-white">col2</q-th>
+            <q-th key="col1" :props="props" class="bg-deep-orange-9 text-white">col3</q-th>
+            <q-th key="col4" :props="props" class="bg-light-blue-9 text-white">col4</q-th>
+            <q-th key="col5" :props="props" class="bg-light-blue-9 text-white">col5</q-th>
+            <q-th key="col6" :props="props" class="bg-light-blue-9 text-white">col6</q-th>
+          </q-tr>
+      </template>
+      <template v-slot:body="props">
+         {{props}} 
+        <q-td v-for="row in props.row" v-bind:key="row">
+          {{ row }}
+        </q-td>
+      </template>
+    </q-table>
+  </div> -->
+
+  <!-- <div class="q-pa-md">
+    <div class="row">
+      <q-form ref="dateform">
+        <div class="row inline">
+          <q-input outlined filled mask="date" v-model="beforeDate" lazy-rules :rules="[val => val <= afterDate || 'Field should be earlier than after date']" placeholder="mm/dd/yy" hint="Start Date" >
+            <template v-slot:append>
+              <q-icon name="event" class="cursor-pointer">
+                <q-popup-proxy ref="qDateProxy" transition-show="scale" transition-hide="scale">
+                  <q-date v-model="beforeDate">
+                    <div class="row items-center justify-end">
+                      <q-btn v-close-popup label="Close" color="primary" flat />
+                    </div>
+                  </q-date>
+                </q-popup-proxy>
+              </q-icon>
+            </template>
+          </q-input> 
+           :rules="[val => !!val || 'Field is required', val => !isNaN(val) || 'Field should be a number']"
+          <q-input outlined filled mask="date" v-model="afterDate" lazy-rules :rules="[val => val >= beforeDate || 'Field should be later than before date']"   placeholder="mm/dd/yy" hint="End Date" style=" margin-left: 40px">
+            <template v-slot:append>
+              <q-icon name="event" class="cursor-pointer">
+                <q-popup-proxy ref="qDateProxy" transition-show="scale" transition-hide="scale">
+                  <q-date v-model="afterDate">
+                    <div class="row items-center justify-end">
+                      <q-btn v-close-popup label="Close" color="primary" flat />
+                    </div>
+                  </q-date>
+                </q-popup-proxy>
+              </q-icon>
+            </template>
+          </q-input>
+        </div>
+      </q-form>
+    </div>
+  </div> -->
+
   <div class="q-pa-md">
+    
   
    <q-table
-      :rows="tableData"
+      :rows="rowsOverallPerformance"
       class="my-sticky-header-table"
-      :columns="columns"
+      :columns="colsOverallPerformance"
       row-key="col1"
       separator="cell"
       title="Overall Performance of the Center Based on CSS Responses"
     >
-    <template v-slot:header="props">
+    
+     <template  v-slot:header>
+       <!-- {{props}} -->
+      <!-- <div  -->
+          <q-tr>
+            <q-th key="serviceArea" style="width: 250px" class="bg-light-blue-9 black-white"></q-th>
+            <q-th key="percentage" style="width: 100px" class="bg-light-blue-9 black-white"></q-th>
+            <q-th v-for="(col,key) in divisionsAndSections" v-bind:key="col.name" v-bind:colspan="col.length"> {{key}}</q-th>
+          </q-tr>
+          <q-tr>
+            <q-th  v-for="col in colsOverallPerformance"  v-bind:key="col.name" class="bg-light-blue-9 black-white" > {{col.name}}</q-th>
+          </q-tr>
+          
+          
+      <!-- </div> -->
+        
+    </template>
+    <!-- <template v-slot:header="props">
         <q-tr>
           <q-th colspan="1" >col type1</q-th>
           <q-th colspan="2" >col type2</q-th>
@@ -51,33 +136,78 @@
           <q-th key="col5" :props="props" >col5</q-th>
           <q-th key="col6" :props="props" >col6</q-th>
         </q-tr>
-    </template>
+    </template> -->
         
     </q-table>
   </div>
 
   <div class="q-pa-md">
+
     <q-table
-      :rows="tableData"
-      :columns="columns"
+      :rows="rowsnumberOfCustomers"
+      :columns="colsnumberOfCustomers"
       class="my-sticky-header-table"
       row-key="col1"
       title="Number of Customers and CSM Respondents Per Service Area"
       separator="cell"
     >
-    <template v-slot:header="props">
+    <template  v-slot:header>
+       <!-- {{props}} -->
+      <!-- <div  -->
         <q-tr>
-          <q-th v-bind:key="div.name" v-for="div in divisions " :colspan="sample" >{{div}}</q-th>
+          <q-th key="Month" style="width: 250px" class="primary"></q-th>
+          <q-th v-for="(col,key) in divisionsAndSections" v-bind:key="col.name" v-bind:colspan="col.length"> {{key}}</q-th>
+          <q-th key="Total" style="width: 250px" class="primary"></q-th>
         </q-tr>
         <q-tr>
-          <q-th key="col1" :props="props" >col1</q-th>
-          <q-th key="col2" :props="props" >col2</q-th>
-          <q-th key="col3" :props="props" >col3</q-th>
-          <q-th key="col4" :props="props" >col4</q-th>
-          <q-th key="col5" :props="props" >col5</q-th>
-          <q-th key="col6" :props="props" >col6</q-th>
+          <q-th  v-for="col in colsnumberOfCustomers"  v-bind:key="col.name" class="bg-light-blue-9 black-white" > {{col.name}}</q-th>
+          
         </q-tr>
-    </template>
+        
+        
+    <!-- </div> -->
+      
+  </template>
+
+      <template v-slot:bottom-row>
+        <q-tr>
+          
+          <q-td>
+            Total Actual Respondents
+          </q-td>
+          <!-- {{totalActualRespondents}} -->
+          <q-td style="text-align: center" v-bind:key="column.key" v-for="(column) in totalActualRespondents">
+              {{column.value}}
+              <!-- {{ column[key] }} -->
+              <!-- <p v-if="column.value != 0  "></p> -->
+          </q-td>
+        </q-tr>
+        <q-tr>
+          <q-td >
+            Total Actual No. of Customers Served
+          </q-td>
+          <q-td >
+             {{}}
+          </q-td>
+        </q-tr>
+        <q-tr>
+          <q-td >
+             Target No. of Respondents
+          </q-td>
+          <q-td >
+             {{}}
+          </q-td>
+        </q-tr>
+        <q-tr>
+          <q-td >
+             Percentage
+          </q-td>
+          <q-td>
+             {{}}
+          </q-td>
+        </q-tr>
+
+      </template>
         
     </q-table>
   </div>
@@ -88,9 +218,13 @@
 <script type="text/javascript">
 
   import { defineComponent, ref, computed, onMounted } from 'vue'
-  import { getDivList, countPositiveFeedback, countNegativeFeedback, totalTsrsCount} from 'src/axioshelper.js'
+  import { getDivList, countPositiveFeedback, countNegativeFeedback, totalTsrsCount , getTSRs} from 'src/axioshelper.js'
   import CardDashboardFeedbackCount from '../components/CardDashboardFeedbackCount.vue'
   import { Chart, registerables } from 'chart.js'
+  import groupBy from 'lodash'
+  import moment from 'moment';
+
+
   // import { BarChart, useBarChart } from 'vue-chart-3'
 
 
@@ -107,28 +241,33 @@
     const totalNegative = ref(0);
     const totalPositive = ref(0);
     const totalTsrs =  ref(0);
+    const tsrs = ref([])
     const sample = ref(2)
-    const tableData = ref([{
-        col1: 'x', col2: 'x', col3: 'x', col4: 'x', col5: 'x', col6: 'x'
-      }])
+    const tableData = ref([{col1: 'x', col2: 'x', col3: 'x', col4: 'x', col5: 'x', col6: 'x'}]);
+    const columns2 = ref( [
+        { name: 'col1', align: 'center', label: 'col1', field: 'col1', sortable: true },
+        { name: 'col2', align: 'center', label: 'col2', field: 'col2', sortable: true },
+        { name: 'col3', align: 'center', label: 'col3', field: 'col3', sortable: true },
+        { name: 'col4', align: 'center', label: 'col4', field: 'col4', sortable: true },
+        { name: 'col5', align: 'center', label: 'col5', field: 'col5', sortable: true },
+        { name: 'col6', align: 'center', label: 'col6', field: 'col6', sortable: true }
+      ])
 
 
     
     const divisions = ref([])
+    const divisionsAndSections = ref([])
+    const services = ref([])
 
     const rowsOverallPerformance = ref([])
     const rowsnumberOfCustomers = ref([])  
     const colsOverallPerformance = ref([])
     const colsnumberOfCustomers = ref([])
     
-    const columns = ref([
-        { name: 'col1', align: 'center', label: 'col1', field: 'col1', sortable: true },
-        { name: 'col2', align: 'center', label: 'col2', field: 'col2', sortable: true },
-        { name: 'col3', align: 'center', label: 'col3', field: 'col3', sortable: true },
-        { name: 'col4', align: 'center', label: 'col4', field: 'col4', sortable: true },
-        { name: 'col5', align: 'center', label: 'col5', field: 'col5', sortable: true },
-        { name: 'col6', align: 'center', label: 'col6', field: 'col6', sortable: true },
-      ])
+    const columns = ref([])
+
+    // bottom row
+    const totalActualRespondents = ref([])
 
 
 
@@ -137,20 +276,146 @@
       totalNegative.value = await countNegativeFeedback()
       console.log("totalnega", totalNegative.value)
       totalPositive.value = await countPositiveFeedback()
+      
 
     }
 
     async function buildTable(){
-
+      console.log("building tables")
+      tsrs.value = await getTSRs()
+      console.log("tsrs.value", tsrs.value )
+      buildColumns()
+      buildRows()
+      buildRowsOverallPerformance()
+      console.log("building tables", columns.value)
       
+    }
+
+    function buildRows(){
+      
+    }
+
+    function buildRowsOverallPerformance (){
+      rowsOverallPerformance.value.push({servicearea: "5 - Outstanding" , id: 5})
+      rowsOverallPerformance.value.push({servicearea: "4 - Very Satisfactory" ,  id: 4 })
+      rowsOverallPerformance.value.push({servicearea: "3 - Satisfactory", id: 3})
+      rowsOverallPerformance.value.push({servicearea: "2 - Fair & 1 - Poor", id: 2})
+      rowsOverallPerformance.value.push({servicearea: "No Response", id: 0})
+      rowsOverallPerformance.value.forEach(function(column) {
+        console.log("column", column)
+      });
+      
+
+      let totalRespondentsPerMonth = 0
+      // group by months
+      var result = _(tsrs.value)
+      .groupBy(v => moment(v.created_at).format('MMMM'))
+      .value();
+
+        console.log("Res", result)
+        for (var key in result) {
+            if (result.hasOwnProperty(key)) {
+              let row = {}
+              let totalResPerService = 0
+              let totalPerMonth = 0
+              row['month'] = key
+              
+              let temp = result[key]
+              for(let i =0 ; i< services.value.length; i++){
+                let newTemp = temp.filter(tsr => tsr.service == services.value[i]);
+                row[[services.value[i]]] = newTemp.length
+                totalPerMonth += newTemp.length
+              }
+              // total horizontal
+              row['total'] = totalPerMonth
+              totalRespondentsPerMonth += totalPerMonth
+              rowsnumberOfCustomers.value.push(row)
+            }
+        }
+        
+        // total per service
+        for(let i=0; i<services.value.length; i++){
+           let sample = filterMyArr(rowsnumberOfCustomers.value, services.value[i])
+           console.log("Samp", sample)
+           let sum = sample.reduce((a, b) => a + b, 0)
+           let arrTotal = {}
+           // total vertical per service
+           arrTotal["value"] = sum
+           totalActualRespondents.value.push(arrTotal)
+        }
+        // total actual respondents
+        let tot = {}
+        tot["value"] = totalRespondentsPerMonth
+        totalActualRespondents.value.push(tot)
+      }
+
+      function filterMyArr (myArr, condition) {
+        return myArr.map(element => element[condition])
+      }
+
+    // remove duplicate months
+
+    function buildColumns(){
+
+       
+      //   { name: 'col2', align: 'center', label: 'col2', field: 'col2', sortable: true },
+      //   { name: 'col3', align: 'center', label: 'col3', field: 'col3', sortable: true },
+
+        // console.log("divisionsAndSections232", divisionsAndSections)
+      services.value = Object.values(divisionsAndSections.value)
+      console.log("divisionsAndSections.value", divisionsAndSections.value)
+      services.value  = [].concat.apply([], services.value);
+
+      // colsOverallPerformance tables
+      colsOverallPerformance.value.push( {
+          name: 'Service Area',
+          align: 'left',
+          label: 'Service Area/Rating',
+          field: 'servicearea',
+          sortable: true
+        })
+      colsOverallPerformance.value.push( {
+        name: 'Percentage (Overall)',
+        align: 'left',
+        label: 'Percentage',
+        field: 'percentage',
+        sortable: true
+      })
+      colsnumberOfCustomers.value.push({
+        name: 'Month',
+        align: 'left',
+        label: 'Month',
+        field: 'month',
+        sortable: true
+      })
+      console.log("Sections", services.value)
+      for(let i=0; i< services.value.length ; i++){
+        // console.log("divisionsAndSections232", divisionsAndSections.value[divisions.value[i]])
+        let col = { name: services.value[i], align: 'center', label: services.value[i], field: services.value[i], sortable: true }
+        colsOverallPerformance.value.push(col)
+        colsnumberOfCustomers.value.push(col)
+      }
+
+      colsnumberOfCustomers.value.push({
+        name: 'Total',
+        align: 'center',
+        label: 'Total',
+        field: 'total',
+        sortable: true
+      })
+      console.log("colsOverallPerformance", colsOverallPerformance.value)
+
     }
     
     onMounted( async () => {
       console.log("mounted")
       LoadFeedbackCounts()
-      divisions.value = await getDivList()
+      divisionsAndSections.value = await getDivList()
+      console.log("divisionandservices", divisionsAndSections.value)
+      divisions.value = Object.keys(divisionsAndSections.value)
+      
       console.log("divi",divisions.value)
-     
+      buildTable()
     })
 
     
@@ -165,6 +430,10 @@
     //   ],
     // }));
 
+    //  const getKeyByValue = computed((object, value) => {
+    //   return Object.keys(object).find(key => object[key] === value);
+    //   // return capacity.value - attending.value.length;
+    // });
 
     return {
       totalNegative, 
@@ -172,10 +441,17 @@
       totalTsrs, 
       CardDashboardFeedbackCount, 
       columns,
+      columns2,
       tableData,
       divisions,
-      sample
-    
+      sample,
+      divisionsAndSections,
+      services,
+      rowsOverallPerformance,
+      rowsnumberOfCustomers,
+      colsOverallPerformance,
+      colsnumberOfCustomers,
+      totalActualRespondents 
     };
   },
   }

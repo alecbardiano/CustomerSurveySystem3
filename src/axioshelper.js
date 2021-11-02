@@ -1,5 +1,6 @@
 import { api, oneshopapi, ulimsTSRapi} from 'boot/axios'
 import moment from 'moment';
+import {groupBy, flow, chain} from 'lodash';
 
 let today = new Date();
 today = moment().year()
@@ -49,7 +50,7 @@ const getAllQuestions = function () {
 
   }
 
-const getAllTSRs = function (division,section,beforeDate,afterDate) {
+const getAllTSRs = function (division,service,beforeDate,afterDate) {
   
   // console.log("today", today)
   //   loading.value = true;
@@ -61,8 +62,8 @@ const getAllTSRs = function (division,section,beforeDate,afterDate) {
     // ?_start=10&_limit=10
       let before = moment(beforeDate).format('YYYY-MM-DD');
       let after = moment(afterDate).format('YYYY-MM-DD');
-      if(division && section && beforeDate && afterDate){
-        return api.get('/tsrs?_limit=-1&created_at_gt='+before+'&created_at_lt='+after+'&_sort=created_at:DESC&division='+division+'&section='+section)
+      if(division && service && beforeDate && afterDate){
+        return api.get('/tsrs?_limit=-1&created_at_gt='+before+'&created_at_lt='+after+'&_sort=created_at:DESC&division='+division+'&service='+service)
       .then(function( response ){
           // console.log(response.data.results)
           // console.log("from axios")
@@ -139,9 +140,132 @@ const getDivisionList = function () {
           let arr = response.data
           // console.log("from axios tsr division", response.data)
           let result = [...new Set(arr.map(item => item.division))].filter(function(val) { return val !== null; });
-          return result
+          let obj = arr.filter(item => item.division).map(
+            ({division,service}) => (
+              { div: division, 
+                sec: service
+              }
+              ))
+
+          let temparr = []
+          temparr = obj.reduce(function (r, a) {
+            r[a.div] = r[a.div] || [];
+            // if service already exist, dont push to array
+            if( !(r[a.div].includes(a.sec))){
+              r[a.div].push(a.sec);
+            }
+            return r;
+        }, Object.create(null));
+
+        return temparr
+
     })
 }
+
+// const getDivisionList = function () {
+//   // console.log("natawag ba to")
+//   //   loading.value = true;
+//   //   error.value = null;
+//     // I prefer to use fetch
+//     // you can use use axios as an alternative
+//     // console.log("apiiiii")
+//     // console.log(api.get('/questions'))
+//     return api.get('/tsrs/?_limit=-1')
+//       .then(function( response ){
+//           let arr = response.data
+//           console.log("from axios tsr division", response.data)
+          // let obj = arr.filter(item => item.division).map(
+          //   ({division,service}) => (
+          //     { [division]: service }
+          //     ))
+//           // let result = [...new Set(obj.map(item => item.service))]
+//           // let result = [...new Map(obj.map(item =>
+//           //   [item[key], item])).values()];
+//           // console.log("resres", result)
+//           let newarr = []
+//           let keys = Object.keys(obj)
+//           let total = obj.reduce((ac,a) => {
+//             ['patApplied','insApplied'].forEach(k => {
+//               for(let key in a[k]){
+//                 ac[k][key] = ac[k][key] || 0;
+//                 ac[k][key] += a[k][key]
+                
+//               }
+//             })
+//             return ac;
+//           },{patApplied:{},insApplied:{}})
+          
+//           console.log("group", grouped_data)
+  
+//           let temparr = []
+//           // temparr.push(Object.values(obj[0]))
+//           // let key3 = Object.keys(obj[0])[0]
+//           // let obj2 =  {
+//           //   [key3]: temparr
+//           // }
+//           // newarr.push(obj2)
+//           // for(let i =0 ; i<obj.length; i++){
+//           //   for(let j =0; j<newarr.length; j++){
+//           //     var key = Object.keys(obj[i])[0];
+//           //     var key2 = Object.keys(newarr[j])[0];
+//           //     var val2 = Object.values(obj[i])[0];
+//           //     if(key == key2){
+//           //       console.log("eyeyeyey", Object.values(newarr[j]))
+//           //       let x = Object.values(newarr[j])
+//           //       x.push("wat")
+//           //     }else{
+//           //       let temparr = []
+//           //       temparr.push(val2)
+//           //       let obj =  {
+//           //         [key]: temparr
+//           //       }
+//           //       newarr.push(obj)
+//           //     }
+//           //     console.log(key)
+//           //     console.log(key2)
+//           //     console.log("new",newarr[j])
+//           //     console.log("obj",obj[i])
+//           //   }
+//           // }
+//           console.log("Aa",obj)
+//           // obj.forEach(element => {
+//           //   for(var key in element){
+//           //     if (newarr.length ==0){
+//           //       let temparr = []
+//           //       temparr.push(element[key])
+//           //       let obj =  {
+//           //         [key]: temparr
+//           //       }
+//           //       newarr.push(obj)
+//           //     }else{
+//           //       for(let i=0 ; i < newarr.length ; i++){
+//           //         for( var key2 in newarr[i]){
+//           //             if (key == key2){
+//           //               if(!(newarr[i][key].includes(element[key]))){
+//           //                 newarr[i][key].push(element[key])
+//           //               }else{
+//           //                 break;
+//           //               }
+//           //            }
+//           //            else{
+//                       // let temparr = []
+//                       // temparr.push(element[key])
+//                       // let obj =  {
+//                       //   [key]: temparr
+//                       // }
+//                       // newarr.push(obj)
+//           //           }
+//           //         }
+//           //       }
+//           //     }
+//           //   }
+//           // });
+
+//           console.log(newarr)
+
+//           return obj
+//     })
+// }
 
 const getSectionList = function (division) {
   // console.log("natawag ba to")
@@ -155,14 +279,14 @@ const getSectionList = function (division) {
       .then(function( response ){
           let arr = response.data
           console.log("Arr", arr)
-          let result = [...new Set(arr.map(item => item.section))].filter(function(val) { return val !== null; });
+          let result = [...new Set(arr.map(item => item.service))].filter(function(val) { return val !== null; });
           console.log("res", result)
           return result
     })
 }
 
 // http://10.10.120.19:1337/answers/?tsr.division=ATD&&question.id=6
-const getAnswersForOverall = function (division,section,questionID,beforeDate,afterDate) {
+const getAnswersForOverall = function (division,service,questionID,beforeDate,afterDate) {
   // console.log("natawag ba to")
   //   loading.value = true;
   //   error.value = null;
@@ -174,17 +298,17 @@ const getAnswersForOverall = function (division,section,questionID,beforeDate,af
     let after
     before = moment(beforeDate).format('YYYY-MM-DD');
     after = moment(afterDate).format('YYYY-MM-DD');
-    if (section != ""){
+    if (service != ""){
       if(beforeDate && afterDate){
         console.log("before",beforeDate)
         console.log("after",afterDate)
-        return api.get('/answers/?tsr.division='+ division + '&tsr.section=' + section + '&&question.id='+questionID+ '&created_at_gte='+before+'&created_at_lte='+after)
+        return api.get('/answers/?tsr.division='+ division + '&tsr.service=' + service + '&&question.id='+questionID+ '&created_at_gte='+before+'&created_at_lte='+after)
         .then(function( response ){
             // console.log("from axios tsr division", response.data)
             return response.data;
       })
     }else{
-      return api.get('/answers/?tsr.division='+ division + '&tsr.section=' + section+ '&&question.id='+questionID+'&created_at_gte='+today+'-01-01'+'&created_at_lte='+today+'-12-31')
+      return api.get('/answers/?tsr.division='+ division + '&tsr.service=' + service+ '&&question.id='+questionID+'&created_at_gte='+today+'-01-01'+'&created_at_lte='+today+'-12-31')
         .then(function( response ){
             // console.log("from axios tsr division", response.data)
             return response.data;
@@ -358,34 +482,34 @@ const deleteQuestion = async function(id) {
 
 }
 
-const numberPositiveFeedbackCountPerDivision = function (beforeDate,afterDate,division,section)  {
+const numberPositiveFeedbackCountPerDivision = function (beforeDate,afterDate,division,service)  {
   let before
   let after
   before = moment(beforeDate).format('YYYY-MM-DD');
   after = moment(afterDate).format('YYYY-MM-DD');
-  return api.get('/answers/count?value_gte=4'+ '&created_at_gte='+before+'&created_at_lte='+after+'&tsr.division='+division+'&tsr.section='+section)
+  return api.get('/answers/count?value_gte=4'+ '&created_at_gte='+before+'&created_at_lte='+after+'&tsr.division='+division+'&tsr.service='+service)
       .then(function( response ){
           // console.log(response.data.results)
           return response.data;
       })
 }
-const numberSatisfactoryFeedbackCountPerDivision = function (beforeDate,afterDate,division,section)  {
+const numberSatisfactoryFeedbackCountPerDivision = function (beforeDate,afterDate,division,service)  {
   let before
   let after
   before = moment(beforeDate).format('YYYY-MM-DD');
   after = moment(afterDate).format('YYYY-MM-DD');
-  return api.get('/answers/count?value=3'+ '&created_at_gte='+before+'&created_at_lte='+after+'&tsr.division='+division+'&tsr.section='+section)
+  return api.get('/answers/count?value=3'+ '&created_at_gte='+before+'&created_at_lte='+after+'&tsr.division='+division+'&tsr.service='+service)
       .then(function( response ){
           // console.log(response.data.results)
           return response.data;
       })
 }
-const numberPoorFeedbackCountPerDivision = function (beforeDate,afterDate,division,section)  {
+const numberPoorFeedbackCountPerDivision = function (beforeDate,afterDate,division,service)  {
   let before
   let after
   before = moment(beforeDate).format('YYYY-MM-DD');
   after = moment(afterDate).format('YYYY-MM-DD');
-  return api.get('/answers/?value_lte=3'+ '&created_at_gte='+before+'&created_at_lte='+after+'&tsr.division='+division+'&tsr.section='+section)
+  return api.get('/answers/?value_lte=3'+ '&created_at_gte='+before+'&created_at_lte='+after+'&tsr.division='+division+'&tsr.service='+service)
       .then(function( response ){
           // console.log(response.data.results)
           return response.data;
@@ -482,8 +606,8 @@ export const getAnswers = (start,limit) => {
 }
 
 
-export const getTSRs = (division,section,beforeDate,afterDate) => {
-  return getAllTSRs(division,section,beforeDate,afterDate)
+export const getTSRs = (division,service,beforeDate,afterDate) => {
+  return getAllTSRs(division,service,beforeDate,afterDate)
 }
 export const getQuestionTypes = () => {
   return getAllQuestionTypes()
@@ -511,20 +635,20 @@ export const tsrViaDivision = (division) => {
   return getTsrViaDivision(division)
 }
 
-export const getOverall = (division,section,questionID,beforeDate,afterDate) =>{
-  return getAnswersForOverall(division,section,questionID,beforeDate,afterDate)
+export const getOverall = (division,service,questionID,beforeDate,afterDate) =>{
+  return getAnswersForOverall(division,service,questionID,beforeDate,afterDate)
 }
 
-export const positiveFeedbackPerDivision = (beforeDate,afterDate,division,section) =>{
-  return numberPositiveFeedbackCountPerDivision(beforeDate,afterDate,division,section)
+export const positiveFeedbackPerDivision = (beforeDate,afterDate,division,service) =>{
+  return numberPositiveFeedbackCountPerDivision(beforeDate,afterDate,division,service)
 }
 
-export const satisfactoryFeedbackPerDivision = (beforeDate,afterDate,division,section) =>{
-  return numberSatisfactoryFeedbackCountPerDivision (beforeDate,afterDate,division,section)
+export const satisfactoryFeedbackPerDivision = (beforeDate,afterDate,division,service) =>{
+  return numberSatisfactoryFeedbackCountPerDivision (beforeDate,afterDate,division,service)
 }
 
-export const poorFeedbackPerDivision = (beforeDate,afterDate,division,section) =>{
-  return numberPoorFeedbackCountPerDivision(beforeDate,afterDate,division,section)
+export const poorFeedbackPerDivision = (beforeDate,afterDate,division,service) =>{
+  return numberPoorFeedbackCountPerDivision(beforeDate,afterDate,division,service)
 }
 
 export const getDivList = () => {

@@ -165,6 +165,7 @@
       </template> -->
       <template v-slot:bottom-row>
         <q-tr>
+          {{overAllAverage}}
           <q-td v-bind:key="column.key" v-for="column in overAllAverage">
               <p v-if="column.dimension">Average: </p>
               <p v-else-if="column.value != 0  ">{{ column.value }}</p>
@@ -189,11 +190,6 @@ import { exportFile, useQuasar} from 'quasar'
 import { xlsx } from 'boot/axios'
 import moment from 'moment';
 import orderBy from 'lodash.orderby'
-
-// import orderByPositionQuestions from '../pages/QuestionsPage.vue' 
-
-
-// import function get question from Questions Page
 
 
 //components

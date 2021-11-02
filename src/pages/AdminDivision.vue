@@ -5,7 +5,7 @@
   <div class="q-pa-md" style="margin-left: 40px">
     <div class="row inline">
       <q-select v-model="division" @update:model-value="fillSectionList()" :options="divisions" label="Division" style="width: 200px; " />
-      <q-select v-model="section" :options="sections" label="Section" style="width: 200px;  margin-left: 40px" />
+      <q-select v-model="service" :options="services" label="Service" style="width: 200px;  margin-left: 40px" />
     </div>
   </div>
 
@@ -74,7 +74,7 @@
       </q-tr>
       <q-tr>
         <q-td colspan="100%">
-          {{section}}
+          {{service}}
         </q-td>
       </q-tr>
     </template>
@@ -126,7 +126,7 @@
       row-key="name"
       binary-state-sort
       separator="cell"
-      style="height: 500px"
+      style="height: 300px"
       :rows-per-page-options="[0]"
     >
     </q-table>
@@ -143,9 +143,10 @@ import orderBy from 'lodash.orderby'
 export default defineComponent({
   name: 'AdminDivision',
   setup() {
+    const divisionsAndSections = ref(null)
     const division = ref(null)
-    const sections = ref([])
-    const section = ref(null)
+    const services = ref([])
+    const service = ref(null)
     const questions = ref([])
     const orderKey = ref('position')
     const tsrs = ref([])
@@ -216,11 +217,6 @@ export default defineComponent({
           console.log("hello")
           loadNumbers()
           loadTotalOverall(beforeDate.value,newValue)
-        // filterTable(newValue,1)
-        // onRequest({
-        //   pagination: pagination.value,
-        //   filter: undefined
-        // })
       })
       
     })
@@ -234,7 +230,7 @@ export default defineComponent({
       noSatisfactory.value = 0
       // noRespondents.value = 
       console.log("hey", division.value)
-      tsrs.value = await getTSRs(division.value,section.value,beforeDate.value,afterDate.value)
+      tsrs.value = await getTSRs(division.value,service.value,beforeDate.value,afterDate.value)
       console.log("pasok ba", tsrs.value)
       noRespondents.value = tsrs.value.length
      
@@ -244,7 +240,7 @@ export default defineComponent({
       // if(orderByPositionQuestions.value[j].id == 12){
       //   if(orderByPositionQuestions.value[j])
       // }
-      let dataDivision = await getOverall(division.value,section.value,orderByPositionQuestions.value[j].id,beforeDate.value,afterDate.value)
+      let dataDivision = await getOverall(division.value,service.value,orderByPositionQuestions.value[j].id,beforeDate.value,afterDate.value)
       if(dataDivision.length != 0){
         dataDivision = dataDivision.map(a => a.value)
         dataDivision = dataDivision.map(function (x) { 
@@ -273,6 +269,8 @@ export default defineComponent({
             }
           }
           if (num == 1 || num == 2){
+            console.log("wew")
+            
             counts[2] +=1
           }
           else if (isNaN(num)){
@@ -299,9 +297,23 @@ export default defineComponent({
     console.log("tatanda" , rowsOverall.value)
     }
 
-    async function fillSectionList(){
+    function fillSectionList(){
       console.log("hey", division.value)
-      sections.value = await getSecList(division.value)
+      console.log("hey", divisionsAndSections.value)
+      if(division.value in divisionsAndSections.value){
+        services.value = divisionsAndSections.value[division.value]
+      }
+      // divisionsAndSections.forEach(element => {
+      //     if(element == division.value){
+      //       services.value = element[element]
+      //     }
+      // });
+      // divisionsAndSections.value.foreach(div in divisionsAndSections) {
+      //   if (div == division.value){
+      //     services.value = div[div]
+      //   }
+      // }
+      // services.value = await getSecList(division.value)
     }
 
     function buildColumns (){
@@ -358,6 +370,11 @@ export default defineComponent({
     
     async function loadTotalOverall() {
       let data = await allOverAllRatingsFromApi(beforeDate.value,afterDate.value)
+
+      // reset 
+      noVerySatisfactoryTotal.value = 0
+      noSatisfactoryTotal.value = 0
+      noPoorTotal.value = 0
       console.log("data", data)
       data = data.map(a => a.value)
       data.forEach(val => {
@@ -371,27 +388,34 @@ export default defineComponent({
           console.log("nan? or undefined or '' ")
         }
       });
-      rowsTotal.value.push({
+      if(rowsTotal.value.length == 0){
+        rowsTotal.value.push({
         area: "No. and % of customers who rated the Center's service as very satisfactory or better",
         number: noVerySatisfactoryTotal,
-        percentage: (noVerySatisfactoryTotal.value/data.length* 100).toString() + '%'
-      })
-      rowsTotal.value.push({
-        area: "No. and % of customers who rated the Center's service as satisfactory or better",
-        number: noSatisfactoryTotal,
-        percentage: (noSatisfactoryTotal.value/data.length* 100).toString() + '%'
-      })
-      rowsTotal.value.push({
-        area: "No. and % of customers who rated the service as Fair or Poor",
-        number: noPoorTotal,
-        percentage: ((noPoorTotal.value/data.length) * 100).toString() + '%'
-      })
-
+        percentage: ((noVerySatisfactoryTotal.value/data.length) * 100).toString() + '%'
+        })
+        rowsTotal.value.push({
+          area: "No. and % of customers who rated the Center's service as satisfactory or better",
+          number: noSatisfactoryTotal,
+          percentage: ((noSatisfactoryTotal.value/data.length) * 100).toString() + '%'
+        })
+        rowsTotal.value.push({
+          area: "No. and % of customers who rated the service as Fair or Poor",
+          number: noPoorTotal,
+          percentage: ((noPoorTotal.value/data.length) * 100).toString() + '%'
+        })
+      }else{
+        rowsTotal.value[0].percentage = ((noVerySatisfactoryTotal.value/data.length) * 100).toString() + '%'
+        rowsTotal.value[1].percentage = ((noSatisfactoryTotal.value/data.length) * 100).toString() + '%'
+        rowsTotal.value[2].percentage = ((noPoorTotal.value/data.length) * 100).toString() + '%'
+      }
+      
     }
 
     onMounted( async () => {
       questions.value = await getQuestions()
-      divisions.value = await getDivList()
+      divisionsAndSections.value = await getDivList()
+      divisions.value = Object.keys(divisionsAndSections.value)
       console.log("divis", divisions.value)
       console.log("questions", questions.value)
       buildColumns()
@@ -406,8 +430,8 @@ export default defineComponent({
       options,
       divisions,
       division,
-      sections,
-      section,
+      services,
+      service,
       rowsOverall,
       colsOverall,
       loading,
