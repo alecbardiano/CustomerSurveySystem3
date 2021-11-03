@@ -75,6 +75,7 @@
               label="Generate PDF Report"
               class="q-mt-md"
               color="primary"
+              @click="generatePDF()"
               style="margin-left: 15px"
           />
           </div>
@@ -165,7 +166,6 @@
       </template> -->
       <template v-slot:bottom-row>
         <q-tr>
-          {{overAllAverage}}
           <q-td v-bind:key="column.key" v-for="column in overAllAverage">
               <p v-if="column.dimension">Average: </p>
               <p v-else-if="column.value != 0  ">{{ column.value }}</p>
@@ -296,6 +296,7 @@ export default defineComponent({
 
     
   // }
+  
   function buildTable(){
     let rowData = []
     if(cols.value.length == 0){
@@ -381,12 +382,12 @@ export default defineComponent({
     if(colsOverall.value.length > 0){
       colsOverall.value = []
     }
-    colsOverall.value.push({ name: 'Dimension' ,align: 'left', label: 'Dimension', field: 'dimension' , sortable: true })
+    colsOverall.value.push({ name: 'Dimension' ,align: 'left', label: 'Dimension', field: 'dimension' , sortable: true, style:"width: 300px" })
   
     let dataDivision = []
     // console.log("hellodivlistload divisin data", rowsOverall.value)
     // console.log("hellodivlistload divisin data", divlist)
-    colsOverall.value.push({ name: 'Score' ,align: 'left', label: 'Score All in Service', field: 'scoreservice' , sortable: true })
+    colsOverall.value.push({ name: 'Score' ,align: 'left', label: 'Score All in Service', field: 'scoreservice' , sortable: true ,  style:"width: 300px"})
     for(let i =0; i<divlist.length; i++){
       colsOverall.value.push({name: divlist[i] ,align: 'left', label: divlist[i], field: divlist[i] , sortable: true })
       for (let j=0; j<rowsOverall.value.length; j++){
@@ -423,12 +424,10 @@ export default defineComponent({
     }
     // score in all service
     for (let i = 0; i<rowsOverall.value.length; i++){
-      console.log("rowsoverall.value[i]", rowsOverall.value[i])
       const {dimension, id, scoreservice, ...partialObject} = rowsOverall.value[i];
       
       let total = 0
       let length = 0
-      console.log("partial", partialObject)
       for (var div in partialObject){
         if((partialObject[div]) == 0){
           break;
@@ -493,7 +492,247 @@ export default defineComponent({
     
    }
   
+  function generatePDF(action) {
+    var docDefinition = {
+        content: [
+            { 
+                alignment: 'center',
+                text: 'PPRA',
+                style: 'header',
+                fontSize: 23,
+                bold: true,
+                margin: [0, 10],
+            },
+            {
+                margin: [0, 0, 0, 10],
+                layout: {
+                    fillColor: function (rowIndex, node, columnIndex) {
+                        return (rowIndex % 2 === 0) ? '#ebebeb' : '#f5f5f5';
+                    }
+                },
+                table: {
+                    widths: ['100%'],
+                    heights: [20,10],
+                    body: [
+                        [
+                            { 
+                                text: 'SETOR: ADMINISTRATIVO',
+                                fontSize: 9,
+                                bold: true,
+                            }
+                        ],
+                        [
+                            { 
+                                text: 'FUNÇÃO: DIRETOR DE ENSINO',
+                                fontSize: 9,
+                                bold: true
+                            }
+                        ],
+                    ],
+                }
+            },
+            {
+                style: 'tableExample',
+                layout: {
+                    fillColor: function (rowIndex, node, columnIndex) {
+                        return (rowIndex === 0) ? '#c2dec2' : null;
+                    }
+                },
+                table: {
+                    widths: ['30%', '10%', '25%', '35%'],
+                    heights: [10,10,10,10,30,10,25],
+                    headerRows: 1,
+                    body: [
+                        [
+                            { 
+                                text: 'AGENTE: Não Identificados',
+                                colSpan: 3,
+                                bold: true,
+                                fontSize: 9
+                            }, 
+                            {
+                            },
+                            { 
+                            },
+                            {
+                                text: 'GRUPO: Grupo 1 - Riscos Físicos',
+                                fontSize: 9,
+                                bold: true
+                            }
+                        ],
+                        [
+                            {
+                                text: 'Limite de Tolerância:',
+                                fontSize: 9,
+                                bold: true
+                            }, 
+                            { 
+                                text: 'Meio de Propagação:',
+                                colSpan: 3,
+                                fontSize: 9,
+                                bold: true
+                            },
+                            {
+                            },
+                            {
+                            }
+                        ],
+                        [
+                            {
+                                text: [
+                                    'Frequência: ', 
+                                    {
+                                        text: 'Habitual',
+                                        bold: false
+                                    }
+                                ],
+                                fontSize: 9,
+                                bold: true
+                            }, 
+                            { 
+                                text: [
+                                    'Classificação do Efeito: ', 
+                                    {
+                                        text: 'Leve',
+                                        bold: false
+                                    }
+                                ],
+                                colSpan: 3,
+                                fontSize: 9,
+                                bold: true
+                            },
+                            {
+                            },
+                            {
+                            }
+                        ],
+                        [
+                            {
+                                text: 'Tempo de Exposição:',
+                                colSpan: 2,
+                                fontSize: 9,
+                                bold: true
+                            }, 
+                            { 
+                            },
+                            {
+                                text: 'Medição:',
+                                colSpan: 2,
+                                fontSize: 9,
+                                bold: true
+                            },
+                            {
+                            }
+                        ],
+                        [
+                            {
+                                text: 'Fonte Geradora:',
+                                border: [true, true, false, false],
+                                colSpan: 2,
+                                fontSize: 9,
+                                bold: true
+                            }, 
+                            { 
+                            },
+                            {
+                                text: 'Téc. Utilizada:',
+                                border: [false, true, true, false],
+                                colSpan: 2,
+                                fontSize: 9,
+                                bold: true
+                            },
+                            {
+                            }
+                        ],
+                        [
+                            {
+                                text: 'Conclusão:',
+                                border: [true, false, true, true],
+                                colSpan: 4,
+                                fontSize: 9,
+                                bold: true
+                            }, 
+                            { 
+                            },
+                            {
+                            },
+                            {
+                            }
+                        ],
+                        [
+                            {
+                                text: 'EPIs/EPCs:',
+                                border: [true, true, false, true],
+                                colSpan: 3,
+                                fontSize: 9,
+                                bold: true
+                            }, 
+                            { 
+                            },
+                            {
+                            },
+                            {
+                                text: 'CAs:',
+                                border: [false, true, true, true],
+                                fontSize: 9,
+                                bold: true
+                            }
+                        ],
+                    ]
+                }
+            }
+        ]
+    };
+    
+    if (action === 1) {
+        pdfMake.createPdf(docDefinition).getDataUrl(function(dataURL) {
+            renderPDF(dataURL, document.getElementById('canvas'));
+        });
+    }
+    else if (action === 2) {
+        var pdf = createPdf(docDefinition);
+        pdf.download('PPRA.pdf');
+    }
+}
 
+
+
+
+
+// * this is not important for PDFMake, it's here just to render the result *
+// It's a Mozilla lib called PDFjs that handles pdf rendering directly on the browser
+function renderPDF(url, canvasContainer, options) {
+
+    options = options || { scale: 1.4 };
+        
+    function renderPage(page) {
+        var viewport = page.getViewport(options.scale);
+        var wrapper = document.createElement("div");
+        wrapper.className = "canvas-wrapper";
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d');
+        var renderContext = {
+          canvasContext: ctx,
+          viewport: viewport
+        };
+        
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        wrapper.appendChild(canvas)
+        canvasContainer.appendChild(wrapper);
+        
+        page.render(renderContext);
+    }
+    
+    function renderPages(pdfDoc) {
+        for(var num = 1; num <= pdfDoc.numPages; num++)
+            pdfDoc.getPage(num).then(renderPage);
+    }
+
+    PDFJS.disableWorker = true;
+    PDFJS.getDocument(url).then(renderPages);
+
+}
   function wrapCsvValue (val, formatFn) {
     let formatted = formatFn !== void 0
       ? formatFn(val)
@@ -629,7 +868,7 @@ export default defineComponent({
         // build last row data object with key being the questionID
         avgObv[x[i]] = []
         //  push array of answers per question
-        avgArrayWithKeys.push(avgObv)
+        
         // map all keys with value and return in to the array
         let xy = rows.map(function(item){ 
           return item[x[i]]; 
@@ -649,6 +888,7 @@ export default defineComponent({
           }
         }
         avgObv['value'] = parseFloat((Math.round((sum/filtered.length) * 100) / 100).toFixed(2));
+        avgArrayWithKeys.push(avgObv)
         
       }
       return avgArrayWithKeys
@@ -778,7 +1018,9 @@ export default defineComponent({
       answers,
       listOfTsr,
       cols,
+      // file related functions
       exportTable,
+      generatePDF,
       beforeDate,
       afterDate,
       prompt,
