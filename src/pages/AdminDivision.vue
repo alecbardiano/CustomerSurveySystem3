@@ -256,8 +256,8 @@ export default defineComponent({
           4: 0, 
           3:0, 
           2:0,
-          0:0}
-          ;
+          0:0
+        };
         for (const num of dataDivision) {
           if(orderByPositionQuestions.value[j].id == 12){
             if (num == 5|| num == 4){

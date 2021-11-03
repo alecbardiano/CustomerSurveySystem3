@@ -368,7 +368,7 @@ export default defineComponent({
     function onSubmit () {
       surveyRefForm.value.validate().then(success => {
         // check null values from api
-        if(industryData.value != "" && industryData.value  && divData.value != "" && serviceData.value != ""){
+        if ( divData.value != "" && serviceData.value != ""){
           if (success){
           submitSurvey()
           $q.notify({

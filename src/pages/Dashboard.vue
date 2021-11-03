@@ -104,6 +104,7 @@
       row-key="col1"
       separator="cell"
       title="Overall Performance of the Center Based on CSS Responses"
+      :rows-per-page-options="[0]"
     >
     
      <template  v-slot:header>
@@ -122,22 +123,14 @@
       <!-- </div> -->
         
     </template>
-    <!-- <template v-slot:header="props">
+    <template v-slot:bottom-row>
         <q-tr>
-          <q-th colspan="1" >col type1</q-th>
-          <q-th colspan="2" >col type2</q-th>
-          <q-th colspan="3" >col type3</q-th>
+          <q-td>Total:</q-td>
+          <q-td style="text-align: center" v-bind:key="column.key" v-for="column in totalPerField">
+              <p v-if="column.value != 0  ">{{ column.value }}</p>
+            </q-td>
         </q-tr>
-        <q-tr>
-          <q-th key="col1" :props="props" >col1</q-th>
-          <q-th key="col2" :props="props" >col2</q-th>
-          <q-th key="col3" :props="props" >col3</q-th>
-          <q-th key="col4" :props="props" >col4</q-th>
-          <q-th key="col5" :props="props" >col5</q-th>
-          <q-th key="col6" :props="props" >col6</q-th>
-        </q-tr>
-    </template> -->
-        
+      </template>
     </q-table>
   </div>
 
@@ -150,6 +143,7 @@
       row-key="col1"
       title="Number of Customers and CSM Respondents Per Service Area"
       separator="cell"
+      :rows-per-page-options="[0]"
     >
     <template  v-slot:header>
        <!-- {{props}} -->
@@ -218,7 +212,7 @@
 <script type="text/javascript">
 
   import { defineComponent, ref, computed, onMounted } from 'vue'
-  import { getDivList, countPositiveFeedback, countNegativeFeedback, totalTsrsCount , getTSRs} from 'src/axioshelper.js'
+  import { getDivList, countPositiveFeedback, countNegativeFeedback, totalTsrsCount , getTSRs, allOverAllRatingsFromApi} from 'src/axioshelper.js'
   import CardDashboardFeedbackCount from '../components/CardDashboardFeedbackCount.vue'
   import { Chart, registerables } from 'chart.js'
   import groupBy from 'lodash'
@@ -242,18 +236,8 @@
     const totalPositive = ref(0);
     const totalTsrs =  ref(0);
     const tsrs = ref([])
-    const sample = ref(2)
-    const tableData = ref([{col1: 'x', col2: 'x', col3: 'x', col4: 'x', col5: 'x', col6: 'x'}]);
-    const columns2 = ref( [
-        { name: 'col1', align: 'center', label: 'col1', field: 'col1', sortable: true },
-        { name: 'col2', align: 'center', label: 'col2', field: 'col2', sortable: true },
-        { name: 'col3', align: 'center', label: 'col3', field: 'col3', sortable: true },
-        { name: 'col4', align: 'center', label: 'col4', field: 'col4', sortable: true },
-        { name: 'col5', align: 'center', label: 'col5', field: 'col5', sortable: true },
-        { name: 'col6', align: 'center', label: 'col6', field: 'col6', sortable: true }
-      ])
-
-
+    const totalAnswerOverall = ref([])
+    const totalNoResponse = ref(0)
     
     const divisions = ref([])
     const divisionsAndSections = ref([])
@@ -266,13 +250,17 @@
     
     const columns = ref([])
 
-    // bottom row
+    // bottom row overall performance
+    const totalPerField = ref([])
+
+    // bottom row customer
     const totalActualRespondents = ref([])
 
 
 
     async function LoadFeedbackCounts(){
       totalTsrs.value = await totalTsrsCount()
+
       totalNegative.value = await countNegativeFeedback()
       console.log("totalnega", totalNegative.value)
       totalPositive.value = await countPositiveFeedback()
@@ -281,13 +269,87 @@
     }
 
     async function buildTable(){
-      console.log("building tables")
       tsrs.value = await getTSRs()
-      console.log("tsrs.value", tsrs.value )
       buildColumns()
       buildRows()
       buildRowsOverallPerformance()
-      console.log("building tables", columns.value)
+      totalAnswerOverall.value = await allOverAllRatingsFromApi("","")
+      totalAnswerOverall.value = totalAnswerOverall.value.filter(function (el) {
+        return el.tsr != null;
+      });
+      totalNoResponse.value = totalTsrs.value - totalAnswerOverall.value.length
+
+      //
+      const mainCounts = {
+        5: 0, 
+        4: 0,
+        3: 0, 
+        2: 0
+      };
+      for(let i = 0; i<services.value.length ; i++){
+        let sample = totalAnswerOverall.value.filter((element) => {
+          if(element.tsr){
+            return element.tsr.service == services.value[i]
+          }
+        })
+        console.log("sasasasa", sample)
+        const counts = {
+          5: 0, 
+          4: 0,
+          3: 0, 
+          2: 0
+        };
+        
+        sample.forEach(element => {
+          let num = element.value
+          if (num == 1 || num == 2){
+            counts[2] +=1
+            mainCounts[2] +=1
+          }
+          else if (isNaN(num)){
+            counts[0] += 1
+            mainCounts[0] +=1
+          }else{
+            counts[num] = (counts[num] ? counts[num] + 1 : 1) 
+            mainCounts[num] = (mainCounts[num] ? mainCounts[num] + 1 : 1) 
+          }
+        });
+        console.log("Counts", counts)
+        
+        for(let [key, value] of Object.entries(counts)){
+          // total vertical per service
+          rowsOverallPerformance.value.forEach(function (arrayItem) {
+            if(key == arrayItem.id){
+              value = (value/ sample.length) * 100
+              value = value.toFixed(2).toString() + '%'
+              arrayItem[services.value[i]] = value
+            }
+            
+        });
+        }
+      }
+
+      // row add percentage field
+      console.log("mansCounts", mainCounts)
+      let totalPercentRow = 0
+      rowsOverallPerformance.value.forEach(row => {
+        let res = (parseFloat(mainCounts[row.id])/ totalAnswerOverall.value.length * 100)
+        row['percentage'] = res.toFixed(2).toString() + '%'
+        totalPercentRow +=res
+      });
+      let tempObj = {}
+      tempObj['value'] = parseFloat(totalPercentRow).toFixed(2).toString() + '%'
+      totalPerField.value.push(tempObj)
+
+      for(let j=0; j<services.value.length; j++){
+        let service = services.value[j]
+        let a = rowsOverallPerformance.value.map(a => a[service]);
+        let sum = a.reduce((a, b) => parseFloat(a) + parseFloat(b), 0)
+        tempObj['value'] = sum.toFixed(2).toString() + '%'
+        totalPerField.value.push(tempObj)
+      }
+
+      // [ { "dimension": [], "value": 0 }, { "scoreservice": [], "value": 3.18 }, { "ATD": [], "value": 3.16 }, { "PD": [], "value": 3.22 } ]
       
     }
 
@@ -296,16 +358,18 @@
     }
 
     function buildRowsOverallPerformance (){
+
+      // performance row generation
       rowsOverallPerformance.value.push({servicearea: "5 - Outstanding" , id: 5})
       rowsOverallPerformance.value.push({servicearea: "4 - Very Satisfactory" ,  id: 4 })
       rowsOverallPerformance.value.push({servicearea: "3 - Satisfactory", id: 3})
       rowsOverallPerformance.value.push({servicearea: "2 - Fair & 1 - Poor", id: 2})
-      rowsOverallPerformance.value.push({servicearea: "No Response", id: 0})
-      rowsOverallPerformance.value.forEach(function(column) {
-        console.log("column", column)
-      });
+      
+ 
       
 
+
+      // Number of customers Row generation
       let totalRespondentsPerMonth = 0
       // group by months
       var result = _(tsrs.value)
@@ -316,7 +380,6 @@
         for (var key in result) {
             if (result.hasOwnProperty(key)) {
               let row = {}
-              let totalResPerService = 0
               let totalPerMonth = 0
               row['month'] = key
               
@@ -376,7 +439,7 @@
         })
       colsOverallPerformance.value.push( {
         name: 'Percentage (Overall)',
-        align: 'left',
+        align: 'center',
         label: 'Percentage',
         field: 'percentage',
         sortable: true
@@ -441,17 +504,15 @@
       totalTsrs, 
       CardDashboardFeedbackCount, 
       columns,
-      columns2,
-      tableData,
       divisions,
-      sample,
       divisionsAndSections,
       services,
       rowsOverallPerformance,
       rowsnumberOfCustomers,
       colsOverallPerformance,
       colsnumberOfCustomers,
-      totalActualRespondents 
+      totalActualRespondents,
+      totalPerField
     };
   },
   }

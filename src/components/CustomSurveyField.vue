@@ -3,6 +3,20 @@
     <div v-if="question_type == 1">
         <q-input outlined  v-model="inputViewModel" :label="labelval" style="width: 500px" stack-label />
     </div>
+    <!-- required overall question rating -->
+    <div v-else-if="props.questionId == 12">
+      <q-rating
+            v-model="inputViewModel"
+            size="3.0em"
+            icon="star_border"
+            color="primary"
+            :max="5"
+            :rules="[
+              val => !!val || '* Required'
+            ]"
+            inline /> 
+    </div>
+
     <div v-else-if="question_type == 2">
         <q-rating
             v-model="inputViewModel"

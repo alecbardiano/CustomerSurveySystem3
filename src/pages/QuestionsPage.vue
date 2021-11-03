@@ -45,7 +45,7 @@
      <template v-slot:body-cell-action="props">
         <q-td :props="props">
           <q-btn dense round flat color="grey" @click="editQuestion(props)" icon="edit"></q-btn>
-          <q-btn dense round flat color="grey" @click="deleteQuestion(props)" icon="delete"></q-btn>
+          <!-- <q-btn dense round flat color="grey" @click="deleteQuestion(props)" icon="delete"></q-btn> -->
         </q-td>          
       </template>
     </q-table>
