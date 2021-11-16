@@ -79,6 +79,9 @@
       </q-tr>
     </template>
 
+    
+
+
 
       <template v-slot:bottom-row>
         <q-tr>
@@ -126,7 +129,7 @@
       row-key="name"
       binary-state-sort
       separator="cell"
-      style="height: 300px"
+      style="height: 350px"
       :rows-per-page-options="[0]"
     >
     </q-table>
@@ -228,11 +231,11 @@ export default defineComponent({
       noPoor.value = 0
       noVerySatisfactory.value = 0
       noSatisfactory.value = 0
-      // noRespondents.value = 
+      noRespondents.value = 0
       console.log("hey", division.value)
-      tsrs.value = await getTSRs(division.value,service.value,beforeDate.value,afterDate.value)
+      tsrs.value = await getTSRs("","",division.value,service.value,beforeDate.value,afterDate.value,3)
       console.log("pasok ba", tsrs.value)
-      noRespondents.value = tsrs.value.length
+      
      
 
     for (let j=0; j<orderByPositionQuestions.value.length; j++){
@@ -241,11 +244,13 @@ export default defineComponent({
       //   if(orderByPositionQuestions.value[j])
       // }
       let dataDivision = await getOverall(division.value,service.value,orderByPositionQuestions.value[j].id,beforeDate.value,afterDate.value)
+      console.log("dataDivisiondataDivision",dataDivision)
       if(dataDivision.length != 0){
         dataDivision = dataDivision.map(a => a.value)
         dataDivision = dataDivision.map(function (x) { 
           return parseInt(x, 10); 
         });
+        noRespondents.value = dataDivision.length
         // dataDivision = dataDivision.filter(function(x) {
         //     if ( x != undefined || x == '' || !isNaN(x)){
         //       return x
@@ -261,6 +266,7 @@ export default defineComponent({
         for (const num of dataDivision) {
           if(orderByPositionQuestions.value[j].id == 12){
             if (num == 5|| num == 4){
+              console.log("pasok dito")
               noVerySatisfactory.value+=1
             }else if(num == 3){
               noSatisfactory.value +=1
@@ -281,10 +287,13 @@ export default defineComponent({
           
         }
 
+        console.log("counts", counts)
+
         for(let [key, value] of Object.entries(counts)){
           rowsOverall.value.forEach(function (arrayItem) {
             if(key == arrayItem.id){
-              value = (value/ noRespondents.value) * 100
+              console.log("value", value)
+              value = (value/ dataDivision.length) * 100
               value = value.toString() + '%'
               arrayItem[orderByPositionQuestions.value[j].id] = value
             }
@@ -293,8 +302,7 @@ export default defineComponent({
         }
         console.log("rowsoverall", rowsOverall.value)
       }
-    }
-    console.log("tatanda" , rowsOverall.value)
+     }
     }
 
     function fillSectionList(){
@@ -303,17 +311,6 @@ export default defineComponent({
       if(division.value in divisionsAndSections.value){
         services.value = divisionsAndSections.value[division.value]
       }
-      // divisionsAndSections.forEach(element => {
-      //     if(element == division.value){
-      //       services.value = element[element]
-      //     }
-      // });
-      // divisionsAndSections.value.foreach(div in divisionsAndSections) {
-      //   if (div == division.value){
-      //     services.value = div[div]
-      //   }
-      // }
-      // services.value = await getSecList(division.value)
     }
 
     function buildColumns (){
@@ -375,6 +372,7 @@ export default defineComponent({
       noVerySatisfactoryTotal.value = 0
       noSatisfactoryTotal.value = 0
       noPoorTotal.value = 0
+      noRespondentsTotal.value = 0
       console.log("data", data)
       data = data.map(a => a.value)
       data.forEach(val => {
@@ -382,10 +380,10 @@ export default defineComponent({
           noVerySatisfactoryTotal.value += 1
         }else if (val == 3){
           noSatisfactoryTotal.value +=1
-        }else if (val <= 2){
-          noPoorTotal.value +=1
+        }else if (val == ''){
+          noRespondentsTotal.value +=1
         }else{
-          console.log("nan? or undefined or '' ")
+          noPoorTotal.value +=1
         }
       });
       if(rowsTotal.value.length == 0){
@@ -404,10 +402,16 @@ export default defineComponent({
           number: noPoorTotal,
           percentage: ((noPoorTotal.value/data.length) * 100).toString() + '%'
         })
+        rowsTotal.value.push({
+          area: "No. and % of customers who didn't have an Overall Answer",
+          number: noRespondentsTotal,
+          percentage: ((noRespondentsTotal.value/data.length) * 100).toString() + '%'
+        })
       }else{
         rowsTotal.value[0].percentage = ((noVerySatisfactoryTotal.value/data.length) * 100).toString() + '%'
         rowsTotal.value[1].percentage = ((noSatisfactoryTotal.value/data.length) * 100).toString() + '%'
         rowsTotal.value[2].percentage = ((noPoorTotal.value/data.length) * 100).toString() + '%'
+        rowsTotal.value[3].percentage = ((noRespondentsTotal.value/data.length) * 100).toString() + '%'
       }
       
     }

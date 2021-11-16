@@ -176,9 +176,9 @@ import orderBy from 'lodash.orderby'
 
 const columns = [
   { name: 'id',  label: 'Id', field: row => row.id, sortable: true,align: 'left' },
-  { name: 'description', label: 'Description',align: 'left', field: row => row.description },
+  { name: 'description', label: 'Description',align: 'left', field: row => row.description, sortable: true, },
   { name: 'question_type', label: 'Question_type', align: 'left',field: row => row.question_type.description },
-  { name: 'position', label: 'Position', align: 'left',field: row => row.position },
+  { name: 'position', label: 'Position', align: 'left',field: row => row.position, sortable: true, },
   { name: 'action', label: 'Action', align: 'left',field: ''}
 ]
 

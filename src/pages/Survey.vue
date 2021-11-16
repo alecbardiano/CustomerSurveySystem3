@@ -27,6 +27,7 @@
         <!-- v-model na kumukuha nung array, array of answers instantiate -->
         <!-- {"total":1,"limit":10,"skip":0,"data":[{"customer":{"company":"PD/EPS-DUAL SPEED REDUCER","intExt":"Internal","oldNew":"New","sector":["N. Administrative and support service activities / Government"],"street":"GEN. SANTOS AVE.","region":"NATIONAL CAPITAL REGION (NCR)","province":"NCR, FOURTH DISTRICT","citymun":"TAGUIG CITY","brgy":"Upper Bicutan","telno":"8370431","fax":"","contact":"JOEIN L. LUCES","position":"SCIENCE RESEARCH SPECIALIST 11","email":"N/A","created_at":1569887587065,"_id":"xhDvoTqBELDZDaYD","__index":73},"service":{"name":"Machining (Precision)","div":"PD","sectionCode":"PDS","serviceCode":"MAPR","costCenter":"28"},"checkARF":false,"checkProd":true,"checkMaterials":true,"checkCapability":true,"checkTooling":true,"jeo":"jeo","jobtype":"Actual Time","computationMethod":"","targetStartDate":"2020-02-24T08:00:00.000+08:00","targetDate":"2020-03-12T16:00:00.000+08:00","targetDate1":{"month":"Invalid date","date":"Invalid date","year":"Invalid date","time":"Invalid date"},"startedDate":null,"intExt":{"name":"Internal","code":"0","ieCode":"INT"},"created_at":"2020-02-24T10:25:00.000-03:30","created_at1":{"month":"2","date":"24","year":"2020"},"costCenter":"","deposit":{"date":"","machines":[],"amount":0},"downpayment":{"date":"","amount":0},"partial":{"date":"","amount":0},"fullpayment":{"date":"","amount":0},"payStatus":"","toPay":0,"quoteType":"","quoteDescription":"","quoteInvCasMat":[],"quoteConCasMat":[],"quoteReqs":[],"arfRemark":"","quotApprove":"","tsrNo":"INT-20-PDS-0103","payment":[],"items":[{"item":"GEARS","icode":1,"qty":4,"orderQty":0,"finishQty":0,"unit":"pc","weight":0,"spec":"REFER TO DRAWING","material":"MS","labTesthr":0,"laborCost":0,"labTestRate":0,"markUp":0,"prodOperator":"0","prodRate":0,"heatTreatment":0,"evat":0,"materials":[],"operationAndMachines":[{"operation":"MACHINING","operator":0,"operatorRate":0,"manHour":0,"machine":0,"machineHour":0,"machRateQuot":0}],"machinesB":[],"excessLabor":[],"production":[]}],"heatMachine":"","heatOpt":"","heatTreatment":[],"samplePrep":[],"logs":[{"action":"Accepted","date":"2020-02-24T10:25:00.000-03:30","user":{"emp_id":"1990002","email":"1990002@mail.com"}}],"status":"Scheduled","statuss":[{"action":"Accepted","remark":"New Request","date":"2020-02-24T10:25:00.000-03:30"},{"action":"Endorsed to shop","progress":0,"remark":"for schedule","noItems":"","date":"2020-02-24T08:00:00.000+08:00","user":{"emp_id":"1995004","email":"1995004@mail.com"}},{"action":"Scheduled","progress":0,"remark":"","noItems":"","date":"2020-02-24T08:00:00.000+08:00","user":{"emp_id":"1995004","email":"1995004@mail.com"}}],"otherServices":[],"paymentStat":"","dateCompleted":null,"remarks":"","billingRemark":"","sumOfAllAmounts":0,"totalAmount":{"totalQuoted":0,"totalSamplePrep":0,"totalHeatTreatment":0,"totalJobTicket":0},"payments":[],"totalQuoted":"","grandTotal":"","prepName":{"staffId":1990002,"Name":"Virgilio H. Macanip","lastName":"","middleInitial":"","division":"TSS","position":"Technical Officer","created_at":1525758859635,"_id":"UKkOM6ZUXiPMlPCV"},"reviewName":{"staffId":1988003,"Name":"Wilfredo R. Lim","lastName":"","middleInitial":"","division":"TSS","position":"Assistant Head, TSS","created_at":1525758586461,"_id":"0q0303HVfhySD46R"},"approveName":{"staffId":1990007,"Name":"Edilbert M. Dela Peña","lastName":"","middleInitial":"","division":"TSS","position":"Head, TSS","created_at":1525758457457,"_id":"nHXvHXRMwzPfDmh7"},"year":"20","company":"PD/EPS-DUAL SPEED REDUCER","dateFormatted":"2020-02-24T21:55:00+08:00","date":"February 24 2020","sector":["N. Administrative and support service activities / Government"],"tss":"Virgilio H. Macanip","__index":3,"_id":"01XM3YhnjNeQkK5Q"}]} -->
         <div>
+        <p> For checking purposes </p>
         Industry: {{industryData}} 
         <br>
         Service: {{serviceData}}
@@ -60,7 +61,7 @@
                     <!-- {{ orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.subheader.length, 0)+ index }} -->
                     <div class="row">
                       <div class="col-4 col-md-4">
-                        <p class="questions"> {{questionSubhead.description}}</p>
+                        <p class="questions"> {{index+1 }}. {{questionSubhead.description}}</p>
                       </div>
                     <div class="inputs">
                       <!-- indexing in nested v-model of surveyanswer -->
@@ -201,14 +202,19 @@ export default defineComponent({
         if(tsrDataFromApi.value){
           console.log("Watchwatchtsr", tsrDataFromApi.value )        
           industryData.value = tsrDataFromApi.value.sector[0]
-          serviceData.value = tsrDataFromApi.value.service.serviceCode
+          serviceData.value = tsrDataFromApi.value.service.name
           sectionData.value = tsrDataFromApi.value.service.sectionCode
           divData.value = tsrDataFromApi.value.service.div
         }else{
           tsrDataFromApi.value = await checkTSRsUlimsAPI(newValue)
           console.log(tsrDataFromApi.value)
           industryData.value = tsrDataFromApi.value.industry
-          serviceData.value = tsrDataFromApi.value.service
+          if(tsrDataFromApi.value.service == 'MTR' || tsrDataFromApi.value.service == 'INS'){
+            serviceData.value = "Calibration and Dimensional Measurement"
+          }else{
+            serviceData.value = "Metals and Material Testing"
+          }
+          
           divData.value = "ATD"
         }
 
@@ -324,13 +330,19 @@ export default defineComponent({
       console.log("COLSLDLSDLSDL", cols.value)
       console.log(surveyAnswer.answers)
       console.log(subHeaderSurveyAnswer.answers)
+      if(!(industryData.value)){
+        industryData.value = ""
+      }
+      if(!(sectionData.value)){
+        sectionData.value = ""
+      }
       // post answers and children/subheader answers
       postAnswers(surveyAnswer.answers,subHeaderSurveyAnswer.answers,TsrNo.value,industryData.value,serviceData.value,divData.value)
       // postAnswers(,TsrNo.value)
       
 
-      console.log(surveyAnswer.answers)
-      console.log(subHeaderSurveyAnswer.answers)
+      console.log("surveyanswer", surveyAnswer.answers)
+      console.log("subheader", subHeaderSurveyAnswer.answers)
     }
 
     

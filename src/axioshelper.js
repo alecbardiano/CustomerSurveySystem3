@@ -50,34 +50,59 @@ const getAllQuestions = function () {
 
   }
 
-const getAllTSRs = function (division,service,beforeDate,afterDate) {
-  
-  // console.log("today", today)
-  //   loading.value = true;
-  //   error.value = null;
-    // I prefer to use fetch
-    // you can use use axios as an alternative
-    // console.log("apiiiii")
-    // console.log(api.get('/questions'))
-    // ?_start=10&_limit=10
+const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,mode) {
+  // mode 3 admin division
+  // mode 2 dashboard
+  // mode 1 admin
       let before = moment(beforeDate).format('YYYY-MM-DD');
       let after = moment(afterDate).format('YYYY-MM-DD');
-      if(division && service && beforeDate && afterDate){
-        return api.get('/tsrs?_limit=-1&created_at_gt='+before+'&created_at_lt='+after+'&_sort=created_at:DESC&division='+division+'&service='+service)
+      if (mode == 2){
+        return api.get('/tsrs?&_limit=-1&created_at_gte='+today+'-01-01'+'&created_at_lte='+today+'-12-31&_sort=created_at:DESC')
       .then(function( response ){
           // console.log(response.data.results)
           // console.log("from axios")
           // console.log(response.data)
           return response.data;
       })
+      }
+      else if (mode == 3){
+        if(beforeDate && afterDate){
+          return api.get('/tsrs?&_limit=-1&created_at_gt='+before+'&created_at_lt='+after+'&_sort=created_at:DESC&division='+division+'&service='+service)
+          .then(function( response ){
+              // console.log(response.data.results)
+              // console.log("from axios")
+              // console.log(response.data)
+              return response.data;
+          })
+
+        }else{
+          return api.get('/tsrs?&_limit=-1&created_at_gte='+today+'-01-01'+'&created_at_lte='+today+'-12-31&_sort=created_at:DESC&division='+division+'&service='+service)
+          .then(function( response ){
+              // console.log(response.data.results)
+              // console.log("from axios")
+              // console.log(response.data)
+              return response.data;
+          })
+        }
       }else{
-      return api.get('/tsrs?_limit=-1&created_at_gte='+today+'-01-01'+'&created_at_lte='+today+'-12-31&_sort=created_at:DESC')
-      .then(function( response ){
-          // console.log(response.data.results)
-          // console.log("from axios")
-          // console.log(response.data)
-          return response.data;
-      })
+        if( beforeDate && afterDate){
+          return api.get('/tsrs?_limit=-1&created_at_gt='+before+'&created_at_lt='+after+'&_sort=created_at:DESC')
+        .then(function( response ){
+            // console.log(response.data.results)
+            // console.log("from axios")
+            // console.log(response.data)
+            console.log("Dapat dito to diba")
+            return response.data;
+        })
+        }else{
+        return api.get('/tsrs?_start='+start+'&_limit='+limit+'&created_at_gt='+today+'-01-01'+'&created_at_lt='+today+'-12-31&_sort=created_at:DESC')
+        .then(function( response ){
+            // console.log(response.data.results)
+            // console.log("from axios")
+            // console.log(response.data)
+            return response.data;
+        })
+      }
     }
   }
 
@@ -300,8 +325,6 @@ const getAnswersForOverall = function (division,service,questionID,beforeDate,af
     after = moment(afterDate).format('YYYY-MM-DD');
     if (service != ""){
       if(beforeDate && afterDate){
-        console.log("before",beforeDate)
-        console.log("after",afterDate)
         return api.get('/answers/?tsr.division='+ division + '&tsr.service=' + service + '&&question.id='+questionID+ '&created_at_gte='+before+'&created_at_lte='+after)
         .then(function( response ){
             // console.log("from axios tsr division", response.data)
@@ -316,8 +339,6 @@ const getAnswersForOverall = function (division,service,questionID,beforeDate,af
      }
     }else{
         if(beforeDate && afterDate){
-          console.log("before",beforeDate)
-          console.log("after",afterDate)
           return api.get('/answers/?tsr.division='+ division + '&&question.id='+questionID+ '&created_at_gte='+before+'&created_at_lte='+after)
           .then(function( response ){
               // console.log("from axios tsr division", response.data)
@@ -339,17 +360,8 @@ const postAnswersToBackend = async function(answers,subheaderans,tsrNo,industry,
   
   let errorMessage = ""
   console.log(answers)
-  // 10.10.120.19:1337/tsrs
-  // api.post("/tsrs",tsrNo)
-//   {
-//     "tsr": 4,
-//     "question": 4,
-//     "value": "4",
-//     "tsr_q_id": "4_4",
-//     "tsrNo": "8050"
-// }
-//division
-//sector add
+try {
+  console.log("hellofromxax" , tsrNo)
   let tsr = {
       "tsrNo": tsrNo,
       "industry": industry,
@@ -361,7 +373,7 @@ const postAnswersToBackend = async function(answers,subheaderans,tsrNo,industry,
   .then(response => 
     tsrId = response.data.id
   )
-  answers.forEach(function (answer) {
+  for (const answer of answers) {
     console.log("tsrsrsts", tsrId)
     // console.log("from axioss sssssdsd23232", answer)
     let ans = {
@@ -371,14 +383,14 @@ const postAnswersToBackend = async function(answers,subheaderans,tsrNo,industry,
       tsr_q_id: tsrId +'_' +answer.question,
       tsrNo: tsrNo
     }
-    api.post("/answers", ans)
-    .then()
-    .catch(error => {
-      errorMessage = error.message;
-      console.error("There was an error!", error);
-    });
-  })
-  subheaderans.forEach(function (answer) {
+    await api.post("/answers", ans)
+    // .then()
+    // .catch(error => {
+    //   errorMessage = error.message;
+    //   console.error("There was an error!", error);
+    // });
+  }
+  for (const answer of subheaderans){
     console.log("tsrsrsts", tsrId)
     // console.log("from axioss sssssdsd23232", answer)
     let ans = {
@@ -388,13 +400,13 @@ const postAnswersToBackend = async function(answers,subheaderans,tsrNo,industry,
       tsr_q_id: tsrId +'_' +answer.question,
       tsrNo: tsrNo
     }
-    api.post("/answers", ans)
-    .then()
-    .catch(error => {
-      errorMessage = error.message;
-      console.error("There was an error!", error);
-    });
-  })
+    await api.post("/answers", ans)
+
+  }
+} catch (error) {
+  console.log(error)
+}
+
 }
 
 const postQuestionToBackend = async function(question) {
@@ -445,6 +457,23 @@ const editQuestion = async function(id,question) {
   })
 
 }
+
+// const deleteAllAnswers = async function (){
+//   let answers = await api.get('/answers?_limit=-1')
+//         .then(function( response ){
+//             // console.log(response.data.results)
+//             // console.log("from axios")
+//             // console.log(response.data)
+//             return response.data;
+//         })
+//         console.log(answers)
+//   for (const element of answers) {
+//     console.log(element.id)
+//     await api.delete("/answers/" + element.id).then(res =>  {
+//       console.log("successfully deleted: ")
+//     })  
+//   } 
+// }
 
 const deleteQuestion = async function(id) {
   let errorMessage = ""
@@ -517,7 +546,7 @@ const numberPoorFeedbackCountPerDivision = function (beforeDate,afterDate,divisi
 }
 
 const positiveFeedbackCount = function ()  {
-  return api.get('/answers/count?value_gte=3')
+  return api.get('/answers/count?value_gte=4')
       .then(function( response ){
           // console.log(response.data.results)
           return response.data;
@@ -533,12 +562,23 @@ const negativeFeedbackCount = function ()  {
 }
 
 // http://10.10.120.19:1337/questions/count
-const totalFeedbackCountTSR = function ()  {
-  return api.get('/tsrs/count')
+const totalFeedbackCountTSR = function (beforeDate,afterDate)  {
+  if (beforeDate && afterDate){
+    let before = moment(beforeDate).format('YYYY-MM-DD');
+    let after = moment(afterDate).format('YYYY-MM-DD');
+    return api.get('/tsrs/count?&created_at_gte='+before+'&created_at_lte='+after)
+        .then(function( response ){
+            // console.log(response.data.results)
+            return response.data;
+        })
+  }else{
+  return api.get('/tsrs/count?')
       .then(function( response ){
           // console.log(response.data.results)
           return response.data;
       })
+  }
+  
 }
 
 const noOfRespondentsPerDivision = function (division,before,after)  {
@@ -583,8 +623,8 @@ export const countNegativeFeedback = () => {
   return negativeFeedbackCount()
 }
 
-export const totalTsrsCount = () => {
-  return totalFeedbackCountTSR()
+export const totalTsrsCount = (before,after) => {
+  return totalFeedbackCountTSR(before,after)
 }
 // exports
 // raw data
@@ -605,9 +645,9 @@ export const getAnswers = (start,limit) => {
   return getAllAnswers(start,limit)
 }
 
-
-export const getTSRs = (division,service,beforeDate,afterDate) => {
-  return getAllTSRs(division,service,beforeDate,afterDate)
+// mode still to change if mode is 2 get all tsr data
+export const getTSRs = (start,limit,division,service,beforeDate,afterDate,mode) => {
+  return getAllTSRs(start,limit,division,service,beforeDate,afterDate,mode)
 }
 export const getQuestionTypes = () => {
   return getAllQuestionTypes()
@@ -661,6 +701,10 @@ export const getSecList = (division) => {
 
 export const allOverAllRatingsFromApi = (beforeDate,afterDate) => {
   return allOverAllRatings(beforeDate,afterDate)
+}
+
+export const deleteAll = () => {
+  return deleteAllAnswers()
 }
 
 

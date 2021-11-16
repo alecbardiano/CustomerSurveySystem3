@@ -269,14 +269,14 @@
     }
 
     async function buildTable(){
-      tsrs.value = await getTSRs()
+      tsrs.value = await getTSRs("","","","","","",2)
       buildColumns()
-      buildRows()
       buildRowsOverallPerformance()
       totalAnswerOverall.value = await allOverAllRatingsFromApi("","")
       totalAnswerOverall.value = totalAnswerOverall.value.filter(function (el) {
         return el.tsr != null;
       });
+      console.log("totalAnswerOverallleng", totalAnswerOverall.value.length)
       totalNoResponse.value = totalTsrs.value - totalAnswerOverall.value.length
 
       //
@@ -284,48 +284,68 @@
         5: 0, 
         4: 0,
         3: 0, 
-        2: 0
+        2: 0,
+        1: 0,
       };
-      for(let i = 0; i<services.value.length ; i++){
-        let sample = totalAnswerOverall.value.filter((element) => {
-          if(element.tsr){
-            return element.tsr.service == services.value[i]
+
+      for (var key in divisionsAndSections.value) {
+        for (const element of divisionsAndSections.value[key]) {
+          let stringColField = element.toString().concat(key.toString())
+          // filter all data
+          let sample = totalAnswerOverall.value.filter((elementTSR) => {
+          if(elementTSR.tsr){
+            if(elementTSR.tsr.division == key && elementTSR.tsr.service == element){
+              return elementTSR
+            }
           }
         })
-        console.log("sasasasa", sample)
+        
+        // console.log("sampless", sample)
         const counts = {
           5: 0, 
           4: 0,
           3: 0, 
-          2: 0
+          2: 0,
+          1: 0
         };
-        
-        sample.forEach(element => {
+        // console.log("x", x+=sample.length)
+        // console.log("sample", sample.length)
+        for (const element of sample) {
           let num = element.value
-          if (num == 1 || num == 2){
+          if (num == 1){
+            counts[1] +=1
+            mainCounts[1] +=1
+          }else if ( num == 2){
             counts[2] +=1
             mainCounts[2] +=1
+          }else if(num ==3 ){
+            counts[3] +=1
+            mainCounts[3] +=1
+          }else if(num == 4){
+            counts[4] +=1
+            mainCounts[4] +=1
+          }else if(num == 5){
+            counts[5] +=1
+            mainCounts[5] +=1
           }
-          else if (isNaN(num)){
+          else{
             counts[0] += 1
             mainCounts[0] +=1
-          }else{
-            counts[num] = (counts[num] ? counts[num] + 1 : 1) 
-            mainCounts[num] = (mainCounts[num] ? mainCounts[num] + 1 : 1) 
           }
-        });
+        };
         console.log("Counts", counts)
         
-        for(let [key, value] of Object.entries(counts)){
+        for(let [key2, value] of Object.entries(counts)){
           // total vertical per service
           rowsOverallPerformance.value.forEach(function (arrayItem) {
-            if(key == arrayItem.id){
+            if(key2 == arrayItem.id){
               value = (value/ sample.length) * 100
               value = value.toFixed(2).toString() + '%'
-              arrayItem[services.value[i]] = value
+              arrayItem[stringColField] = value
             }
             
-        });
+            });
+          }
         }
       }
 
@@ -341,22 +361,19 @@
       tempObj['value'] = parseFloat(totalPercentRow).toFixed(2).toString() + '%'
       totalPerField.value.push(tempObj)
 
-      for(let j=0; j<services.value.length; j++){
-        let service = services.value[j]
-        let a = rowsOverallPerformance.value.map(a => a[service]);
-        let sum = a.reduce((a, b) => parseFloat(a) + parseFloat(b), 0)
-        tempObj['value'] = sum.toFixed(2).toString() + '%'
-        totalPerField.value.push(tempObj)
+       for (var key in divisionsAndSections.value) {
+          for (const element of divisionsAndSections.value[key]) {
+          let service = element.toString().concat(key.toString())
+          let a = rowsOverallPerformance.value.map(a => a[service]);
+          let sum = a.reduce((a, b) => parseFloat(a) + parseFloat(b), 0)
+          tempObj['value'] = sum.toFixed(2).toString() + '%'
+          totalPerField.value.push(tempObj)
+        }
       }
 
       // [ { "dimension": [], "value": 0 }, { "scoreservice": [], "value": 3.18 }, { "ATD": [], "value": 3.16 }, { "PD": [], "value": 3.22 } ]
       
     }
-
-    function buildRows(){
-      
-    }
-
     function buildRowsOverallPerformance (){
 
       // performance row generation
@@ -372,6 +389,7 @@
       // Number of customers Row generation
       let totalRespondentsPerMonth = 0
       // group by months
+      console.log("tsrstsrstsrs", tsrs.value)
       var result = _(tsrs.value)
       .groupBy(v => moment(v.created_at).format('MMMM'))
       .value();
@@ -384,10 +402,23 @@
               row['month'] = key
               
               let temp = result[key]
-              for(let i =0 ; i< services.value.length; i++){
-                let newTemp = temp.filter(tsr => tsr.service == services.value[i]);
-                row[[services.value[i]]] = newTemp.length
-                totalPerMonth += newTemp.length
+              console.log("temp", temp)
+              for (var key2 in divisionsAndSections.value) {
+                for (const element of divisionsAndSections.value[key2]) {
+                  let stringColField = element.toString().concat(key2.toString())
+                  // filter all data
+                  let sample = temp.filter((elementTSR) => {
+                  if(elementTSR.tsrNo){
+                    if(elementTSR.division == key2 && elementTSR.service == element){
+                      console.log("pasok oh loko" )
+                      return elementTSR
+                    }
+                  }
+                  
+                  })
+                  row[stringColField] = sample.length
+                  totalPerMonth += sample.length
+                }
               }
               // total horizontal
               row['total'] = totalPerMonth
@@ -397,15 +428,19 @@
         }
         
         // total per service
-        for(let i=0; i<services.value.length; i++){
-           let sample = filterMyArr(rowsnumberOfCustomers.value, services.value[i])
-           console.log("Samp", sample)
+        for (var key2 in divisionsAndSections.value) {
+           for (const element of divisionsAndSections.value[key2]) {
+           let stringColField = element.toString().concat(key2.toString())
+           let sample = filterMyArr(rowsnumberOfCustomers.value, stringColField)
+          //  console.log("Samp", sample)
            let sum = sample.reduce((a, b) => a + b, 0)
            let arrTotal = {}
            // total vertical per service
            arrTotal["value"] = sum
            totalActualRespondents.value.push(arrTotal)
+          }
         }
+
         // total actual respondents
         let tot = {}
         tot["value"] = totalRespondentsPerMonth
@@ -425,9 +460,7 @@
       //   { name: 'col3', align: 'center', label: 'col3', field: 'col3', sortable: true },
 
         // console.log("divisionsAndSections232", divisionsAndSections)
-      services.value = Object.values(divisionsAndSections.value)
       console.log("divisionsAndSections.value", divisionsAndSections.value)
-      services.value  = [].concat.apply([], services.value);
 
       // colsOverallPerformance tables
       colsOverallPerformance.value.push( {
@@ -451,12 +484,14 @@
         field: 'month',
         sortable: true
       })
-      console.log("Sections", services.value)
-      for(let i=0; i< services.value.length ; i++){
+      for (var key in divisionsAndSections.value) {
+          for (const element of divisionsAndSections.value[key]) {
         // console.log("divisionsAndSections232", divisionsAndSections.value[divisions.value[i]])
-        let col = { name: services.value[i], align: 'center', label: services.value[i], field: services.value[i], sortable: true }
+        let stringColField = element.toString().concat(key.toString())
+        let col = { name: element, align: 'center', label: element, field: stringColField, sortable: true }
         colsOverallPerformance.value.push(col)
         colsnumberOfCustomers.value.push(col)
+        }
       }
 
       colsnumberOfCustomers.value.push({
@@ -481,22 +516,6 @@
       buildTable()
     })
 
-    
-
-    // const chartData = computed(() => ({
-    //   labels: ['Paris', 'Nîmes', 'Toulon', 'Perpignan', 'Autre'],
-    //   datasets: [
-    //     {
-    //       data: dataValues.value,
-    //       backgroundColor: ['#77CEFF', '#0079AF', '#123E6B', '#97B0C4', '#A5C8ED'],
-    //     },
-    //   ],
-    // }));
-
-    //  const getKeyByValue = computed((object, value) => {
-    //   return Object.keys(object).find(key => object[key] === value);
-    //   // return capacity.value - attending.value.length;
-    // });
 
     return {
       totalNegative, 

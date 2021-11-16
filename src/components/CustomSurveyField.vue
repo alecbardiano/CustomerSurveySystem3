@@ -11,13 +11,12 @@
             icon="star_border"
             color="primary"
             :max="5"
-            :rules="[
-              val => !!val || '* Required'
-            ]"
+             lazy-rules :rules="[val => val == '' || 'Field is required']"
             inline /> 
     </div>
 
     <div v-else-if="question_type == 2">
+      
         <q-rating
             v-model="inputViewModel"
             size="3.0em"
@@ -26,9 +25,9 @@
             :max="5"
             inline /> 
     </div>
-    <div v-else-if="question_type == 4">
+    <!-- <div v-else-if="question_type == 4">
         <q-select clearable v-model="inputViewModel" :options="optionval" :label="labelval" lazy-rules :rules="[val => !!val || 'Field is required']" />
-    </div>
+    </div> -->
   
 </template>
 <script type="text/javascript">

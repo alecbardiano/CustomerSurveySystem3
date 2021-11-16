@@ -34,7 +34,7 @@
               </div>
               <div class=".col-md-4 .offset-md-4" style = "margin-left: 500px" >
                 <div class="row inline">
-                  <q-file v-model="importFile" label="Import Data " style="width: 200px"
+                  <q-file  v-model="importFile" ref="uploadRefButton" label="Import Data " style="width: 200px"
                   accept=".csv,.xls,.xlsx"
                       color="primary"
                       
@@ -78,6 +78,14 @@
               @click="generatePDF()"
               style="margin-left: 15px"
           />
+          <!-- <q-btn
+              type="submit"
+              label="DELETE"
+              class="q-mt-md"
+              color="primary"
+              @click="deleteAnswers()"
+              style="margin-left: 15px"
+          /> -->
           </div>
         </div>
     </div>
@@ -106,6 +114,26 @@
         </template>
       </q-input>
     </template>
+
+    <template v-slot:body="props">
+        <q-tr :props="props" :key="`m_${props.row.index}`">
+<!--          
+         <q-tr :props="props" :key="`e_${props.row.index}`" class="q-virtual-scroll--with-prev">
+          <q-td colspan="100%">
+            <div class="text-left">This is the second row generated from the same data: {{ props.row.name }} (Index: {{ props.row.index }}).</div>
+          </q-td>
+        </q-tr> -->
+
+          <q-td
+            v-for="col in props.cols"
+            :key="col.name"
+            :props="props"
+          >
+            {{ col.value }}
+          </q-td>
+        </q-tr>
+        
+      </template>
 
 
     <!-- to follow code for red green orange color of answers -->
@@ -185,11 +213,16 @@
 </template>
 <script>
 import { reactive, defineComponent, ref, onMounted, computed , watch} from 'vue'
-import { getQuestions, getTSRs, tsrViaDivision, getOverall } from 'src/axioshelper.js'
+import { getQuestions, getTSRs,postAnswers, tsrViaDivision, getOverall,deleteAll,totalTsrsCount, getDivList } from 'src/axioshelper.js'
+import { overAllColumns, overAllRows } from 'src/utils/dataRetrieveTables.js'
 import { exportFile, useQuasar} from 'quasar'
-import { xlsx } from 'boot/axios'
+import { xlsx, pdfMake } from 'boot/axios'
+// import {pdfFonts} from "pdfmake/build/vfs_fonts";
+// import { createPdf } from 'pdfmake'
 import moment from 'moment';
 import orderBy from 'lodash.orderby'
+
+import parDocDefinition from '../utils/pdflayout'
 
 
 //components
@@ -198,6 +231,11 @@ import CardDashboardFeedbackCountVue from 'src/components/CardDashboardFeedbackC
 
 
 
+// let pdfMake = require('pdfmake/build/pdfmake.js')
+// if (pdfMake.vfs == undefined){
+//   let pdfFonts = require('pdfmake/build/vfs_fonts.js')
+//   pdfMake.vfs = pdfFonts.pdfMake.vfs;
+// }
 
 
 
@@ -220,6 +258,8 @@ export default defineComponent({
   const afterDate = ref('')
   const dateform = ref(null)
   const prompt = ref(false)
+  let today = new Date();
+  today = moment().year()
 
   const orderKey = ref('position')
 
@@ -241,20 +281,25 @@ export default defineComponent({
     sortBy: 'desc',
     descending: false,
     page: 1,
-    rowsPerPage: 5,
+    rowsPerPage: 10,
     rowsNumber: 5
   })
   const startDataFromApi = ref(1)
   const endDataFromApi = ref(100)
 
+  // pdf
+  
+
   watch(afterDate, (newValue, oldValue) => {
 
     dateform.value.validate().then(success => {
       // filterTable(newValue,1)
-      onRequest({
-        pagination: pagination.value,
-        filter: undefined
-      })
+      if (success) { 
+          onRequest({
+          pagination: pagination.value,
+          filter: undefined
+        })
+      }
     })
     
   })
@@ -271,20 +316,38 @@ export default defineComponent({
   const colsOverall = ref([])
   const rowsOverall = ref([])
   const overallLoading = ref(true)
+
+  // overall Perf for PDF
+  const rowsOverallPerformance = ref([])
+  const colsOverallPerformance = ref([])
+
+  // for pdf
+  const allTsrList = ref ([]) // all data
+
+
+  // upload/import data
+  const uploadRefButton = ref(null)
   
 
   
   
 
 
-  const getTSRsFromApi = async () => {
+  const getTSRsFromApi = async (start,limit) => {
     // update `props.user` to `user.value` to access the Reference value
 
       try {
         // upon startup we can initialize data to 1 - rows per page which is 50
         
         // lengthOfAnswers.value = answers.value.length
-        return await getTSRs("","","","")
+        if(beforeDate.value && afterDate.value){
+          console.log("Wehweh?")
+          return await getTSRs(start,limit,"","",beforeDate.value,afterDate.value,1)
+        }else{
+          console.log("dito naman pala")
+          return await getTSRs(start,limit,"","","","",1)
+        }
+        
       }
       catch(err) {
         throw(err)
@@ -297,14 +360,17 @@ export default defineComponent({
     
   // }
   
+  // function deleteAnswers (){
+  //   deleteAll()
+  // }
   function buildTable(){
     let rowData = []
     if(cols.value.length == 0){
-      cols.value.push({ name: 'tsrNo', align: 'left', label: 'TSR', field: 'tsrNo', sortable: true })
-      cols.value.push({ name: 'Division', align: 'left', label: 'Division', field: 'division', sortable: true })
-      cols.value.push({ name: 'Section', align: 'left', label: 'Section', field: 'section', sortable: true })
-      cols.value.push({ name: 'Service', align: 'left ', label: 'Service', field: 'service', sortable: true })
-      cols.value.push({ name: 'Industry', align: 'left', label: 'Industry', field: 'industry', sortable: true })
+      cols.value.push({ name: 'tsrNo', align: 'left', label: 'TSR Number', field: 'tsrNo', sortable: true })
+      cols.value.push({ name: 'division', align: 'left', label: 'Division', field: 'division', sortable: true })
+      cols.value.push({ name: 'section', align: 'left', label: 'Section', field: 'section', sortable: true })
+      cols.value.push({ name: 'service', align: 'left ', label: 'Service', field: 'service', sortable: true })
+      cols.value.push({ name: 'industry', align: 'left', label: 'Industry', field: 'industry', sortable: true })
       
       // var uniqueKeys = Object.keys(answers.value.reduce(function(result, obj) {
       //   return Object.assign(result, obj);
@@ -323,7 +389,7 @@ export default defineComponent({
       
       const id = 'id';
       // const uniqueQuestions = [...new Map(idAndQuestion.map(item =>[item['id'], item])).values()];
-      console.log("hellooo2323232",orderByPositionQuestions.value)
+      // console.log("hellooo2323232",orderByPositionQuestions.value)
       for (let j =0; j < orderByPositionQuestions.value.length ; j++){
         // remove subheaders in columns filter
         if(orderByPositionQuestions.value[j].question_type.id != 5){
@@ -350,10 +416,12 @@ export default defineComponent({
       cols.value.push({ name: 'publishedDate',align: 'left', label: 'Date', field: 'publishedDate', sortable: true })
     }
     
-    console.log("completed cols", cols.value)
+    // console.log("completed cols", cols.value)
     // push columns for q table data
     //map this to columns and rows for visualization
+    console.log("tsrList.value.",tsrList.value)
     tsrList.value.map(function(item){
+      // console.log("itemssss", item)
       let row = {
         tsrNo: item.tsrNo,
         publishedDate:dateTime(item.published_at),
@@ -363,21 +431,33 @@ export default defineComponent({
         section: item.section
       }
       let result = item.answers.map(a => a.question);
-      for (let i=0 ; i < result.length; i++){
-        row[item.answers[i].question] = item.answers[i].value;
-      }
-      // console.log("rororororw", row)
-      rowData.push(row)
+      // result = result.filter(function (el) {
+      //   return el != null;
+      // });
+
+      // console.log("Result", result)
+        for (let i=0 ; i < result.length; i++){
+          if(item.answers[i].question != ""){
+            
+            row[item.answers[i].question] = item.answers[i].value;
+          }
+        }
+        // console.log("rororororw", row)'
+        // console.log("rororo", row)
+        // delete person.age;
+        rowData.push(row)
+      
     })
     // let keysObject = Object.keys(averageColumns.value)
 
       // load overall
-    
+     console.log("rowdata",rowData)
     
     return rowData
 
   }
   async function loadDivisionDataOverall(divlist){
+    console.log("divlist", divlist)
     overallLoading.value = true
     if(colsOverall.value.length > 0){
       colsOverall.value = []
@@ -405,8 +485,8 @@ export default defineComponent({
           });
           // console.log("Datadiv", dataDivision)
           const sum = dataDivision.reduce((a, b) => a + b, 0);
-          console.log("sum", sum)
-          console.log("sum", dataDivision)
+          // console.log("sum", sum)
+          // console.log("sum", dataDivision)
           let avg = parseFloat((Math.round((sum/dataDivision.length) * 100) / 100).toFixed(2));
           if(isNaN(avg)){
             avg = 0
@@ -440,8 +520,8 @@ export default defineComponent({
         length++
         
       }
-      console.log("total",total)
-      console.log("length",length)
+      // console.log("total",total)
+      // console.log("length",length)
       let avg = parseFloat((Math.round((total/length) * 100) / 100).toFixed(2));
       if(isNaN(avg)){
         avg = 0
@@ -466,234 +546,185 @@ export default defineComponent({
 
 
    function fileUpload(file) {
+     uploadMigrationData(file)
+     onRequest({
+        pagination: pagination.value,
+        filter: undefined
+      })
      console.log("pasok")
-  //   if(file){
-  //     const formData = new FormData()
-
-  //     if (importFile.value && importFile.value.length > 0) {
-  //       for (let i = 0; i < importFile.value.length; i++) {
-  //         formData.append('files[' + i + ']', importFile.value[i])
-  //       }
-  //     }
-  //     // for (const [key, value] of Object.entries(this.form)) {
-  //     //   formData.append(key, value)
-  //     // }
-      
-  //     console.log("formdata", formData)
-  //   }else{
-  //     console.log("q", $q)
-  //     $q.notify({
-  //       color: 'red-5',
-  //         textColor: 'white',
-  //         icon: 'warning',
-  //         message: 'Please upload a file above'
-  //       })
-  //   }
     
    }
-  
-  function generatePDF(action) {
-    var docDefinition = {
-        content: [
-            { 
-                alignment: 'center',
-                text: 'PPRA',
-                style: 'header',
-                fontSize: 23,
-                bold: true,
-                margin: [0, 10],
-            },
-            {
-                margin: [0, 0, 0, 10],
-                layout: {
-                    fillColor: function (rowIndex, node, columnIndex) {
-                        return (rowIndex % 2 === 0) ? '#ebebeb' : '#f5f5f5';
+
+    function buildTableBody(data, columns, mode) {
+        // survey results ALL with extra header
+        var body = [];
+        if(mode == 2){
+          
+        let copyColumns = columns.map(a => a);
+        let divisions = columns.map((a => a.division));
+        
+        console.log(divisions)
+        let mainArrayColumn = columns.map((a => a.label));
+        // console.log("copyColumns",copyColumns)
+        // console.log("mainArrayColumn",mainArrayColumn)
+        // console.log("divisionList",divisionList.value)
+        // console.log("data" ,data )
+        // console.log("columns")
+        // body.push(["hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy",])
+        let copyData = data.map((rest ) => rest)
+          body.push(mainArrayColumn);
+          copyData.forEach(function(row) {
+              // if(row.null){
+              //   delete row.null
+              // }
+              var dataRow = [];
+              // let merged = {...row, ...columns};
+              copyColumns.forEach(function(column) {
+                  if(row[column.field]){
+                    if([column.label]){
+                      dataRow.push(row[column.field]);
                     }
-                },
-                table: {
-                    widths: ['100%'],
-                    heights: [20,10],
-                    body: [
-                        [
-                            { 
-                                text: 'SETOR: ADMINISTRATIVO',
-                                fontSize: 9,
-                                bold: true,
-                            }
-                        ],
-                        [
-                            { 
-                                text: 'FUNÇÃO: DIRETOR DE ENSINO',
-                                fontSize: 9,
-                                bold: true
-                            }
-                        ],
-                    ],
-                }
-            },
-            {
-                style: 'tableExample',
-                layout: {
-                    fillColor: function (rowIndex, node, columnIndex) {
-                        return (rowIndex === 0) ? '#c2dec2' : null;
+                  }else{
+                    dataRow.push("");
+                  }
+              })
+              body.push(dataRow);
+          });
+          
+        }else{
+
+        
+        var body = [];
+        let copyColumns = columns.map(a => a);
+        
+        let mainArrayColumn = columns.map((a => a.label));
+        // console.log("columns")
+        let copyData = data.map((rest ) => rest)
+          body.push(mainArrayColumn);
+          copyData.forEach(function(row) {
+              // if(row.null){
+              //   delete row.null
+              // }
+              var dataRow = [];
+              // let merged = {...row, ...columns};
+              copyColumns.forEach(function(column) {
+                  if(row[column.field]){
+                    if([column.label]){
+                      dataRow.push(row[column.field]);
                     }
-                },
-                table: {
-                    widths: ['30%', '10%', '25%', '35%'],
-                    heights: [10,10,10,10,30,10,25],
-                    headerRows: 1,
-                    body: [
-                        [
-                            { 
-                                text: 'AGENTE: Não Identificados',
-                                colSpan: 3,
-                                bold: true,
-                                fontSize: 9
-                            }, 
-                            {
-                            },
-                            { 
-                            },
-                            {
-                                text: 'GRUPO: Grupo 1 - Riscos Físicos',
-                                fontSize: 9,
-                                bold: true
-                            }
-                        ],
-                        [
-                            {
-                                text: 'Limite de Tolerância:',
-                                fontSize: 9,
-                                bold: true
-                            }, 
-                            { 
-                                text: 'Meio de Propagação:',
-                                colSpan: 3,
-                                fontSize: 9,
-                                bold: true
-                            },
-                            {
-                            },
-                            {
-                            }
-                        ],
-                        [
-                            {
-                                text: [
-                                    'Frequência: ', 
-                                    {
-                                        text: 'Habitual',
-                                        bold: false
-                                    }
-                                ],
-                                fontSize: 9,
-                                bold: true
-                            }, 
-                            { 
-                                text: [
-                                    'Classificação do Efeito: ', 
-                                    {
-                                        text: 'Leve',
-                                        bold: false
-                                    }
-                                ],
-                                colSpan: 3,
-                                fontSize: 9,
-                                bold: true
-                            },
-                            {
-                            },
-                            {
-                            }
-                        ],
-                        [
-                            {
-                                text: 'Tempo de Exposição:',
-                                colSpan: 2,
-                                fontSize: 9,
-                                bold: true
-                            }, 
-                            { 
-                            },
-                            {
-                                text: 'Medição:',
-                                colSpan: 2,
-                                fontSize: 9,
-                                bold: true
-                            },
-                            {
-                            }
-                        ],
-                        [
-                            {
-                                text: 'Fonte Geradora:',
-                                border: [true, true, false, false],
-                                colSpan: 2,
-                                fontSize: 9,
-                                bold: true
-                            }, 
-                            { 
-                            },
-                            {
-                                text: 'Téc. Utilizada:',
-                                border: [false, true, true, false],
-                                colSpan: 2,
-                                fontSize: 9,
-                                bold: true
-                            },
-                            {
-                            }
-                        ],
-                        [
-                            {
-                                text: 'Conclusão:',
-                                border: [true, false, true, true],
-                                colSpan: 4,
-                                fontSize: 9,
-                                bold: true
-                            }, 
-                            { 
-                            },
-                            {
-                            },
-                            {
-                            }
-                        ],
-                        [
-                            {
-                                text: 'EPIs/EPCs:',
-                                border: [true, true, false, true],
-                                colSpan: 3,
-                                fontSize: 9,
-                                bold: true
-                            }, 
-                            { 
-                            },
-                            {
-                            },
-                            {
-                                text: 'CAs:',
-                                border: [false, true, true, true],
-                                fontSize: 9,
-                                bold: true
-                            }
-                        ],
-                    ]
-                }
-            }
-        ]
-    };
+                  }else{
+                    dataRow.push("");
+                  }
+              })
+              body.push(dataRow);
+          });
+        }
+
+        return body;
+    }
+
+ 
+  async function buildOverall(){
+    colsOverallPerformance.value = await overAllColumns()
+    rowsOverallPerformance.value = await overAllRows()
+  }
     
-    if (action === 1) {
-        pdfMake.createPdf(docDefinition).getDataUrl(function(dataURL) {
-            renderPDF(dataURL, document.getElementById('canvas'));
-        });
+  async function generatePDF(){
+
+    buildOverall()
+    
+    if (beforeDate.value && afterDate.value){
+      let alltsrs = await getTSRsFromApi(0,totalTsrsCount.value,"","",beforeDate.value,afterDate.value,1)
+    }else{
+      let alltsrs = await getTSRsFromApi(0,totalTsrsCount.value,"","",today+'01-01',today+'12-31',1)
     }
-    else if (action === 2) {
-        var pdf = createPdf(docDefinition);
-        pdf.download('PPRA.pdf');
-    }
-}
+  
+
+    let overallCol = colsOverall.value.map(({ field, label }) => ({field, label}));
+    //  episodes.map(selectFewerProps)
+    //  {id, title}
+    let allSurveyCol = cols.value.map(({ field, label }) => ({field, label}));
+    let xCols = colsOverallPerformance.value.map(({ field, label }) => ({field, label}));
+    // let overallCol = colsOverall.value.map((a => a.field));
+    // let allSurveyCol = cols.value.map((a => a.field));
+     console.log("rowsOverall.value", rowsOverall.value)
+     console.log("overallCol", overallCol)
+     console.log("rows.value", rowsTable.value)
+     console.log("allSurveyCol", allSurveyCol)
+     let rateColsTableValue = allSurveyCol.filter(function(x) {
+       return x.field != 4
+     })
+     var dd = {
+       content: [
+          {text: 'Overall Agency Citizen/ Client Satisfaction Score', style: 'tableHeader'},
+          {
+            table:{
+              headerRows:0,
+              
+              body: buildTableBody(rowsOverall.value, overallCol,1)
+              },
+              style:"table"
+          },
+          {text: 'Customer Satisfaction Measurement', style: 'tableHeader'},
+          {
+            table:{
+              headerRows:1,
+              // widths:[5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],
+              widths: [50, 40, 40, 40,40, 35,35, 35,35, 35,35, 35,35, 35,35, 35],
+              body: buildTableBody(rowsTable.value, rateColsTableValue,2)
+              },
+            style:"table"
+          },
+          {text: 'Customer Satisfaction Measurement', style: 'tableHeader'},
+          {
+            table:{
+              headerRows:1,
+              // widths:[5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],
+              // widths: [50, 40, 40, 40,40, 35,35, 35,35, 35,35, 35,35, 35,35, 35],
+              body: buildTableBody(rowsOverallPerformance.value, xCols,1)
+              },
+            style:"table"
+          },
+        ],
+        styles:{
+          header:{
+            "fontSize":12,
+            "bold":true,
+            "alignment": "center"
+            },
+          tableHeader:{
+            "bold":true,
+            "fontSize":18,
+            "alignment": "center"
+          },
+          table:{
+            "fontSize":11,
+            "alignment": "center"
+          }
+        },
+                pageOrientation:"landscape",
+                pageMargins:[40,100,40,50]
+       }
+      //  content:[
+      //    {
+      //           table: toTable(rowsOverall.value, overallCol,1),
+      //           headerRows:1,
+      //           layout:"lightHorizontalLines",
+      //           styles:{
+      //                          header:{"fontSize":19,"bold":true},
+      //                          tableHeader:{"bold":true,"fontSize":13},
+      //                          table:{"fontSize":10}
+      //           },
+      //           pageOrientation:"landscape",
+      //           pageMargins:[40,100,40,50]
+      //     }, 
+          
+      //  ]
+      var pdf = pdfMake.createPdf(dd);
+      // pdf.download('Customer Survey Management System Report.pdf');
+      pdf.open();
+   }
+  
 
 
 
@@ -701,38 +732,37 @@ export default defineComponent({
 
 // * this is not important for PDFMake, it's here just to render the result *
 // It's a Mozilla lib called PDFjs that handles pdf rendering directly on the browser
-function renderPDF(url, canvasContainer, options) {
+// function renderPDF(url, canvasContainer, options) {
 
-    options = options || { scale: 1.4 };
+//     options = options || { scale: 1.4 };
         
-    function renderPage(page) {
-        var viewport = page.getViewport(options.scale);
-        var wrapper = document.createElement("div");
-        wrapper.className = "canvas-wrapper";
-        var canvas = document.createElement('canvas');
-        var ctx = canvas.getContext('2d');
-        var renderContext = {
-          canvasContext: ctx,
-          viewport: viewport
-        };
+//     function renderPage(page) {
+//         var viewport = page.getViewport(options.scale);
+//         var wrapper = document.createElement("div");
+//         wrapper.className = "canvas-wrapper";
+//         var canvas = document.createElement('canvas');
+//         var ctx = canvas.getContext('2d');
+//         var renderContext = {
+//           canvasContext: ctx,
+//           viewport: viewport
+//         };
         
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-        wrapper.appendChild(canvas)
-        canvasContainer.appendChild(wrapper);
+//         canvas.height = viewport.height;
+//         canvas.width = viewport.width;
+//         wrapper.appendChild(canvas)
+//         canvasContainer.appendChild(wrapper);
         
-        page.render(renderContext);
-    }
+//         page.render(renderContext);
+//     }
     
-    function renderPages(pdfDoc) {
-        for(var num = 1; num <= pdfDoc.numPages; num++)
-            pdfDoc.getPage(num).then(renderPage);
-    }
+//     function renderPages(pdfDoc) {
+//         for(var num = 1; num <= pdfDoc.numPages; num++)
+//             pdfDoc.getPage(num).then(renderPage);
+//     }
 
-    PDFJS.disableWorker = true;
-    PDFJS.getDocument(url).then(renderPages);
-
-}
+//     PDFJS.disableWorker = true;
+//     PDFJS.getDocument(url).then(renderPages);
+//   }
   function wrapCsvValue (val, formatFn) {
     let formatted = formatFn !== void 0
       ? formatFn(val)
@@ -788,10 +818,20 @@ function renderPDF(url, canvasContainer, options) {
     }catch{
       
     }
+    
+    let divisionsandsections = await getDivList()
+    console.log("Didididid",divisionsandsections)
+    let divisions = Object.keys(divisionsandsections)
+    console.log("ddsdds", divisions)
+
+    
     await onRequest({
         pagination: pagination.value,
         filter: undefined
       })
+    await loadDivisionDataOverall(divisions)
+    
+    
 
     
   })
@@ -804,36 +844,124 @@ function renderPDF(url, canvasContainer, options) {
 
   function filterDateBet(row,beforeDate,afterDate){
     row.publishedDate = dateTime(row.publishedDate) // convert to readable date time mm/dd/yyyy
-    if ( beforeDate < row.publishedDate && row.publishedDate < afterDate ){
+    if ( beforeDate <= row.publishedDate && row.publishedDate <= afterDate ){
       return row
     }
   }
 
-  function getRowsNumberCount (filter) {
-      if (!filter) {
-        return rowsTable.value.length
-      }
-      let count = 0
-      rowsTable.value.forEach(row => {
-        // question.description.toLowerCase()
-        console.log("HOYOYOYOYOYOYO")
-        console.log("getrowscount", row)
-        if (row.tsrNo.includes(filter)) {
-          ++count
+  async function uploadMigrationData (file) {
+      // this.$refs.uploadMigrationButton.click()
+      // console.log("fefefe2", uploadRefButton.value)
+      // console.log("fefefe", file)
+      // let file = uploadRefButton.value.files[0]
+      // console.log('File', file)
+
+      var reader = new FileReader()
+      loading.value = true
+      reader.onload = async (e) => {
+        const data = e.target.result
+        /* skip the first 4 rows */
+        // var range = XLSX.utils.decode_range(data['!ref']);
+        // range.s.r = 3; // <-- zero-indexed, so setting to 1 will skip row 0
+        // data['!ref'] = XLSX.utils.encode_range(range); 
+        const rowsMigrate = xlsx.utils.sheet_to_json(xlsx.read(data, { type: 'binary', cellDates: true }).Sheets['Details of CSF forms'])
+        // console.log('rowsMigrate', rowsMigrate)
+        let finalArrObj = []
+         rowsMigrate.forEach(r => {
+         
+            // Object { foo: "bar", x: 42 }
+          const obj = {
+              division: r.Division,
+              service: r.Service,
+              industry: r.Sector,
+              tsrNo: r.TSRNo,
+              Month: r.Month
+            }
+          let answers = []
+          for (var key in r) {
+              if (r.hasOwnProperty(key)) {
+                  // console.log(key + " -> " + r[key]);
+                  key = key.split(",");
+                  // console.log(key[0])
+                  let tsr = r.TSRNo
+                  if(key[1]){
+                    // console.log("disney" , key[1])
+                    const answer = {
+                      answerid: "",
+                      value: r[key].toString(),
+                      question: key[1].toString(),
+                      tsrNo: tsr
+                    }
+                    answers.push(answer)
+                  }
+              }
+          }
+          obj["answers"] = answers
+          finalArrObj.push(obj)
+          // let division = rowMig.Division
+          // let service = rowMig.Service
+          // let industry = rowMig.Sector
+          // let TsrNo = rowMig.TSRNo
+        })
+        
+        
+
+        console.log('validData', finalArrObj)
+
+        for (const arrayItem of finalArrObj) {
+          let answers = []
+          await postAnswers(answers,arrayItem.answers,arrayItem.tsrNo,arrayItem.industry,arrayItem.service,arrayItem.division)
+          // await this.responsesSrvc.create(data2)
         }
-      })
-      return count
+
+        // finalArrObj.forEach(async function (arrayItem) {
+        //   // let answers = []
+        //   console.log("deta1wewew", arrayItem)
+          
+        //   let answers = []
+        //   await postAnswers(answers,arrayItem.answers,arrayItem.tsrNo,arrayItem.industry,arrayItem.service,arrayItem.division)
+        //   // await this.responsesSrvc.create(data2)
+        // })
+
+        loading.value = false
+
+        $q.notify({
+          message: 'Responses Migrated',
+          position: 'bottom-right',
+          color: 'positive'
+        })
+      }
+      reader.readAsBinaryString(file)
+    }
+
+  async function getRowsNumberCount () {
+    let tsrCount
+      
+      // if (!filter) {
+      //   return rowsTable.value.length
+      // }
+      // let count = 0
+      // rowsTable.value.forEach(row => {
+      //   // question.description.toLowerCase()
+      //   // console.log("HOYOYOYOYOYOYO")
+      //   // console.log("getrowscount", row)
+      //   if (row.tsrNo.includes(filter)) {
+      //     ++count
+      //   }
+      // })
+      return tsrCount
     }
 
   function fetchFromServer (startRow, count, filter, sortBy, descending) {
 
+      console.log("sortBy,sortBy",sortBy)
       
       let data = filter
         ? rowsTable.value.filter(row => 
         row.tsrNo.includes(filter))
         : rowsTable.value.slice()
       if(beforeDate.value && afterDate.value){
-        console.log("pasok ba?")
+        // console.log("pasok ba?")
         data = data.filter(row => filterDateBet(row,beforeDate.value,afterDate.value))
         pagination.value.rowsNumber = data.length
       }
@@ -851,6 +979,7 @@ function renderPDF(url, canvasContainer, options) {
             )
         data.sort(sortFn)
       }
+      console.log("data hoy hoy",)
 
       return data.slice(startRow, startRow + count)
     }
@@ -859,8 +988,6 @@ function renderPDF(url, canvasContainer, options) {
       
       // const unique = [...new Set(cols.map(item => item.group))]; // [ 'A', 'B']
       // name of all columns
-      console.log("xxxxx", x)
-      console.log("x", cols)
       let avgArrayWithKeys = []
       // console.log("keysObject",keysObject)
       for(let i =0; i< x.length; i++){
@@ -873,7 +1000,7 @@ function renderPDF(url, canvasContainer, options) {
         let xy = rows.map(function(item){ 
           return item[x[i]]; 
           });
-        console.log("xy", xy)
+        // console.log("xy", xy)
 
           // remove undefined
         var filtered = xy.filter(function(x) {
@@ -896,6 +1023,17 @@ function renderPDF(url, canvasContainer, options) {
     }
 
   async function onRequest(props) {
+    
+      
+      if(beforeDate.value && afterDate.value){
+        beforeDate.value =  dateTime(beforeDate.value)
+        afterDate.value =  dateTime(afterDate.value)
+        console.log("dito?")
+        totalTsrsCount.value = await totalTsrsCount(beforeDate.value, afterDate.value)
+        
+      }else{
+        totalTsrsCount.value  = await totalTsrsCount("","")
+      }
       if(rowsOverall.value.length ==0){
         for (let i=0; i<orderByPositionQuestions.value.length ; i++){
         let row = {
@@ -917,7 +1055,7 @@ function renderPDF(url, canvasContainer, options) {
       // emulate server
       setTimeout(async () => {
         // update rowsCount with appropriate value
-        tsrList.value = await getTSRsFromApi()
+        
         // get unique divisions that removes null
         
         
@@ -927,25 +1065,32 @@ function renderPDF(url, canvasContainer, options) {
         // console.log("hellotsrlist",listOfTsr.value)
         // assignValues(tsrList.value)
          
-        if(rowsTable.value.length == 0 || afterDate || beforedate){
-          rowsTable.value =  buildTable() 
-        }
-        console.log("rowsrows", rowsTable.value)
+       
+        // console.log("rowsrows", rowsTable.value)
         
+        // pagination.value.rowsNumber =  getRowsNumberCount(filter)
+        pagination.value.rowsNumber = totalTsrsCount.value
+        // console.log("pagination.value.rowsNumber ",pagination.value.rowsNumber )
 
-        pagination.value.rowsNumber = getRowsNumberCount(filter)
+        
 
         // get all rows if "All" (0) is selected
         const fetchCount = rowsPerPage === 0 ? pagination.value.rowsNumber : rowsPerPage
 
         // calculate starting row of data
         const startRow = (page - 1) * rowsPerPage
+
+        if (beforeDate.value && afterDate.value){
+          tsrList.value= await getTSRsFromApi(0,totalTsrsCount.value,"","",beforeDate.value,afterDate.value,1)
+        }else{
+          tsrList.value = await getTSRsFromApi(0,totalTsrsCount.value,"","",today+'01-01',today+'12-31',1)
+        }
+        rowsTable.value =  buildTable()
+        console.log("rowsTable.valuerowsTable.value,",rowsTable.value)
         // fetch data from "server"
         const returnedData = fetchFromServer(startRow, fetchCount, filter, sortBy, descending)
         divisionList.value = [...new Set(tsrList.value.map(item => item.division))].filter(function(val) { return val !== null; });
-        loadDivisionDataOverall(divisionList.value)
-
-        
+       
         // console.log("rettt", returnedData)
         // returnedData.push(startRow)
 
@@ -964,51 +1109,6 @@ function renderPDF(url, canvasContainer, options) {
       }, 500)
   }
 
-  async function uploadMigrationData () {
-      // this.$refs.uploadMigrationButton.click()
-      let file = this.$refs.uploadMigrationButton.files[0]
-      console.log('File', file)
-      var reader = new FileReader()
-      this.loading = true
-      reader.onload = async (e) => {
-        const data = e.target.result
-        const rows = xlsx.utils.sheet_to_json(xlsx.read(data, { type: 'binary', cellDates: true }).Sheets['Sheet1'])
-        // console.log('data', rows)
-        console.log("file upload", rows)
-        // const validData = rows.map(r => {
-        //   const obj = {
-        //     formID: this.node._id,
-        //     userID: this.$root.user._id,
-        //     dateSubmitted: Date.now()
-        //   }
-        //   for (const q of this.node.format) {
-        //     if (r[q.field]) {
-        //       if (typeof r[q.field].getMonth === 'function') {
-        //         obj[q.field] = r[q.field].getTime()
-        //       } else {
-        //         obj[q.field] = r[q.field]
-        //       }
-        //     }
-        //   }
-        //   return obj
-        // }).filter(r => Object.entries(r).length)
-
-        console.log('validData', validData)
-
-        for (const data of validData) {
-          await this.responsesSrvc.create(data)
-        }
-
-        this.loading = false
-
-        $q.notify({
-          message: 'Responses Migrated',
-          position: 'bottom-right',
-          color: 'positive'
-        })
-      }
-      reader.readAsBinaryString(file)
-    }
 
 
 
