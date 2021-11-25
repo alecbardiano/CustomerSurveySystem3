@@ -32,9 +32,18 @@
                   </q-input>
                 </q-form>
               </div>
-              <div class=".col-md-4 .offset-md-4" style = "margin-left: 500px" >
+              <div class=".col-md-4 .offset-md-4"  >
                 <div class="row inline">
-                  <q-file  v-model="importFile" ref="uploadRefButton" label="Import Data " style="width: 200px"
+                  
+                  
+                </div>
+              </div>
+          </div>
+    
+        <div class="row">
+          <div class="col-md-4">
+            <div class="row inline">
+            <q-file  v-model="importFile" ref="uploadRefButton" label="Import Data "
                   accept=".csv,.xls,.xlsx"
                       color="primary"
                       
@@ -43,34 +52,27 @@
                     <q-icon name="attach_file" />
                   </template>
                   </q-file>
-                  <q-btn
+            <q-btn
                       type="submit"
                       label="Import Data"
                       class="q-mt-md"
                       color="primary"
                       @click="fileUpload(importFile)"
                       style="margin-left: 25px"
-                      
                   
                   />
-                </div>
-              </div>
+            </div>
           </div>
-    
-    <div class=row>
-      <div class="col-md-4" >
-      </div>
-        <div class=".col-md-4 .offset-md-4" style = "margin-left: 480px">
+          <div class="col-md-4 offset-md-4">
+            <div class="row inline">
             <q-btn
               type="submit"
               label="Generate Raw Data"
               class="q-mt-md"
               color="primary"
               @click="exportTable(rows)"
-              style="margin-left: 15px"
           />
-          <!-- <div class=col-1></div> -->
-          <q-btn
+           <q-btn
               type="submit"
               label="Generate PDF Report"
               class="q-mt-md"
@@ -86,6 +88,7 @@
               @click="deleteAnswers()"
               style="margin-left: 15px"
           /> -->
+            </div>
           </div>
         </div>
     </div>
@@ -214,7 +217,7 @@
 <script>
 import { reactive, defineComponent, ref, onMounted, computed , watch} from 'vue'
 import { getQuestions, getTSRs,postAnswers, tsrViaDivision, getOverall,deleteAll,totalTsrsCount, getDivList } from 'src/axioshelper.js'
-import { overAllColumns, overAllRows } from 'src/utils/dataRetrieveTables.js'
+import { overAllColumns, overAllRows,numberOfCustomersColumnsData,numberOfCustomersRowsData  } from 'src/utils/dataRetrieveTables.js'
 import { exportFile, useQuasar} from 'quasar'
 import { xlsx, pdfMake } from 'boot/axios'
 // import {pdfFonts} from "pdfmake/build/vfs_fonts";
@@ -244,6 +247,8 @@ export default defineComponent({
   components: { viewsurveyanswer },
   
   setup () {
+
+  const divisioAndSectionList = ref([])
 
   const $q = useQuasar()
 
@@ -320,6 +325,10 @@ export default defineComponent({
   // overall Perf for PDF
   const rowsOverallPerformance = ref([])
   const colsOverallPerformance = ref([])
+
+  // numbers of customers PDF
+  const numberOfCustomersRows = ref([])
+  const numberOfCustomersColumns = ref([])
 
   // for pdf
   const allTsrList = ref ([]) // all data
@@ -555,15 +564,22 @@ export default defineComponent({
     
    }
 
-    function buildTableBody(data, columns, mode) {
+    function buildTableBody(data, columns, mode,divisionsAndSections) {
         // survey results ALL with extra header
+        debugger
         var body = [];
+        let copyColumns = columns.map(a => a);
+        let divisions = columns.map((a => a.field));
+      
+        console.log(divisionsAndSections)
+        
+        // let divisions = Object.keys(divisionsAndSections)
+        console.log("columns,", columns)
+        console.log("divisions",divisions)
         if(mode == 2){
           
-        let copyColumns = columns.map(a => a);
-        let divisions = columns.map((a => a.division));
-        
-        console.log(divisions)
+          
+       
         let mainArrayColumn = columns.map((a => a.label));
         // console.log("copyColumns",copyColumns)
         // console.log("mainArrayColumn",mainArrayColumn)
@@ -573,6 +589,7 @@ export default defineComponent({
         // body.push(["hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy",])
         let copyData = data.map((rest ) => rest)
           body.push(mainArrayColumn);
+          
           copyData.forEach(function(row) {
               // if(row.null){
               //   delete row.null
@@ -591,16 +608,15 @@ export default defineComponent({
               body.push(dataRow);
           });
           
-        }else{
-
-        
-        var body = [];
+        }else if (mode == 3){
+       
         let copyColumns = columns.map(a => a);
         
         let mainArrayColumn = columns.map((a => a.label));
         // console.log("columns")
         let copyData = data.map((rest ) => rest)
           body.push(mainArrayColumn);
+          console.log(body)
           copyData.forEach(function(row) {
               // if(row.null){
               //   delete row.null
@@ -619,14 +635,77 @@ export default defineComponent({
               body.push(dataRow);
           });
         }
+      // number of customers table
+      else if(mode == 4){
+
+
+    //     {
+		// 	style: 'tableExample',
+		// 	color: '#444',
+		// 	table: {
+		// 		widths: [200, 'auto', 'auto'],
+		// 		headerRows: 2,
+		// 		// keepWithHeaderRows: 1,
+		// 		body: [
+		// 			[{text: 'Header with Colspan = 2', style: 'tableHeader', colSpan: 2, alignment: 'center'}, {}, {text: 'Header 3', style: 'tableHeader', alignment: 'center'}],
+		// 			[{text: 'Header 1', style: 'tableHeader', alignment: 'center'}, {text: 'Header 2', style: 'tableHeader', alignment: 'center'}, {text: 'Header 3', style: 'tableHeader', alignment: 'center'}],
+		// 			['Sample value 1', 'Sample value 2', 'Sample value 3'],
+		// 			[{rowSpan: 3, text: 'rowSpan set to 3\nLorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor'}, 'Sample value 2', 'Sample value 3'],
+		// 			['', 'Sample value 2', 'Sample value 3'],
+		// 			['Sample value 1', 'Sample value 2', 'Sample value 3'],
+		// 			['Sample value 1', {colSpan: 2, rowSpan: 2, text: 'Both:\nrowSpan and colSpan\ncan be defined at the same time'}, ''],
+		// 			['Sample value 1', '', ''],
+		// 		]
+		// 	}
+		// },
+        let arrFirstHeader = []
+        arrFirstHeader.push({})
+        for(let div in divisionsAndSections){
+          console.log("div he", div)
+          console.log("div she", divisionsAndSections[div].length)
+          arrFirstHeader.push({text: div, rowSpan: divisionsAndSections[div].length})
+          for(let i =0; i< divisionsAndSections[div].length-1; i++){
+            arrFirstHeader.push({})
+          }
+        }
+        arrFirstHeader.push({})
+        body.push(arrFirstHeader)
+        
+        let copyColumns = columns.map(a => a);
+        
+        let mainArrayColumn = columns.map((a => a.label));
+        // console.log("columns")
+        let copyData = data.map((rest ) => rest)
+          body.push(mainArrayColumn);
+          console.log(body)
+          copyData.forEach(function(row) {
+              // if(row.null){
+              //   delete row.null
+              // }
+              var dataRow = [];
+              // let merged = {...row, ...columns};
+              copyColumns.forEach(function(column) {
+                  if(row[column.field]){
+                    if([column.label]){
+                      dataRow.push(row[column.field]);
+                    }
+                  }else{
+                    dataRow.push("");
+                  }
+              })
+              body.push(dataRow);
+          });
+      }
 
         return body;
     }
 
  
   async function buildOverall(){
-    colsOverallPerformance.value = await overAllColumns()
-    rowsOverallPerformance.value = await overAllRows()
+    colsOverallPerformance.value = overAllColumns(divisioAndSectionList.value)
+    rowsOverallPerformance.value = await overAllRows(divisioAndSectionList.value)
+    numberOfCustomersColumns.value = numberOfCustomersColumnsData(divisioAndSectionList.value)
+    numberOfCustomersRows.value = numberOfCustomersRowsData(divisioAndSectionList.value,tsrList.value)
   }
     
   async function generatePDF(){
@@ -661,27 +740,53 @@ export default defineComponent({
             table:{
               headerRows:0,
               
-              body: buildTableBody(rowsOverall.value, overallCol,1)
+              body: buildTableBody(rowsOverall.value, overallCol,1,divisioAndSectionList.value)
               },
               style:"table"
           },
-          {text: 'Customer Satisfaction Measurement', style: 'tableHeader'},
-          {
-            table:{
-              headerRows:1,
-              // widths:[5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],
-              widths: [50, 40, 40, 40,40, 35,35, 35,35, 35,35, 35,35, 35,35, 35],
-              body: buildTableBody(rowsTable.value, rateColsTableValue,2)
-              },
-            style:"table"
+          // { 
+          //    text: 'Customer Satisfaction Measurement', 
+          //    style: 'tableHeader', 
+          //    pageBreak: 'before', 
+          //    pageOrientation: 'landscape' 
+          // },
+          // {
+          //   table:{
+          //     headerRows:1,
+          //     // widths:[5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],
+          //     widths: [50, 40, 40, 40,40, 35,35, 35,35, 35,35, 35,35, 35,35, 35],
+          //     body: buildTableBody(rowsTable.value, rateColsTableValue,2)
+          //     },
+          //   style:"table"
+          // },
+          { 
+             text: 'Overall Performance of the Center Based on CSS Responses', 
+             style: 'tableHeader', 
+             pageBreak: 'before', 
+             pageOrientation: 'landscape' 
           },
-          {text: 'Customer Satisfaction Measurement', style: 'tableHeader'},
+          // {
+          //   table:{
+          //     headerRows:2,
+          //     // widths:[5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],
+          //     // widths: [50, 40, 40, 40,40, 35,35, 35,35, 35,35, 35,35, 35,35, 35],
+              
+          //     body: buildTableBody(rowsOverallPerformance.value, xCols,2,divisioAndSectionList.value)
+          //     },
+          //   style:"table"
+          // },
+          { 
+             text: 'Number Customers', 
+             style: 'tableHeader', 
+             pageBreak: 'before', 
+             pageOrientation: 'landscape' 
+          },
           {
             table:{
-              headerRows:1,
+              headerRows:2,
               // widths:[5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],
-              // widths: [50, 40, 40, 40,40, 35,35, 35,35, 35,35, 35,35, 35,35, 35],
-              body: buildTableBody(rowsOverallPerformance.value, xCols,1)
+              // widths: 
+              body: buildTableBody(numberOfCustomersRows.value, numberOfCustomersColumns.value,4,divisioAndSectionList.value)
               },
             style:"table"
           },
@@ -705,21 +810,6 @@ export default defineComponent({
                 pageOrientation:"landscape",
                 pageMargins:[40,100,40,50]
        }
-      //  content:[
-      //    {
-      //           table: toTable(rowsOverall.value, overallCol,1),
-      //           headerRows:1,
-      //           layout:"lightHorizontalLines",
-      //           styles:{
-      //                          header:{"fontSize":19,"bold":true},
-      //                          tableHeader:{"bold":true,"fontSize":13},
-      //                          table:{"fontSize":10}
-      //           },
-      //           pageOrientation:"landscape",
-      //           pageMargins:[40,100,40,50]
-      //     }, 
-          
-      //  ]
       var pdf = pdfMake.createPdf(dd);
       // pdf.download('Customer Survey Management System Report.pdf');
       pdf.open();
@@ -819,9 +909,8 @@ export default defineComponent({
       
     }
     
-    let divisionsandsections = await getDivList()
-    console.log("Didididid",divisionsandsections)
-    let divisions = Object.keys(divisionsandsections)
+    divisioAndSectionList.value = await getDivList()
+    let divisions = Object.keys(divisioAndSectionList.value)
     console.log("ddsdds", divisions)
 
     

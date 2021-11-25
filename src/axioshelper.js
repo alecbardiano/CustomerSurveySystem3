@@ -50,6 +50,8 @@ const getAllQuestions = function () {
 
   }
 
+
+
 const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,mode) {
   // mode 3 admin division
   // mode 2 dashboard
@@ -325,13 +327,13 @@ const getAnswersForOverall = function (division,service,questionID,beforeDate,af
     after = moment(afterDate).format('YYYY-MM-DD');
     if (service != ""){
       if(beforeDate && afterDate){
-        return api.get('/answers/?tsr.division='+ division + '&tsr.service=' + service + '&&question.id='+questionID+ '&created_at_gte='+before+'&created_at_lte='+after)
+        return api.get('/answers/?_limit=-1&tsr.division='+ division + '&tsr.service=' + service + '&&question.id='+questionID+ '&created_at_gte='+before+'&created_at_lte='+after)
         .then(function( response ){
             // console.log("from axios tsr division", response.data)
             return response.data;
       })
     }else{
-      return api.get('/answers/?tsr.division='+ division + '&tsr.service=' + service+ '&&question.id='+questionID+'&created_at_gte='+today+'-01-01'+'&created_at_lte='+today+'-12-31')
+      return api.get('/answers/?_limit=-1&tsr.division='+ division + '&tsr.service=' + service+ '&&question.id='+questionID+'&created_at_gte='+today+'-01-01'+'&created_at_lte='+today+'-12-31')
         .then(function( response ){
             // console.log("from axios tsr division", response.data)
             return response.data;
@@ -339,13 +341,13 @@ const getAnswersForOverall = function (division,service,questionID,beforeDate,af
      }
     }else{
         if(beforeDate && afterDate){
-          return api.get('/answers/?tsr.division='+ division + '&&question.id='+questionID+ '&created_at_gte='+before+'&created_at_lte='+after)
+          return api.get('/answers/?_limit=-1&tsr.division='+ division + '&&question.id='+questionID+ '&created_at_gte='+before+'&created_at_lte='+after)
           .then(function( response ){
               // console.log("from axios tsr division", response.data)
               return response.data;
         })
       }else{
-        return api.get('/answers/?tsr.division='+ division + '&&question.id='+questionID+'&created_at_gte='+today+'-01-01'+'&created_at_lte='+today+'-12-31')
+        return api.get('/answers/?_limit=-1&tsr.division='+ division + '&&question.id='+questionID+'&created_at_gte='+today+'-01-01'+'&created_at_lte='+today+'-12-31')
           .then(function( response ){
               // console.log("from axios tsr division", response.data)
               return response.data;
@@ -546,7 +548,8 @@ const numberPoorFeedbackCountPerDivision = function (beforeDate,afterDate,divisi
 }
 
 const positiveFeedbackCount = function ()  {
-  return api.get('/answers/count?value_gte=4')
+  return api.get('/answers/count?value_gte=4',{
+      })
       .then(function( response ){
           // console.log(response.data.results)
           return response.data;
@@ -554,7 +557,8 @@ const positiveFeedbackCount = function ()  {
 }
 
 const negativeFeedbackCount = function ()  {
-  return api.get('/answers/count?value_lte=2')
+  return api.get('/answers/count?value_lte=2',{
+      })
       .then(function( response ){
           // console.log(response.data.results)
           return response.data;
@@ -563,22 +567,23 @@ const negativeFeedbackCount = function ()  {
 
 // http://10.10.120.19:1337/questions/count
 const totalFeedbackCountTSR = function (beforeDate,afterDate)  {
-  if (beforeDate && afterDate){
-    let before = moment(beforeDate).format('YYYY-MM-DD');
-    let after = moment(afterDate).format('YYYY-MM-DD');
-    return api.get('/tsrs/count?&created_at_gte='+before+'&created_at_lte='+after)
+    if (beforeDate && afterDate){
+      let before = moment(beforeDate).format('YYYY-MM-DD');
+      let after = moment(afterDate).format('YYYY-MM-DD');
+      return api.get('/tsrs/count?&created_at_gte='+before+'&created_at_lte='+after,{
+          })
+          .then(function( response ){
+              // console.log(response.data.results)
+              return response.data;
+          })
+    }else{
+    return api.get('/tsrs/count?',{
+        })
         .then(function( response ){
             // console.log(response.data.results)
             return response.data;
         })
-  }else{
-  return api.get('/tsrs/count?')
-      .then(function( response ){
-          // console.log(response.data.results)
-          return response.data;
-      })
-  }
-  
+    }
 }
 
 const noOfRespondentsPerDivision = function (division,before,after)  {
@@ -609,6 +614,27 @@ const allOverAllRatings = function (beforeDate,afterDate){
   }
   
 }
+
+
+const loginToSSO = function (username,password) {
+  //   loading.value = true;
+  //   error.value = null;
+    // I prefer to use fetch
+    // you can use use axios as an alternative
+      console.log("apiiiiwqwqi")
+    // console.log(api.get('/questions'))
+      return api.post('/auth/local', {
+        identifier: username.toString(),
+        password: password.toString()
+      }).then(function( response ){
+          // console.log(response.data.results)
+          setJWT(response.data.jwt)
+        }
+      )
+  }
+
+
+
 
 export async function load(url) {
     let result = await axios.get(url);
@@ -705,6 +731,11 @@ export const allOverAllRatingsFromApi = (beforeDate,afterDate) => {
 
 export const deleteAll = () => {
   return deleteAllAnswers()
+}
+
+
+export const loginToSSOStrapi = (username,password) => {
+  return loginToSSO(username,password)
 }
 
 

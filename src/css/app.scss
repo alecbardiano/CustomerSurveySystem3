@@ -16,7 +16,10 @@
 }
 
 .overallAverage {
-
+  // tr th {
+  //   max-width: 5px;
+  // }
+  
     td:first-child, tr:last-child {    /* bg color is important for td; just specify one */
         background-color: #c1f4cd !important;
       }
@@ -30,6 +33,7 @@
         /* this will be the loading indicator */
       thead tr:last-child th {    /* height of all previous header rows */
         top: 48px;
+        
           /* highest z-index */
         z-index: 3;
       }
@@ -137,4 +141,8 @@
     color: white;
     opacity: 1; /* Firefox */
 }
-      
+
+// login css
+.alignRight {
+  padding-left: 50px;
+}

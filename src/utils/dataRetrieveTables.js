@@ -1,4 +1,4 @@
-import { getDivList, countPositiveFeedback, countNegativeFeedback, totalTsrsCount , getTSRs, allOverAllRatingsFromApi} from 'src/axioshelper.js'
+import { getTSRs, allOverAllRatingsFromApi} from 'src/axioshelper.js'
 import groupBy from 'lodash'
 import moment from 'moment';
 
@@ -7,8 +7,7 @@ function filterMyArr (myArr, condition) {
 }
 
 
-async function buildOverallPerfColumns (){
-    let divisionsAndSections = await getDivList()
+function buildOverallPerfColumns (divisionsAndSections){
     let cols = []
     cols.push( {
         name: 'Service Area',
@@ -24,13 +23,6 @@ async function buildOverallPerfColumns (){
       field: 'percentage',
       sortable: true
     })
-    cols.push({
-      name: 'Month',
-      align: 'left',
-      label: 'Month',
-      field: 'month',
-      sortable: true
-    })
     for (var key in divisionsAndSections) {
         for (const element of divisionsAndSections[key]) {
       // console.log("divisionsAndSections232", divisionsAndSections.value[divisions.value[i]])
@@ -42,7 +34,7 @@ async function buildOverallPerfColumns (){
     return cols
 }
 
-async function buildOverallPerfRows (){
+async function buildOverallPerfRows (divisionsAndSections){
     let rowsOverallPerformance = []
     
     rowsOverallPerformance.push({servicearea: "5 - Outstanding" , id: 5})
@@ -51,7 +43,6 @@ async function buildOverallPerfRows (){
     rowsOverallPerformance.push({servicearea: "2 - Fair & 1 - Poor", id: 2})
     rowsOverallPerformance.push({servicearea: "Total", id: 1})
     // let tsrs = await getTSRs()
-    let divisionsAndSections = await getDivList()
     let totalAnswerOverall = await allOverAllRatingsFromApi("","")
       totalAnswerOverall = totalAnswerOverall.filter(function (el) {
         return el.tsr != null;
@@ -59,40 +50,6 @@ async function buildOverallPerfRows (){
     //   let totalNoResponse = totalTsrs.value - totalAnswerOverall.value.length
     let totalPerField = []
     let totalRespondentsPerMonth = 0
-      // group by months
-    //   let result = _(tsrs)
-    //   .groupBy(v => moment(v.created_at).format('MMMM'))
-    //   .value();
-
-    //     console.log("Res", result)
-    //     for (var key in result) {
-    //         if (result.hasOwnProperty(key)) {
-    //           let row = {}
-    //           let totalPerMonth = 0
-    //           row['month'] = key
-              
-    //           let temp = result[key]
-    //           console.log("temp", temp)
-    //           for (var key2 in divisionsAndSections.value) {
-    //             for (const element of divisionsAndSections.value[key2]) {
-    //               let stringColField = element.toString().concat(key2.toString())
-    //               // filter all data
-    //               let sample = temp.filter((elementTSR) => {
-    //               if(elementTSR.tsrNo){
-    //                 if(elementTSR.division == key2 && elementTSR.service == element){
-    //                   console.log("pasok oh loko" )
-    //                   return elementTSR
-    //                 }
-    //               }
-                  
-    //               })
-    //               row[stringColField] = sample.length
-    //               totalPerMonth += sample.length
-    //             }
-    //           }
-    //         }
-    //     }
-        
 
       //
       const mainCounts = {
@@ -191,9 +148,16 @@ async function buildOverallPerfRows (){
 
       return rowsOverallPerformance
 }
-async function buildNumberOfCustomersColumns (){
-    let divisionsAndSections = await getDivList()
-    let cols = []
+function buildNumberOfCustomersColumns (divisionsAndSections){
+  
+  let cols = []
+  cols.push({
+    name: 'Month',
+    align: 'left',
+    label: 'Month',
+    field: 'month',
+    sortable: true
+  })
     for (var key in divisionsAndSections) {
         for (const element of divisionsAndSections[key]) {
       // console.log("divisionsAndSections232", divisionsAndSections.value[divisions.value[i]])
@@ -210,6 +174,71 @@ async function buildNumberOfCustomersColumns (){
         sortable: true
       })
     return cols
+}
+function buildNumberOfCustomersRows (divisionsAndSections, tsrList){
+  console.log("from data retrieve", divisionsAndSections)
+  let rowsnumberOfCustomers = []
+  // tsrList.value
+      // Number of customers Row generation
+      let totalRespondentsPerMonth = 0
+      // group by months
+      var result = _(tsrList)
+      .groupBy(v => moment(v.created_at).format('MMMM'))
+      .value();
+
+        console.log("Res", result)
+        for (var key in result) {
+            if (result.hasOwnProperty(key)) {
+              let row = {}
+              let totalPerMonth = 0
+              row['month'] = key
+              
+              let temp = result[key]
+              console.log("temp", temp)
+              for (var key2 in divisionsAndSections) {
+                for (const element of divisionsAndSections[key2]) {
+                  let stringColField = element.toString().concat(key2.toString())
+                  // filter all data
+                  let sample = temp.filter((elementTSR) => {
+                  if(elementTSR.tsrNo){
+                    if(elementTSR.division == key2 && elementTSR.service == element){
+                      console.log("pasok oh loko" )
+                      return elementTSR
+                    }
+                  }
+                  
+                  })
+                  row[stringColField] = sample.length
+                  totalPerMonth += sample.length
+                }
+              }
+              // total horizontal
+              row['total'] = totalPerMonth
+              totalRespondentsPerMonth += totalPerMonth
+              
+              rowsnumberOfCustomers.push(row)
+            }
+        }
+        
+        // total per service
+        for (var key2 in divisionsAndSections) {
+           for (const element of divisionsAndSections[key2]) {
+           let stringColField = element.toString().concat(key2.toString())
+           let sample = filterMyArr(rowsnumberOfCustomers, stringColField)
+          //  console.log("Samp", sample)
+           let sum = sample.reduce((a, b) => a + b, 0)
+           let arrTotal = {}
+           // total vertical per service
+           arrTotal["value"] = sum
+          //  totalActualRespondents.push(arrTotal)
+          }
+        }
+
+        // total actual respondents
+      // let tot = {}
+      // tot["value"] = totalRespondentsPerMonth
+      // totalActualRespondents.push(tot)
+      return rowsnumberOfCustomers
 }
 async function buildTable(){
   tsrs.value = await getTSRs("","","","","","",2)
@@ -317,14 +346,18 @@ async function buildTable(){
   // [ { "dimension": [], "value": 0 }, { "scoreservice": [], "value": 3.18 }, { "ATD": [], "value": 3.16 }, { "PD": [], "value": 3.22 } ]
   
 }
-export const overAllColumns = () => {
-    return buildOverallPerfColumns()
+export const overAllColumns = (div) => {
+    return buildOverallPerfColumns(div)
 }
-export const overAllRows = () => {
-    return buildOverallPerfRows()
+export const overAllRows = (div) => {
+    return buildOverallPerfRows(div)
 }
 
-export const numberOfCustomersColumns = () => {
-    return buildNumberOfCustomersColumns()
+export const numberOfCustomersColumnsData= (div) => {
+    return buildNumberOfCustomersColumns(div)
+}
+
+export const numberOfCustomersRowsData = (div,tsr) => {
+  return buildNumberOfCustomersRows(div,tsr)
 }
   

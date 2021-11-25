@@ -217,6 +217,8 @@
   import { Chart, registerables } from 'chart.js'
   import groupBy from 'lodash'
   import moment from 'moment';
+  import {  useStore } from "vuex";
+
 
 
   // import { BarChart, useBarChart } from 'vue-chart-3'
@@ -249,6 +251,10 @@
     const colsnumberOfCustomers = ref([])
     
     const columns = ref([])
+
+    const store = useStore();
+
+    const getterUser = computed(() => store.getters["auth/getUserProfile"]);
 
     // bottom row overall performance
     const totalPerField = ref([])
@@ -309,8 +315,10 @@
           1: 0
         };
         // console.log("x", x+=sample.length)
+        console.log("sample ey", key ,element)
         // console.log("sample", sample.length)
         for (const element of sample) {
+          
           let num = element.value
           if (num == 1){
             counts[1] +=1
@@ -423,6 +431,7 @@
               // total horizontal
               row['total'] = totalPerMonth
               totalRespondentsPerMonth += totalPerMonth
+              
               rowsnumberOfCustomers.value.push(row)
             }
         }
