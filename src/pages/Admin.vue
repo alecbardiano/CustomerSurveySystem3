@@ -107,6 +107,7 @@
       :filter="filter"
       v-model:pagination="pagination"
       @request="onRequest"
+      binary-state-sort
       separator="cell"
     >
     <template v-slot:top-right>
@@ -283,6 +284,8 @@ export default defineComponent({
   
   const loading = ref(true)
   const pagination = ref({
+    sortBy: 'desc',
+    descending: false,
     page: 1,
     rowsPerPage: 10,
     rowsNumber: 5
@@ -1333,11 +1336,11 @@ export default defineComponent({
     }
 
   async function fetchFromServer (startRow, count, filter, sortBy, descending) {
-      if (beforeDate.value && afterDate.value){
-        tsrList.value= await getTSRsFromApi(startRow,count,"","",beforeDate.value,afterDate.value,1)
-      }else{
-        tsrList.value = await getTSRsFromApi(startRow,count,"","",today+'01-01',today+'12-31',1)
-      }
+        if (beforeDate.value && afterDate.value){
+          tsrList.value= await getTSRsFromApi(startRow,count,"","",beforeDate.value,afterDate.value,1)
+        }else{
+          tsrList.value = await getTSRsFromApi(startRow,count,"","",today+'01-01',today+'12-31',1)
+        }
         
       rowsTable.value =  buildTable()
       console.log("sortBy,sortBy",sortBy)
@@ -1354,18 +1357,22 @@ export default defineComponent({
 
       // handle sortBy
       if (sortBy) {
-        // const sortFn = sortBy === 'desc'
-        //   ? (descending
-        //       ? (a, b) => (a.name > b.name ? -1 : a.name < b.name ? 1 : 0)
-        //       : (a, b) => (a.name > b.name ? 1 : a.name < b.name ? -1 : 0)
-        //     )
-        //   : (descending
-        //       ? (a, b) => (parseFloat(b[ sortBy ]) - parseFloat(a[ sortBy ]))
-        //       : (a, b) => (parseFloat(a[ sortBy ]) - parseFloat(b[ sortBy ]))
-        //     )
-        // data.sort(sortFn)
+        const sortFn = sortBy === 'desc'
+          ? (descending
+              ? (a, b) => (a.name > b.name ? -1 : a.name < b.name ? 1 : 0)
+              : (a, b) => (a.name > b.name ? 1 : a.name < b.name ? -1 : 0)
+            )
+          : (descending
+              ? (a, b) => (parseFloat(b[ sortBy ]) - parseFloat(a[ sortBy ]))
+              : (a, b) => (parseFloat(a[ sortBy ]) - parseFloat(b[ sortBy ]))
+            )
+        data.sort(sortFn)
       }
-      console.log("data hoy hoy",)
+      console.log("data hoy hoy", data)
+      // last page not equal to rows per page
+      if(data.length <= startRow + count){
+        return data
+      }
 
       return data.slice(startRow, startRow + count)
     }
@@ -1455,6 +1462,7 @@ export default defineComponent({
 
         // calculate starting row of data
         const startRow = (page - 1) * rowsPerPage
+
         if (page == 0){
           fetchCount = rowsPerPage === 0 ? pagination.value.rowsNumber : rowsPerPage
         }else{
@@ -1478,6 +1486,7 @@ export default defineComponent({
 
         // clear out existing data and add new
         rows.value.splice(0, rows.value.length, ...returnedData)
+        console.log("rowsrowsFinaltable", rows.value, "rowsrowsFinaltable2", returnedData)
         finalAverageDataRow.value  = await averageLastTable(cols.value,rows.value)
 
         // don't forget to update local pagination object

@@ -2,8 +2,13 @@ import { api, oneshopapi, ulimsTSRapi} from 'boot/axios'
 import moment from 'moment';
 import {groupBy, flow, chain} from 'lodash';
 
+
+
 let today = new Date();
+let datetime = today
 today = moment().year()
+
+
 const getTSRNoFromULIMSrSystems = async function (tsrNumber) {
   //   loading.value = true;
   //   error.value = null;
@@ -368,7 +373,8 @@ try {
       "tsrNo": tsrNo,
       "industry": industry,
       "service": service,
-      "division": division
+      "division": division,
+      "submittedAt": datetime
   }
   let tsrId
   await api.post("/tsrs", tsr)
@@ -400,7 +406,8 @@ try {
       question: answer.question,
       value: answer.value,
       tsr_q_id: tsrId +'_' +answer.question,
-      tsrNo: tsrNo
+      tsrNo: tsrNo,
+      remarks: answer.remarks
     }
     await api.post("/answers", ans)
 
