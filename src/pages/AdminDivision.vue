@@ -237,7 +237,6 @@ export default defineComponent({
       console.log("pasok ba", tsrs.value)
       
      
-
     for (let j=0; j<orderByPositionQuestions.value.length; j++){
       // overall rating
       // if(orderByPositionQuestions.value[j].id == 12){
@@ -250,7 +249,8 @@ export default defineComponent({
         dataDivision = dataDivision.map(function (x) { 
           return parseInt(x, 10); 
         });
-        noRespondents.value = dataDivision.length
+        console.log("noRespondents", dataDivision.length)
+       
         // dataDivision = dataDivision.filter(function(x) {
         //     if ( x != undefined || x == '' || !isNaN(x)){
         //       return x
@@ -265,6 +265,7 @@ export default defineComponent({
         };
         for (const num of dataDivision) {
           if(orderByPositionQuestions.value[j].id == 12){
+             noRespondents.value  +=  1
             if (num == 5|| num == 4){
               console.log("pasok dito")
               noVerySatisfactory.value+=1
@@ -378,6 +379,7 @@ export default defineComponent({
       data.forEach(val => {
         if(val >= 4){
           noVerySatisfactoryTotal.value += 1
+          console.log("nocount",noVerySatisfactoryTotal )
         }else if (val == 3){
           noSatisfactoryTotal.value +=1
         }else if (val == ''){

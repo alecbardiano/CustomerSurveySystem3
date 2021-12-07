@@ -46,9 +46,11 @@
               <p class="questions"> {{question.description}}</p>
               <!-- add 1 because index is 0 -->
             </div>
-              <div class="inputs">
-               <CustomSurveyField v-if="question.id == 3" v-model="surveyAnswer.answers[parent_node_index]" :questionId="question.id" :question_type="question.question_type.id" :optionval="serviceOptions" :labelval="question.label" />
-               <CustomSurveyField v-else v-model="surveyAnswer.answers[parent_node_index]" :questionId="question.id" :question_type="question.question_type.id" :optionval="industryOptions" :labelval="question.label" />
+              <div class="row inline">
+                <div class="inputs">
+                  <CustomSurveyField v-if="question.id == 3" v-model="surveyAnswer.answers[parent_node_index]" :questionId="question.id" :question_type="question.question_type.id" :optionval="serviceOptions" :labelval="question.label" />
+                  <CustomSurveyField v-else v-model="surveyAnswer.answers[parent_node_index]" :questionId="question.id" :question_type="question.question_type.id" :optionval="industryOptions" :labelval="question.label" />
+                </div>
               </div>
           </div>
           <div v-else-if="question.children.length > 0">

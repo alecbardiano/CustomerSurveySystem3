@@ -1,4 +1,4 @@
-import { getTSRs, allOverAllRatingsFromApi} from 'src/axioshelper.js'
+import { getTSRs, allOverAllRatingsFromApi, getOverall} from 'src/axioshelper.js'
 import groupBy from 'lodash'
 import moment from 'moment';
 
@@ -122,7 +122,7 @@ async function buildOverallPerfRows (divisionsAndSections){
       }
 
       // row add percentage field
-      console.log("mansCounts", mainCounts)
+      // console.log("mansCounts", mainCounts)
       
       let totalPercentRow = 0
       rowsOverallPerformance.forEach(row => {
@@ -130,7 +130,7 @@ async function buildOverallPerfRows (divisionsAndSections){
         row['percentage'] = res.toFixed(2).toString() + '%'
         totalPercentRow +=res
       });
-      console.log("yayeyey", rowsOverallPerformance)
+      // console.log("yayeyey", rowsOverallPerformance)
       let tempObj = {}
       tempObj['value'] = parseFloat(totalPercentRow).toFixed(2).toString() + '%'
       totalPerField.push(tempObj)
@@ -176,7 +176,7 @@ function buildNumberOfCustomersColumns (divisionsAndSections){
     return cols
 }
 function buildNumberOfCustomersRows (divisionsAndSections, tsrList){
-  console.log("from data retrieve", divisionsAndSections)
+  // console.log("from data retrieve", divisionsAndSections)
   let rowsnumberOfCustomers = []
   // tsrList.value
       // Number of customers Row generation
@@ -194,7 +194,6 @@ function buildNumberOfCustomersRows (divisionsAndSections, tsrList){
               row['month'] = key
               
               let temp = result[key]
-              console.log("temp", temp)
               for (var key2 in divisionsAndSections) {
                 for (const element of divisionsAndSections[key2]) {
                   let stringColField = element.toString().concat(key2.toString())
@@ -202,7 +201,7 @@ function buildNumberOfCustomersRows (divisionsAndSections, tsrList){
                   let sample = temp.filter((elementTSR) => {
                   if(elementTSR.tsrNo){
                     if(elementTSR.division == key2 && elementTSR.service == element){
-                      console.log("pasok oh loko" )
+                      // console.log("pasok oh loko" )
                       return elementTSR
                     }
                   }
@@ -240,112 +239,173 @@ function buildNumberOfCustomersRows (divisionsAndSections, tsrList){
       // totalActualRespondents.push(tot)
       return rowsnumberOfCustomers
 }
-async function buildTable(){
-  tsrs.value = await getTSRs("","","","","","",2)
-  buildColumns()
-  buildRowsOverallPerformance()
-  totalAnswerOverall.value = await allOverAllRatingsFromApi("","")
-  totalAnswerOverall.value = totalAnswerOverall.value.filter(function (el) {
-    return el.tsr != null;
-  });
-  console.log("totalAnswerOverallleng", totalAnswerOverall.value.length)
-  totalNoResponse.value = totalTsrs.value - totalAnswerOverall.value.length
 
-  //
-  const mainCounts = {
-    5: 0, 
-    4: 0,
-    3: 0, 
-    2: 0,
-    1: 0,
-  };
-
-  for (var key in divisionsAndSections.value) {
-    for (const element of divisionsAndSections.value[key]) {
-      let stringColField = element.toString().concat(key.toString())
-      // filter all data
-      let sample = totalAnswerOverall.value.filter((elementTSR) => {
-      if(elementTSR.tsr){
-        if(elementTSR.tsr.division == key && elementTSR.tsr.service == element){
-          return elementTSR
-        }
-      }
-    })
-    
-    // console.log("sampless", sample)
-    const counts = {
-      5: 0, 
-      4: 0,
-      3: 0, 
-      2: 0,
-      1: 0
-    };
-    // console.log("x", x+=sample.length)
-    // console.log("sample", sample.length)
-    for (const element of sample) {
-      let num = element.value
-      if (num == 1){
-        counts[1] +=1
-        mainCounts[1] +=1
-      }else if ( num == 2){
-        counts[2] +=1
-        mainCounts[2] +=1
-      }else if(num ==3 ){
-        counts[3] +=1
-        mainCounts[3] +=1
-      }else if(num == 4){
-        counts[4] +=1
-        mainCounts[4] +=1
-      }else if(num == 5){
-        counts[5] +=1
-        mainCounts[5] +=1
-      }
-      else{
-        counts[0] += 1
-        mainCounts[0] +=1
-      }
-    };
-    console.log("Counts", counts)
-    
-    for(let [key2, value] of Object.entries(counts)){
-      // total vertical per service
-      rowsOverallPerformance.value.forEach(function (arrayItem) {
-        if(key2 == arrayItem.id){
-          value = (value/ sample.length) * 100
-          value = value.toFixed(2).toString() + '%'
-          arrayItem[stringColField] = value
-        }
+async function buildSummaryPerDivisionRows (questions,divisionsAndSections,allTsrs){
+  let rowsSummary = []
+  
+  let dataDivision = []
+      
+      for (var key2 in divisionsAndSections) {
         
-        });
+        for (const element of divisionsAndSections[key2]) {
+          let index = 0
+          // if(index % 5 == 0){
+          //   rowsSummary.push({division: key2, service: "" ,servicearea: "5 - Outstanding" , id: 5})
+          //   rowsSummary.push({division: key2, service: element, servicearea: "4 - Very Satisfactory" , id: 4 })
+          // }
+          rowsSummary.push({division: key2, service: element ,servicearea: "5 - Outstanding" , id: 5})
+          rowsSummary.push({division: key2, service: element, servicearea: "4 - Very Satisfactory" , id: 4 })
+          rowsSummary.push({division: key2, service: element,servicearea: "3 - Satisfactory", id: 3 })
+          rowsSummary.push({division: key2, service: element,servicearea: "2 - Fair & 1 - Poor", id: 2})
+          rowsSummary.push({division: key2, service: element,servicearea: "No Response", id: 0})
+          // let dataDivision = await getOverall(key2,element,questions[j].id,'01-01-2021','12-31-2021')
+          // console.log("dataDivisiondataDivision",dataDivision)
+          let answersperDivision = []
+          dataDivision = allTsrs.filter(a => a.division == key2 && a.service == element)
+          for (let j=0; j<questions.length; j++){ 
+            const counts = {
+                    5: 0, 
+                    4: 0, 
+                    3:0, 
+                    2:0,
+                    0:0
+                  };
+          if(allTsrs.length != 0){
+            
+            dataDivision.map((nestedObject)=>{
+              if (typeof nestedObject.answers != 'undefined'){
+                nestedObject.answers.map(a => {
+                  if( a.question == questions[j].id){
+                    if (a.value == 1 || a.value == 2){
+                      counts[2] +=1
+                    }
+                    else if (isNaN(a.value)){
+                      counts[0] += 1
+                    }else{
+                      counts[a.value] = (counts[a.value] ? counts[a.value] + 1 : 1) 
+                    }
+                    
+                  }
+                 
+                })
+
+                // console.log("answerPickedanswerPicked", answerPicked)
+                // console.log("answerPickedanswerPicked", answerPicked[0])
+                
+                // let answers = nestedObject.answers
+                // answers = answers.filter(a => {
+                //   return a.question== questions[j].id
+                // })
+                // console.log("answered", answers)
+                // console.log("questions", questions[j])
+                // answers.map( a => {
+                //   if (a.value == 1 || a.value == 2){
+                //     console.log("wew")
+                //     counts[2] +=1
+                //   }
+                //   else if (isNaN(a.value)){
+                //     counts[0] += 1
+                //   }else{
+                //     counts[a.value] = (counts[a.value] ? counts[a.value] + 1 : 1) 
+                //   }
+                // })
+                
+              }
+
+              // console.log("The subject Name="+nestedObject.subjectDetails.subjectName);
+           })
+           let x = 0
+           let y = 0
+           let z = 0
+           for(let [key, value] of Object.entries(counts)){
+             console.log("vavavaval", value)
+            rowsSummary.forEach(function (arrayItem) {
+              if (arrayItem.division == key2 && arrayItem.service == element)
+              if(key == arrayItem.id){
+                
+                
+                value = (value/ dataDivision.length) * 100
+                value = value.toFixed(2).toString() + '%'
+                arrayItem[questions[j].id] = value
+                arrayItem['countsDivision'] = dataDivision.length
+                arrayItem['verysatis'] = x
+                
+                // arrayItem['countsDivision'] = dataDivision.length
+              }
+          });
+        }
+            // dataDivision = dataDivision.map(function (x) { 
+            //   return parseInt(x, 10); 
+            // });]
+              // if(questions[j].id == 12){
+              //   // noRespondents.value  +=  1
+              //   if (num == 5|| num == 4){
+              //     console.log("pasok dito")
+              //     noVerySatisfactory.value+=1
+              //   }else if(num == 3){
+              //     noSatisfactory.value +=1
+              //   }else{
+              //     noPoor.value+=1
+              //   }
+              // }
+            
+            }
+
+        
+
+      
       }
+      // rowsSummary.push([{text: "No of Respondents"},{text: index},"","","","","","","",""])
     }
   }
-
-  // row add percentage field
-  console.log("mansCounts", mainCounts)
-  let totalPercentRow = 0
-  rowsOverallPerformance.value.forEach(row => {
-    let res = (parseFloat(mainCounts[row.id])/ totalAnswerOverall.value.length * 100)
-    row['percentage'] = res.toFixed(2).toString() + '%'
-    totalPercentRow +=res
-  });
-  let tempObj = {}
-  tempObj['value'] = parseFloat(totalPercentRow).toFixed(2).toString() + '%'
-  totalPerField.value.push(tempObj)
-
-   for (var key in divisionsAndSections.value) {
-      for (const element of divisionsAndSections.value[key]) {
-      let service = element.toString().concat(key.toString())
-      let a = rowsOverallPerformance.value.map(a => a[service]);
-      let sum = a.reduce((a, b) => parseFloat(a) + parseFloat(b), 0)
-      tempObj['value'] = sum.toFixed(2).toString() + '%'
-      totalPerField.value.push(tempObj)
-    }
-  }
-
-  // [ { "dimension": [], "value": 0 }, { "scoreservice": [], "value": 3.18 }, { "ATD": [], "value": 3.16 }, { "PD": [], "value": 3.22 } ]
+  return rowsSummary
   
 }
+
+function buildSummaryPerDivisionColumns (questions){
+  let columnSummary = []
+
+  columnSummary.push( {
+    name: 'serviceArea',
+    align: 'left',
+    label: 'Service Area/Rating',
+    field: 'servicearea',
+    sortable: true
+  })
+  for (let j =0; j < questions.length ; j++){
+    // remove subheaders in columns filter
+    if(questions[j].question_type.id != 5){
+    let column = {
+      name: '',
+      align: 'left',
+      label: '',
+      field: '',
+      sortable: true
+    }
+    // dynamic here for the question
+    // console.log("helloooo", listOfTsr.value[0].questionsWithAnswer[j])
+
+    // change this code
+    column.name = questions[j].description
+    column.label = questions[j].description
+    column.field = questions[j].id
+    if(questions[j].question_type.id == 2){
+      columnSummary.push(column)
+      }
+    }
+  }
+  return columnSummary
+  
+}
+
+export const summaryPerDivisionRows = (questions,div,answers) => {
+  return buildSummaryPerDivisionRows(questions,div,answers)
+}
+
+export const summaryPerDivisionColumns = (questions) => {
+  return buildSummaryPerDivisionColumns(questions)
+}
+
 export const overAllColumns = (div) => {
     return buildOverallPerfColumns(div)
 }

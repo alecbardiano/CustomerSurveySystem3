@@ -59,7 +59,7 @@ const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,m
       let before = moment(beforeDate).format('YYYY-MM-DD');
       let after = moment(afterDate).format('YYYY-MM-DD');
       if (mode == 2){
-        return api.get('/tsrs?&_limit=-1&created_at_gte='+today+'-01-01'+'&created_at_lte='+today+'-12-31&_sort=created_at:DESC')
+        return api.get('/tsrs?&_limit=-1&created_at_gte='+today+'-01-01'+'&created_at_lte='+today+'-12-31&_sort=division,section,created_at:DESC')
       .then(function( response ){
           // console.log(response.data.results)
           // console.log("from axios")
@@ -69,7 +69,7 @@ const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,m
       }
       else if (mode == 3){
         if(beforeDate && afterDate){
-          return api.get('/tsrs?&_limit=-1&created_at_gt='+before+'&created_at_lt='+after+'&_sort=created_at:DESC&division='+division+'&service='+service)
+          return api.get('/tsrs?&_limit=-1&created_at_gt='+before+'&created_at_lt='+after+'&division='+division+'&service='+service +'&_sort=division,section,created_at:DESC')
           .then(function( response ){
               // console.log(response.data.results)
               // console.log("from axios")
@@ -78,7 +78,7 @@ const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,m
           })
 
         }else{
-          return api.get('/tsrs?&_limit=-1&created_at_gte='+today+'-01-01'+'&created_at_lte='+today+'-12-31&_sort=created_at:DESC&division='+division+'&service='+service)
+          return api.get('/tsrs?&_limit=-1&created_at_gte='+today+'-01-01'+'&created_at_lte='+today+'-12-31'+division+'&service='+service+'&_sort=division,section,created_at:DESC&division=')
           .then(function( response ){
               // console.log(response.data.results)
               // console.log("from axios")
@@ -88,7 +88,7 @@ const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,m
         }
       }else{
         if( beforeDate && afterDate){
-          return api.get('/tsrs?_limit=-1&created_at_gt='+before+'&created_at_lt='+after+'&_sort=created_at:DESC')
+          return api.get('/tsrs?_limit=-1&created_at_gt='+before+'&created_at_lt='+after+'&_sort=division:ASC,section:ASC')
         .then(function( response ){
             // console.log(response.data.results)
             // console.log("from axios")
@@ -97,7 +97,7 @@ const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,m
             return response.data;
         })
         }else{
-        return api.get('/tsrs?_start='+start+'&_limit='+limit+'&created_at_gt='+today+'-01-01'+'&created_at_lt='+today+'-12-31&_sort=created_at:DESC')
+        return api.get('/tsrs?_start='+start+'&_limit='+limit+'&created_at_gt='+today+'-01-01'+'&created_at_lt='+today+'-12-31&_sort=division:ASC,section:ASC')
         .then(function( response ){
             // console.log(response.data.results)
             // console.log("from axios")
@@ -108,7 +108,7 @@ const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,m
     }
   }
 
-const getAllAnswers = function (start,limit) {
+const getAllAnswers = function () {
     //   loading.value = true;
     //   error.value = null;
       // I prefer to use fetch
@@ -116,7 +116,7 @@ const getAllAnswers = function (start,limit) {
       // console.log("apiiiii")
       // console.log(api.get('/questions'))
       // ?_start=10&_limit=10
-        return api.get('/answers?_start='+start+'&_limit='+limit)
+        return api.get('/answers?_limit=-1')
         .then(function( response ){
             // console.log(response.data.results)
             // console.log("from axios")
@@ -667,8 +667,8 @@ export const getQuestions = () => {
   return getAllQuestions()
 }
 
-export const getAnswers = (start,limit) => {
-  return getAllAnswers(start,limit)
+export const getAnswers = () => {
+  return getAllAnswers()
 }
 
 // mode still to change if mode is 2 get all tsr data

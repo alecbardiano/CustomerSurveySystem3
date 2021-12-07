@@ -1,29 +1,33 @@
 <template>
-
-    <div v-if="question_type == 1">
-        <q-input outlined  v-model="inputViewModel" :label="labelval" style="width: 500px" stack-label />
-    </div>
-    <!-- required overall question rating -->
-    <div v-else-if="props.questionId == 12">
-      <q-rating
-            v-model="inputViewModel"
-            size="3.0em"
-            icon="star_border"
-            color="primary"
-            :max="5"
-             lazy-rules :rules="[val => val == '' || 'Field is required']"
-            inline /> 
-    </div>
-
-    <div v-else-if="question_type == 2">
-      
+    <div class ="row inline">
+      <div v-if="question_type == 1">
+          <q-input outlined  v-model="inputViewModel" :label="labelval" style="width: 500px" stack-label />
+      </div>
+      <!-- required overall question rating -->
+      <div v-else-if="props.questionId == 12">
         <q-rating
-            v-model="inputViewModel"
-            size="3.0em"
-            icon="star_border"
-            color="primary"
-            :max="5"
-            inline /> 
+              v-model="inputViewModel"
+              size="3.0em"
+              icon="star_border"
+              color="primary"
+              :max="5"
+              lazy-rules :rules="[val => val == '' || 'Field is required']"
+              inline /> 
+      </div>
+
+      <div v-else-if="question_type == 2">
+        
+          <q-rating
+              v-model="inputViewModel"
+              size="3.0em"
+              icon="star_border"
+              color="primary"
+              :max="5"
+              inline /> 
+      </div>
+      <div>
+        <q-input outlined  v-model="inputViewModel" :label="labelval" style="width: 100px" stack-label />
+      </div>
     </div>
     <!-- <div v-else-if="question_type == 4">
         <q-select clearable v-model="inputViewModel" :options="optionval" :label="labelval" lazy-rules :rules="[val => !!val || 'Field is required']" />
