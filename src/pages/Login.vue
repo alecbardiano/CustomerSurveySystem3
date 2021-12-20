@@ -137,9 +137,21 @@ export default defineComponent({
     if(getterAuth.value == "success"){
         console.log("getterAuth",getterAuth.value)
         router.push({name: 'Dashboard'})
-      }else{
-        alert("failed")
-      }
+    }else if(getterAuth.value == "usernotaccess"){
+      $q.notify({
+        color: 'red-5',
+        textColor: 'white',
+        icon: 'warning',
+        message: 'user does not have access to CSMS system'
+      })
+    }else{
+      $q.notify({
+        color: 'red-5',
+        textColor: 'white',
+        icon: 'warning',
+        message: 'username and password does not match'
+      })
+    }
     }
 
     

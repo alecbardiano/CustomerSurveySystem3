@@ -68,6 +68,7 @@
                     <div class="row inline">
                       <div class="inputs">
                         <div v-if="question.id == 12">
+                          {{question}}
                           <CustomSurveyField v-model="subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index]" :questionId="questionSubhead.id" lazy-rules :rules="[val => val == '' || 'Field is required']"  :question_type="questionSubhead.question_type.id" :optionval="industryOptions" :labelval="questionSubhead.label" />
                         </div>
                         <!-- indexing in nested v-model of surveyanswer -->
@@ -75,9 +76,11 @@
                         <CustomSurveyField v-model="subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index]" :questionId="questionSubhead.id"  :question_type="questionSubhead.question_type.id" :optionval="industryOptions" :labelval="questionSubhead.label" />
                       </div>
                       <div>
-                        {{subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index]}}
-                        <q-input v-if="subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index].value < 3 && subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index].value != ''" v-model="subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index].remarks" outlined label="Remarks:" lazy-rules
-        :rules="[val => !!val || 'Field is required']" />
+                        <!-- {{subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index]}} -->
+                        <q-input v-if="subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index].value < 3 && subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index].value != ''" v-model="subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index].remarks" outlined label="Remarks:" 
+                        style="width: 300px" stack-label lazy-rules :rules="[val => !!val || 'Field is required']" />
+                        <!-- <q-input v-if="subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index].value < 3 && subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index].value != ''" v-model="subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index].remarks" outlined label="Remarks:" 
+                        /> -->
                       </div>
                     </div>
                 </div>
@@ -140,7 +143,7 @@
 import { useQuasar } from 'quasar'
 import { defineComponent, computed, ref, reactive, onMounted, onBeforeMount,watch } from 'vue';
 import CustomSurveyField from '../components/CustomSurveyField.vue'
-import { getQuestions, postAnswers, checkTSRsOtherAPI, checkTSRsUlimsAPI } from 'src/axioshelper.js'
+import { getQuestions, postAnswers, checkTSRsOtherAPI, checkTSRsUlimsAPI, checkTSRIfExists } from 'src/axioshelper.js'
 
 import viewsurveyanswer from '../components/modals/ViewSurveyAnswer.vue'
 
@@ -332,13 +335,17 @@ export default defineComponent({
         // if subHeaderSurveyAnswer.answeers[i]. que
       }
     }
-    function submitSurvey(){
+
+    async function submitSurvey(){
       console.log("submitted")
       
 
       // remove answers without associated question (mainly subheader type question)
       // surveyAnswer.answers = surveyAnswer.answers.filter(item => item.question !== "")
       // subHeaderSurveyAnswer.answers = surveyAnswer.answers.filter(item => item.question !== "")
+      // if allow true, there is exist in system
+      
+      
       console.log("hello post submit")
       console.log("COLSLDLSDLSDL", cols.value)
       console.log(surveyAnswer.answers)
@@ -349,8 +356,17 @@ export default defineComponent({
       if(!(sectionData.value)){
         sectionData.value = ""
       }
+      console.log(subHeaderSurveyAnswer.answers)
       // post answers and children/subheader answers
-      postAnswers(surveyAnswer.answers,subHeaderSurveyAnswer.answers,TsrNo.value,industryData.value,serviceData.value,divData.value)
+      let a = await postAnswers(surveyAnswer.answers,subHeaderSurveyAnswer.answers,TsrNo.value,industryData.value,serviceData.value,divData.value)
+      if (a == '403'){
+        $q.notify({
+          color: 'red-5',
+            textColor: 'white',
+            icon: 'warning',
+            message: 'TSR already answered'
+          })
+      }
       // postAnswers(,TsrNo.value)
       
 
@@ -390,27 +406,28 @@ export default defineComponent({
 
     // validation
     
-    function onSubmit () {
+    async function onSubmit () {
       surveyRefForm.value.validate().then(success => {
         // check null values from api
         if ( divData.value != "" && serviceData.value != ""){
+ 
           if (success){
-          submitSurvey()
-          $q.notify({
-            color: 'green-4',
-            textColor: 'white',
-            icon: 'cloud_done',
-            message: 'Submitted'
-          })
-        }else{
-          $q.notify({
-          color: 'red-5',
-            textColor: 'white',
-            icon: 'warning',
-            message: 'Please check all the fields'
-          })
-        }
-        
+            submitSurvey()
+            $q.notify({
+              color: 'green-4',
+              textColor: 'white',
+              icon: 'cloud_done',
+              message: 'Submitted'
+            })
+          }
+          else{
+            $q.notify({
+              color: 'red-5',
+              textColor: 'white',
+              icon: 'warning',
+              message: 'Please check all the fields'
+            })
+          }
       }else{
         $q.notify({
           color: 'red-5',

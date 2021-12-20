@@ -11,14 +11,17 @@ const routes = [
       { name: 'Admin', path: 'Admin', component: () => import('pages/Admin.vue'), meta: {
         requiresAuth: true
       }},
-      { name: 'AdminDivision',  path: 'AdminDivision', component: () => import('pages/AdminDivision.vue'), meta: {
+      { name: 'AdminDivision',  path: 'AdminDivision', component: () => import('pages/AdminDivision.vue'), 
+      meta: {
         requiresAuth: true
       } },
       { name: 'Survey', path: 'Survey', component: () => import('pages/Survey.vue') },
-      { name: 'Question', path: 'Question', component: () => import('pages/QuestionsPage.vue'), meta: {
+      { name: 'Question', path: 'Question', component: () => import('pages/QuestionsPage.vue'), 
+      meta: {
         requiresAuth: true
       }},
-      { name: 'Home', path: 'Home', component: () => import('pages/Home.vue'),meta: {
+      { name: 'Home', path: 'Home', component: () => import('pages/Home.vue'),
+      meta: {
         requiresAuth: true
       } },
       

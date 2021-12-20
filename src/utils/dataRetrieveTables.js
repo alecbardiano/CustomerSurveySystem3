@@ -1,6 +1,7 @@
 import { getTSRs, allOverAllRatingsFromApi, getOverall} from 'src/axioshelper.js'
 import groupBy from 'lodash'
 import moment from 'moment';
+import orderBy from 'lodash.orderby';
 
 function filterMyArr (myArr, condition) {
     return myArr.map(element => element[condition])
@@ -179,12 +180,15 @@ function buildNumberOfCustomersRows (divisionsAndSections, tsrList){
   // console.log("from data retrieve", divisionsAndSections)
   let rowsnumberOfCustomers = []
   // tsrList.value
+
+    tsrList = orderBy(tsrList,'created_at', 'desc')
       // Number of customers Row generation
       let totalRespondentsPerMonth = 0
       // group by months
       var result = _(tsrList)
       .groupBy(v => moment(v.created_at).format('MMMM'))
       .value();
+
 
         console.log("Res", result)
         for (var key in result) {
@@ -240,7 +244,7 @@ function buildNumberOfCustomersRows (divisionsAndSections, tsrList){
       return rowsnumberOfCustomers
 }
 
-async function buildSummaryPerDivisionRows (questions,divisionsAndSections,allTsrs){
+function buildSummaryPerDivisionRows (questions,divisionsAndSections,allTsrs){
   let rowsSummary = []
   
   let dataDivision = []

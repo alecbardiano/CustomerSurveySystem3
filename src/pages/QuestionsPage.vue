@@ -45,7 +45,8 @@
      <template v-slot:body-cell-action="props">
         <q-td :props="props">
           <q-btn dense round flat color="grey" @click="editQuestion(props)" icon="edit"></q-btn>
-          <!-- <q-btn dense round flat color="grey" @click="deleteQuestion(props)" icon="delete"></q-btn> -->
+          <!-- questions are added dynamically therefore can be deleted, questions that are stable 14 -->
+          <q-btn dense round flat color="grey" v-if="props.key > 14" @click="deleteQuestion(props)" icon="delete"></q-btn>
         </q-td>          
       </template>
     </q-table>
@@ -147,6 +148,9 @@
             <q-card-section class="row items-center">
               <span>Are you sure you want to delete this question?</span>
             </q-card-section>
+            <q-card-section class="row items-center">
+              <p style="font-size: 18px; color: red">Question: {{deleteQuestionDescription}} with the ID {{toDelete}}</p>
+            </q-card-section>
 
             <q-card-actions align="right">
               <q-btn flat label="Cancel" color="primary" v-close-popup />
@@ -216,6 +220,7 @@ export default defineComponent({
     
     //delete
     const toDelete = ref(null)
+    const deleteQuestionDescription = ref(null)
     
     //update
     const isPartOfSubheader = ref(false)
@@ -315,6 +320,7 @@ export default defineComponent({
       // confirmDelete(params.row.id)
       confirm.value = true
       toDelete.value = params.row.id
+      deleteQuestionDescription.value = params.row.description
     }
     // delete question
     function confirmDelete(){
@@ -356,23 +362,24 @@ export default defineComponent({
           question.question_type.description = questionType.value.description
           question.label = questionLabel.value
           if (isPartOfSubheader.value){
-            console.log("if", question)
+          //   console.log("if", question)
             // partOfSubheader.value.subheader.push(question)
             // question.subheader = partOfSubheader.value
-            delete question.question_type.description; 
-            delete question.question_type.id; 
+          //   delete question.question_type.description; 
+          //   delete question.question_type.id; 
             question.parent = partOfSubheader.value
-            question.question_type = questionType.value.id
-            console.log("eyeyey", partOfSubheader.value)
-            console.log("kweskwes", question)
-            postQuestionSubheader(partOfSubheader.value.id,question)
-            addQuestionModal.value = false
-            onRequest({
-              pagination: pagination.value,
-              filter: undefined
-            })
-            // call for post to a question push array
-          }else{
+          //   question.question_type = questionType.value.id
+          //   console.log("eyeyey", partOfSubheader.value)
+          //   console.log("kweskwes", question)
+          //   postQuestionSubheader(partOfSubheader.value.id,question)
+          //   addQuestionModal.value = false
+          //   onRequest({
+          //     pagination: pagination.value,
+          //     filter: undefined
+          //   })
+          //   // call for post to a question push array
+          }
+          // else{
             // call
             console.log("else", question)
             postQuestion(question)
@@ -381,7 +388,7 @@ export default defineComponent({
               pagination: pagination.value,
               filter: undefined
             })
-          }
+          // }
           
 
         }else{
@@ -548,9 +555,10 @@ export default defineComponent({
       partOfSubheader,
       includedQuestions,
       // delete
-      confirm,
+      confirm, // modal
       confirmDelete,
       toDelete,
+      deleteQuestionDescription, 
       //update modal
       updateQuestionModal,
       updateDescription,

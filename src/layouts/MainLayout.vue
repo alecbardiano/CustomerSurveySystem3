@@ -12,8 +12,10 @@
 
      
     </q-header>
+   
 
-    <q-drawer  class="bg-whitetext-black" show-if-above v-model="leftDrawerOpen" side="left" :width="200" :breakpoint="500" bordered v-if="loginStatus">
+
+    <q-drawer  class="bg-whitetext-black" show-if-above v-model="leftDrawerOpen" side="left" :width="200" :breakpoint="500" bordered v-if="loginStatus != 'failed' && userLoggedin ">
        <q-scroll-area class="fit">
         <q-list padding>
           <q-item clickable exact to="/Home" class="text-black" label="Home">
@@ -98,6 +100,7 @@
             </q-item-section>
           </q-item>
         </q-list>
+        
       </q-scroll-area>
     </q-drawer>
 
@@ -110,7 +113,6 @@
 
 <script>
 import { ref, onMounted, computed} from 'vue'
-import { api} from 'boot/axios'
 import { useRouter } from 'vue-router';
 import {  useStore } from "vuex";
 
@@ -125,18 +127,10 @@ export default {
     
     const loginStatus = computed(() => store.getters["auth/getLoginApiStatus"]);
 
-    async function setterAuth (payload) {
-        
-    }
 
 
     async function logout(){
       await store.dispatch('auth/logout')
-      localStorage.removeItem("jwt")
-      localStorage.removeItem("isAuthenticated");
-      localStorage.removeItem("user")
-      localStorage.removeItem("userProfile");
-      api.defaults.headers.common['Authorization'] = ''
       router.push({name: 'Login'})
       
     }

@@ -1,13 +1,17 @@
 export default function () {
   return {
     //
-    loginApiStatus: localStorage.getItem("isLoggedIn") || "" ,
-    userProfile:{
+    loginApiStatus: "" ,
+    userProfile: {
       id: 0,
       name: "",
       username: "",
       role: "",
-      email: ""
+      email: "",
+      confirmed: false,
+      blocked: false,
+      displayName: "",
+      
     },
     
   }

@@ -15,6 +15,7 @@
     "chart.js": "^3.5.1",
     "core-js": "^3.6.5",
     "dotenv": "^10.0.0",
+    "file-saver": "^2.0.5",
     "jwt-client": "^0.2.1",
     "lodash.orderby": "^4.6.0",
     "pdfmake": "^0.2.2",

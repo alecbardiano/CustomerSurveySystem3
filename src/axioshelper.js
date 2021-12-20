@@ -3,7 +3,6 @@ import moment from 'moment';
 import {groupBy, flow, chain} from 'lodash';
 
 
-
 let today = new Date();
 let datetime = today
 today = moment().year()
@@ -55,16 +54,36 @@ const getAllQuestions = function () {
 
   }
 
-
+  const checkTSRExist = function (tsr) {
+    //   loading.value = true;
+    //   error.value = null;
+      // I prefer to use fetch
+      // you can use use axios as an alternative
+      // console.log("apiiiii")
+      // console.log(api.get('/questions'))
+        return api.get('/tsrs?tsrNo='+ tsr)
+        .then(function( response ){
+            // console.log(response.data.results)
+            // return response.data;
+            if ( response.data.length > 0 ){
+              return true
+            }else{
+              return false
+            }
+        })
+  
+    }
 
 const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,mode) {
   // mode 3 admin division
   // mode 2 dashboard
   // mode 1 admin
+      console.log("beforeDate",beforeDate, "afterdate", afterDate)
       let before = moment(beforeDate).format('YYYY-MM-DD');
       let after = moment(afterDate).format('YYYY-MM-DD');
+      console.log("Before", before, "after", after)
       if (mode == 2){
-        return api.get('/tsrs?&_limit=-1&created_at_gte='+today+'-01-01'+'&created_at_lte='+today+'-12-31&_sort=division,section,created_at:DESC')
+        return api.get('/tsrs?&_limit=-1&created_at_gte='+today+'-01-01'+'&created_at_lte='+today+'-12-31&_sort=division,service,created_at:DESC')
       .then(function( response ){
           // console.log(response.data.results)
           // console.log("from axios")
@@ -74,7 +93,7 @@ const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,m
       }
       else if (mode == 3){
         if(beforeDate && afterDate){
-          return api.get('/tsrs?&_limit=-1&created_at_gt='+before+'&created_at_lt='+after+'&division='+division+'&service='+service +'&_sort=division,section,created_at:DESC')
+          return api.get('/tsrs?&_limit=-1&created_at_gt='+before+'&created_at_lt='+after+'&division='+division+'&service='+service +'&_sort=division,service,created_at:DESC')
           .then(function( response ){
               // console.log(response.data.results)
               // console.log("from axios")
@@ -83,7 +102,7 @@ const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,m
           })
 
         }else{
-          return api.get('/tsrs?&_limit=-1&created_at_gte='+today+'-01-01'+'&created_at_lte='+today+'-12-31'+division+'&service='+service+'&_sort=division,section,created_at:DESC&division=')
+          return api.get('/tsrs?&_limit=-1&created_at_gte='+today+'-01-01'+'&created_at_lte='+today+'-12-31'+division+'&service='+service+'&_sort=division,service,created_at:DESC&division=')
           .then(function( response ){
               // console.log(response.data.results)
               // console.log("from axios")
@@ -93,7 +112,7 @@ const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,m
         }
       }else{
         if( beforeDate && afterDate){
-          return api.get('/tsrs?_limit=-1&created_at_gt='+before+'&created_at_lt='+after+'&_sort=division:ASC,section:ASC')
+          return api.get('/tsrs?_start='+start+'&_limit='+limit+'&created_at_gt='+before+'&created_at_lt='+after+'&_sort=division:ASC,service:ASC')
         .then(function( response ){
             // console.log(response.data.results)
             // console.log("from axios")
@@ -102,7 +121,7 @@ const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,m
             return response.data;
         })
         }else{
-        return api.get('/tsrs?_start='+start+'&_limit='+limit+'&created_at_gt='+today+'-01-01'+'&created_at_lt='+today+'-12-31&_sort=division:ASC,section:ASC')
+        return api.get('/tsrs?_start='+start+'&_limit='+limit+'&created_at_gt='+today+'-01-01'+'&created_at_lt='+today+'-12-31&_sort=division:ASC,service:ASC')
         .then(function( response ){
             // console.log(response.data.results)
             // console.log("from axios")
@@ -378,9 +397,28 @@ try {
   }
   let tsrId
   await api.post("/tsrs", tsr)
-  .then(response => 
+  
+  .then(response => { 
     tsrId = response.data.id
-  )
+  })
+  .catch(function (error) {
+    console.log(error.response.status);
+    if (error.response) {
+      // Request made and server responded
+      
+      console.log(error.response.data);
+      console.log(error.response.status);
+      console.log(error.response.headers);
+      return error.response.status
+      
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.log(error.request);
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      console.log('Error', error.message);
+    }
+  })
   for (const answer of answers) {
     console.log("tsrsrsts", tsrId)
     // console.log("from axioss sssssdsd23232", answer)
@@ -442,20 +480,6 @@ const postQuestionToBackendExistingSubheader = async function(id,question) {
   question.id = postid
   console.log("ques", question)
   console.log("sub", task)
-  await api.post("/questions/" + id, function(request,response){
-    {
-      task
-    }
-  })
-  .then(res => {
-    console.log("campmates")
-    console.log(res);
-  // console.log(res.data);
-  })
-  .catch(error => {
-    this.errorMessage = error.message;
-    console.error("There was an error!", error);
-  });
 }
 
 const editQuestion = async function(id,question) {
@@ -682,6 +706,13 @@ export const getAnswers = () => {
 export const getTSRs = (start,limit,division,service,beforeDate,afterDate,mode) => {
   return getAllTSRs(start,limit,division,service,beforeDate,afterDate,mode)
 }
+
+export const checkTSRIfExists = (tsr) => {
+  return checkTSRExist(tsr)
+}
+
+
+
 export const getQuestionTypes = () => {
   return getAllQuestionTypes()
 }

@@ -28,7 +28,8 @@ const api = axios.create(
   })
 const oneshopapi = axios.create({ baseURL: 'http://10.10.120.32:3030/' })
 const ulimsTSRapi = axios.create({baseURL: 'http://10.10.120.5/ulims/lab/request'})
-
+const mailapi = axios.create({baseURL: 'http://10.10.120.15:3232/'}) // send notifications
+ 
  
 
 // export default ({  Vue }) => {
@@ -58,7 +59,14 @@ export default boot(({ app, router, store, }) => {
   // ^ ^ ^ this will allow you to use this.$axios (for Vue Options API form)
   //       so you won't necessarily have to import axios in each vue file
 
+  app.config.globalProperties.$xlsx = xlsx
+  
+  app.config.globalProperties.$oneshopapi = oneshopapi
+
+  app.config.globalProperties.$ulimsTSRapi = ulimsTSRapi
+
   app.config.globalProperties.$api = api
+  app.config.globalProperties.$mailapi = mailapi
 
   // api.interceptors.response.use( (response) => {
   //   // Return a successful response back to the calling service
@@ -131,12 +139,7 @@ export default boot(({ app, router, store, }) => {
   //   return Promise.reject(error)
   // })
 
-  app.config.globalProperties.$xlsx = xlsx
   
-  app.config.globalProperties.$oneshopapi = oneshopapi
-
-  app.config.globalProperties.$ulimsTSRapi = ulimsTSRapi
-
 
   
 
@@ -145,4 +148,4 @@ export default boot(({ app, router, store, }) => {
   //       so you can easily perform requests against your app's API
 })
 
-export { api,oneshopapi, ulimsTSRapi, xlsx, pdfMake,pdfFonts }
+export { api,oneshopapi,mailapi, ulimsTSRapi, xlsx, pdfMake,pdfFonts }

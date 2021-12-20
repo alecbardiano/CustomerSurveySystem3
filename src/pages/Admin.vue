@@ -1,8 +1,8 @@
 <template>
       <div class="q-pa-lg" >
-        <div class="row">
-              <div class="col-md-4" >
+        
                 <q-form ref="dateform">
+                  <div class="row inline">
                   <q-input outlined filled mask="date" v-model="beforeDate" lazy-rules :rules="[val => val <= afterDate || 'Field should be earlier than after date']" placeholder="mm/dd/yy" hint="Start Date" >
                     <template v-slot:append>
                       <q-icon name="event" class="cursor-pointer">
@@ -17,7 +17,7 @@
                     </template>
                   </q-input> 
                   <!-- :rules="[val => !!val || 'Field is required', val => !isNaN(val) || 'Field should be a number']" -->
-                  <q-input outlined filled mask="date" v-model="afterDate" lazy-rules :rules="[val => val >= beforeDate || 'Field should be later than before date']"   placeholder="mm/dd/yy" hint="End Date" >
+                  <q-input outlined filled mask="date" style="padding-left: 25px" v-model="afterDate" lazy-rules :rules="[val => val >= beforeDate || 'Field should be later than before date']"   placeholder="mm/dd/yy" hint="End Date" >
                     <template v-slot:append>
                       <q-icon name="event" class="cursor-pointer">
                         <q-popup-proxy ref="qDateProxy" transition-show="scale" transition-hide="scale">
@@ -30,16 +30,21 @@
                       </q-icon>
                     </template>
                   </q-input>
-                </q-form>
-              </div>
-              <div class=".col-md-4 .offset-md-4"  >
-                <div class="row inline">
-                  
-                  
+
+                  <q-btn
+                    type="submit"
+                    label="Go"
+                    color="primary"
+                    style="margin-left: 25px; width: 150px; height: 55px;"
+                    @click="onRequest({
+                      pagination: pagination,
+                      filter: undefined
+                    })"
+                />
                 </div>
-              </div>
-          </div>
     
+                </q-form>
+  
         <div class="row">
           <div class="col-md-4">
             <div class="row inline">
@@ -70,7 +75,7 @@
               label="Generate Raw Data"
               class="q-mt-md"
               color="primary"
-              @click="exportTable(rows)"
+              @click="generateExcel()"
           />
            <q-btn
               type="submit"
@@ -98,7 +103,7 @@
     <q-table
       class="overallAverage"
       v-if="rows"
-      title="Survey Results"
+      title="Customer Satisfaction Measurement"
       :rows="rows"
       :columns="cols"
       row-key="name"
@@ -110,6 +115,7 @@
       binary-state-sort
       separator="cell"
     >
+   
     <template v-slot:top-right>
       <q-input class="placeholderClass" borderless dense debounce="300" v-model="filter" placeholder="Search">
         <template v-slot:append>
@@ -217,7 +223,7 @@
 </template>
 <script>
 import { reactive, defineComponent, ref, onMounted, computed , watch} from 'vue'
-import { getQuestions, getTSRs,postAnswers, tsrViaDivision, getOverall,deleteAll,totalTsrsCount, getDivList, getAnswers} from 'src/axioshelper.js'
+import { getQuestions, getTSRs,postAnswers , getOverall,deleteAll,totalTsrsCount, getDivList} from 'src/axioshelper.js'
 import { overAllColumns, overAllRows,numberOfCustomersColumnsData,numberOfCustomersRowsData, summaryPerDivisionRows, summaryPerDivisionColumns  } from 'src/utils/dataRetrieveTables.js'
 import { exportFile, useQuasar} from 'quasar'
 import { xlsx, pdfMake } from 'boot/axios'
@@ -232,6 +238,7 @@ import parDocDefinition from '../utils/pdflayout'
 //components
 import viewsurveyanswer from '../components/modals/ViewSurveyAnswer.vue'
 import CardDashboardFeedbackCountVue from 'src/components/CardDashboardFeedbackCount.vue';
+import { isArray } from 'pdfmake/build/pdfmake'
 
 
 
@@ -250,6 +257,7 @@ export default defineComponent({
   setup () {
 
   const divisioAndSectionList = ref([])
+  const divisions = ref([])
 
   const $q = useQuasar()
 
@@ -290,9 +298,6 @@ export default defineComponent({
     rowsPerPage: 10,
     rowsNumber: 5
   })
-  const startDataFromApi = ref(1)
-  const endDataFromApi = ref(100)
-
   // pdf
   
 
@@ -301,14 +306,13 @@ export default defineComponent({
     dateform.value.validate().then(success => {
       // filterTable(newValue,1)
       if (success) { 
-          onRequest({
-          pagination: pagination.value,
-          filter: undefined
-        })
+          
       }
     })
     
   })
+
+  
   
   
 
@@ -377,6 +381,45 @@ export default defineComponent({
   // function deleteAnswers (){
   //   deleteAll()
   // }
+
+  function buildRow(rowdatafromapi){
+    let rowData = []
+
+    rowdatafromapi.map(function(item){
+      // console.log("itemssss", item)
+      let row = {
+        tsrNo: item.tsrNo,
+        publishedDate:dateTime(item.published_at),
+        division: item.division,
+        industry: item.industry,
+        service: item.service,
+        section: item.section
+      }
+      let result = item.answers.map(a => a.question);
+      // result = result.filter(function (el) {
+      //   return el != null;
+      // });
+
+      // console.log("Result", result)
+        for (let i=0 ; i < result.length; i++){
+          if(item.answers[i].question != ""){
+            
+            row[item.answers[i].question] = item.answers[i].value;
+          }
+        }
+        // console.log("rororororw", row)'
+        // console.log("rororo", row)
+        // delete person.age;
+        rowData.push(row)
+      
+    })
+    // let keysObject = Object.keys(averageColumns.value)
+
+      // load overall
+     console.log("rowdata",rowData)
+    
+    return rowData
+  }
   function buildTable(){
     let rowData = []
     if(cols.value.length == 0){
@@ -555,6 +598,10 @@ export default defineComponent({
     return moment(value).format('YYYY/MM/DD');
   }
 
+  function dateTimeMonth(value) {
+    return moment(value).format('MMMM');
+  }
+
 
 
    function fileUpload(file) {
@@ -568,7 +615,7 @@ export default defineComponent({
    }
 
     function buildTableBody(data, columns, mode,divisionsAndSections) {
-
+      console.log("modedede", mode)
       console.log("colssss",columns)
       console.log("data", data)
         // survey results ALL with extra header
@@ -678,10 +725,8 @@ export default defineComponent({
 
         // data
         copyData.forEach(function(row) {
-            // if(row.null){
-            //   delete row.null
-            // }
             var dataRow = [];
+            console.log("rowditoboy", row)
             // let merged = {...row, ...columns};
             copyColumns.forEach(function(column) {
                 if(row[column.field]){
@@ -810,15 +855,15 @@ export default defineComponent({
         });
       body.push(["Total Summary of Citizen/Client Satisfaction Survey CCSS Rating ","","","","","","","","",""])
       // body.push(["Total Summary of Citizen/Client Satisfaction Survey CCSS Rating ","","","","","","","","",""])
-      body.push(["No. and % of customers who rated the Center's service as very satisfactory or better",Math.round(totalprevVerySatis),((totalprevVerySatis/totalPrevRespond)* 100).toString() + '%',"","","","","","",""])
-      body.push(["No. and % of customers who rated the Center's service as satisfactory or better",Math.round(totalprevSatis),((totalprevSatis/totalPrevRespond)* 100).toString() + '%',"","","","","","",""])
-      body.push(["No. and % of customers who rated the service as Fair or Poor",Math.round(totalprevPoor),((totalprevPoor/totalPrevRespond)* 100).toString() + '%',"","","","","","",""])
+      body.push(["No. and % of customers who rated the Center's service as very satisfactory or better",Math.round(totalprevVerySatis),((totalprevVerySatis/totalPrevRespond)* 100).toFixed(2).toString() + '%',"","","","","","",""])
+      body.push(["No. and % of customers who rated the Center's service as satisfactory or better",Math.round(totalprevSatis),((totalprevSatis/totalPrevRespond)* 100).toFixed(2).toString() + '%',"","","","","","",""])
+      body.push(["No. and % of customers who rated the service as Fair or Poor",Math.round(totalprevPoor),((totalprevPoor/totalPrevRespond)* 100).toFixed(2).toString() + '%',"","","","","","",""])
       // body.push(["No. and % of customers who didn't have an Overall Answer: ",totalprevPoor,"","","","","","","",""])
       body.push(["Total No. of Respondents : ",totalPrevRespond,"","","","","","","",""])
         
       }
       else if(mode == 6){
-         let copyColumns = columns.map(a => a);
+          let copyColumns = columns.map(a => a);
           let mainArrayColumn = columns.map((a => a.label));
           body.push(mainArrayColumn);
           // console.log("copyColumns",copyColumns)
@@ -838,8 +883,7 @@ export default defineComponent({
               //   delete row.null
               // }
               if (row.service && row.division){
-                 if((prevDivision != row.division) || index == 0){
-                  
+                 if(prevDivision != row.division || index == 0){
                   body.push(
                       [
                       {
@@ -900,11 +944,7 @@ export default defineComponent({
                         border: [false, true, true, false]
                       }
                     ])
-                  // set previous to present row 
-                  
-                }
-                if(prevService != row.service){
-                  body.push(
+                    body.push(
                     [
                     {
                       text : "Service: ",
@@ -964,6 +1004,11 @@ export default defineComponent({
                       border: [false, true, true, false]
                     }
                   ])
+                    index +=2
+                  // set previous to present row 
+                }
+                 else if(prevService != row.service){
+                   
                 }
               }
               prevDivision = row.division
@@ -998,17 +1043,19 @@ export default defineComponent({
     }
 
  
-  async function buildOverall(){
+  async function buildOverall(alltsrs){
+    console.log("buildoverall",alltsrs)
     // build tables inside PDF
     colsOverallPerformance.value = overAllColumns(divisioAndSectionList.value)
+    console.log("colsOverallPerformance",colsOverallPerformance)
     rowsOverallPerformance.value = await overAllRows(divisioAndSectionList.value)
 
     // Number of Customers and CSM Respondents Per Service Area
     numberOfCustomersColumns.value = numberOfCustomersColumnsData(divisioAndSectionList.value)
-    numberOfCustomersRows.value = numberOfCustomersRowsData(divisioAndSectionList.value,tsrList.value)
+    numberOfCustomersRows.value = numberOfCustomersRowsData(divisioAndSectionList.value,alltsrs)
     
     summaryQuestionPerDivisionCols.value = summaryPerDivisionColumns(orderByPositionQuestions.value)
-    summaryQuestionPerDivisionRows.value = await summaryPerDivisionRows(orderByPositionQuestions.value,divisioAndSectionList.value,tsrList.value)
+    summaryQuestionPerDivisionRows.value =  summaryPerDivisionRows(orderByPositionQuestions.value,divisioAndSectionList.value,alltsrs)
     
 
     console.log("summaryQuestionPerDivisionRows,",summaryQuestionPerDivisionRows.value)
@@ -1016,15 +1063,15 @@ export default defineComponent({
   }
     
   async function generatePDF(){
-
-    buildOverall()
-    
+    let alltsrs
     if (beforeDate.value && afterDate.value){
-      let alltsrs = await getTSRsFromApi(0,totalTsrsCount.value,"","",beforeDate.value,afterDate.value,1)
+      alltsrs = await getTSRsFromApi(0,totalTsrsCount.value,"","",beforeDate.value,afterDate.value,1)
     }else{
-      let alltsrs = await getTSRsFromApi(0,totalTsrsCount.value,"","",today+'01-01',today+'12-31',1)
+      alltsrs = await getTSRsFromApi(0,totalTsrsCount.value,"","",today+'01-01',today+'12-31',1)
     }
-  
+    await buildOverall(alltsrs)
+    
+    let rowalltsrs = buildRow(alltsrs)
     // for overall column table Overall Agency Citizen/ Client Satisfaction Score' deconstruct to get only field and label
     let overallCol = colsOverall.value.map(({ field, label }) => ({field, label}));
     // all survey  Customer Satisfaction Measurement
@@ -1035,6 +1082,9 @@ export default defineComponent({
      let rateColsTableValue = allSurveyCol.filter(function(x) {
        return x.field != 4
      })
+
+     let beforeMonth = (beforeDate.value) ? dateTimeMonth(beforeDate.value ) : "January"
+     let afterMonth =  (afterDate.value) ? dateTimeMonth(afterDate.value ) : dateTimeMonth(Date.now())
      // pdf generated
      var dd = {
         pageSize: 'LEGAL',
@@ -1056,12 +1106,13 @@ export default defineComponent({
         },
        content: [
           {text: 'Overall Agency Citizen/ Client Satisfaction Score', style: 'tableHeader'},
+          {text: beforeMonth + ' - ' + afterMonth , style: 'tableHeader'},
           {
             table:{
               headerRows:1,
-              body: buildTableBody(rowsOverall.value, overallCol,6,divisioAndSectionList.value)
+              body: buildTableBody(rowsOverall.value, overallCol,2,divisioAndSectionList.value)
               },
-              style:"table"
+              style:"tableOverallAgency"
           },
           { 
              text: 'Customer Satisfaction Measurement', 
@@ -1074,7 +1125,7 @@ export default defineComponent({
               headerRows:1,
               // widths:[5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],
               // widths: [50, 40, 40,40, 35,35, 35,35, 35,35, 35,35, 35,35, 35],
-              body: buildTableBody(rowsTable.value, rateColsTableValue,6,divisioAndSectionList.value)
+              body: buildTableBody(rowalltsrs, rateColsTableValue,6,divisioAndSectionList.value)
               },
             style:"table"
           },
@@ -1142,6 +1193,10 @@ export default defineComponent({
           table:{
             "fontSize":10,
             "alignment": "center"
+          },
+          tableOverallAgency:{
+            "fontSize":16,
+            "alignment": "center"
           }
         },
        }
@@ -1169,31 +1224,113 @@ export default defineComponent({
 
     return `"${formatted}"`
   }
-  function exportTable (data) {
-        // naive encoding to csv format
-        const content = [cols.value.map(col => wrapCsvValue(col.label))].concat(
-          data.map(row => cols.value.map(col => wrapCsvValue(
-            typeof col.field === 'function'
-              ? col.field(row)
-              : row[ col.field === void 0 ? col.name : col.field ],
-            col.format
-          )).join(','))
-        ).join('\r\n')
-
-        // change this name to quarterly
-        const status = exportFile(
-          'table-export.csv',
-          content,
-          'text/csv'
-        )
-
-        if (status !== true) {
-          $q.notify({
-            message: 'Browser denied file download...',
-            color: 'negative',
-            icon: 'warning'
-          })
+  async function generateExcel (data) {
+        let alltsrs
+        let dateFirstRow
+        if (beforeDate.value && afterDate.value){
+          alltsrs = await getTSRsFromApi(0,totalTsrsCount.value,"","",beforeDate.value,afterDate.value,1)
+           dateFirstRow = moment(beforeDate.value).format('MMMM') + ' - '   + moment(afterDate.value).format('MMMM')
+        }else{
+          alltsrs = await getTSRsFromApi(0,totalTsrsCount.value,"","",today+'01-01',today+'12-31',1)
+           dateFirstRow = 'January' + ' - ' + moment(Date.now()).format('MMMM')
         }
+
+        await buildOverall(alltsrs)
+        let rowalltsrs = buildRow(alltsrs)
+    // for overall column table Overall Agency Citizen/ Client Satisfaction Score' deconstruct to get only field and label
+        let overallCol = colsOverall.value.map(({ field, label }) => ({field, label}));
+        // all survey  Customer Satisfaction Measurement
+        let allSurveyCol = cols.value.map(({ field, label }) => ({field, label}));
+        // column for overall performance Overall Performance of the Center Based on CSS Responses
+        let overallPerformanceCols = colsOverallPerformance.value.map(({ field, label }) => ({field, label}));
+
+        let rateColsTableValue = allSurveyCol.filter(function(x) {
+          return x.field != 4
+        })
+
+        console.log("rowsOverallPerformancerowsOverallPerformance", rowsOverallPerformance.value)
+
+        // body: buildTableBody(rowsOverall.value, overallCol,2,divisioAndSectionList.value)
+        // body: buildTableBody(rowalltsrs, rateColsTableValue,6,divisioAndSectionList.value)
+        // body: buildTableBody(rowsOverallPerformance.value, overallPerformanceCols,3,divisioAndSectionList.value)
+        // body: buildTableBody(numberOfCustomersRows.value, numberOfCustomersColumns.value,4,divisioAndSectionList.value)
+        // body: buildTableBody(summaryQuestionPerDivisionRows.value, summaryQuestionPerDivisionCols.value,5,divisioAndSectionList.value)
+        // add dates to first array
+        
+        
+        /* make the worksheet */
+        // Worksheets
+        var rowsOverallWS = xlsx.utils.json_to_sheet(buildTableBody(rowsOverall.value, overallCol,2,divisioAndSectionList.value));
+        
+        let a = buildTableBody(rowalltsrs, rateColsTableValue,6,divisioAndSectionList.value)
+        // format to be able to export to xlsx all survey results
+        let d = a.map(function(obj) {
+          if(Array.isArray(obj)) {
+            console.log("ararar", obj)
+            if(obj[0] && !(obj[0].hasOwnProperty('text'))){
+              return obj
+            }else{
+              return obj.map(o => o.text)
+            }
+          }
+          return obj
+        })
+        var rowalltsrsWS = xlsx.utils.json_to_sheet(d)
+
+        // need formatting on tables with colspan ( number of customers and overall performance)
+        let a1 = buildTableBody(rowsOverallPerformance.value, overallPerformanceCols,3,divisioAndSectionList.value)
+        let d1 = a1.map(function(obj) {
+          console.log("objobjoverall", obj)
+          if(Array.isArray(obj)) {
+            for(let i =0 ; i < obj.length ; i++){
+              if(obj[i] && (obj[i].hasOwnProperty('colSpan'))){
+                let colspan = parseInt(obj[i]['colSpan'])
+                let text = obj[i]['text']
+                for (let j = 0; j < colspan ; j++){
+                  obj[i+j] =  text
+                }
+              }
+            }
+          }
+          return obj
+        })
+        // work sheet
+        var rowsOverallPerformanceWS = xlsx.utils.json_to_sheet(d1);
+        
+        let a2 = buildTableBody(numberOfCustomersRows.value, numberOfCustomersColumns.value,4,divisioAndSectionList.value)
+        let d2 = a2.map(function(obj) {
+          if(Array.isArray(obj)) {
+            for(let i =0 ; i < obj.length ; i++){
+              if(obj[i] && (obj[i].hasOwnProperty('colSpan'))){
+                let colspan = parseInt(obj[i]['colSpan'])
+                let text = obj[i]['text']
+                for (let j = 0; j < colspan ; j++){
+                  obj[i+j] =  text
+                }
+              }
+            }
+          }
+          return obj
+        })
+        // work sheet
+        var numberOfCustomersRowsWS = xlsx.utils.json_to_sheet(d2);
+        var summaryQuestionPerDivisionRowsWS = xlsx.utils.json_to_sheet(buildTableBody(summaryQuestionPerDivisionRows.value, summaryQuestionPerDivisionCols.value,5,divisioAndSectionList.value));
+
+        // create workbook
+        var Workbook = xlsx.utils.book_new();
+        
+ 
+        /* add to workbook */
+        xlsx.utils.book_append_sheet(Workbook, rowsOverallWS, "Overall Agency Citizen Score");
+        xlsx.utils.book_append_sheet(Workbook, rowalltsrsWS, "Customer Satisfaction Measure");
+        xlsx.utils.book_append_sheet(Workbook, rowsOverallPerformanceWS, "Overall Performance CSS");
+        xlsx.utils.book_append_sheet(Workbook, numberOfCustomersRowsWS, "Number of Customers Per Service");
+        xlsx.utils.book_append_sheet(Workbook, summaryQuestionPerDivisionRowsWS, "Summary of Citizen CCSS Rating");
+
+
+        /* generate an XLSX file */
+        xlsx.writeFile(Workbook, dateFirstRow.toString() +" CSMS Raw Data .xlsx");
+        
       }
     
 
@@ -1201,13 +1338,14 @@ export default defineComponent({
     console.log("mounted")
     // first to be called
     try {
+        
         questions.value = await getQuestions() // check
     }catch{
       
     }
     
     divisioAndSectionList.value = await getDivList()
-    let divisions = Object.keys(divisioAndSectionList.value)
+    divisions.value = Object.keys(divisioAndSectionList.value)
     console.log("ddsdds", divisions)
 
     
@@ -1215,7 +1353,7 @@ export default defineComponent({
         pagination: pagination.value,
         filter: undefined
       })
-    await loadDivisionDataOverall(divisions)
+    
     
   })
 
@@ -1336,10 +1474,14 @@ export default defineComponent({
     }
 
   async function fetchFromServer (startRow, count, filter, sortBy, descending) {
+        console.log("startrow fetch", startRow,count)
         if (beforeDate.value && afterDate.value){
           tsrList.value= await getTSRsFromApi(startRow,count,"","",beforeDate.value,afterDate.value,1)
-        }else{
+          console.log("tsrList.value before true and after true ", tsrList.value )
+        }
+        else{
           tsrList.value = await getTSRsFromApi(startRow,count,"","",today+'01-01',today+'12-31',1)
+          console.log("tsrList.value after ", tsrList.value )
         }
         
       rowsTable.value =  buildTable()
@@ -1349,12 +1491,8 @@ export default defineComponent({
         ? rowsTable.value.filter(row => 
         row.tsrNo.includes(filter))
         : rowsTable.value.slice()
-      if(beforeDate.value && afterDate.value){
-        // console.log("pasok ba?")
-        data = data.filter(row => filterDateBet(row,beforeDate.value,afterDate.value))
-        pagination.value.rowsNumber = data.length
-      }
-
+      // { "sortBy": "desc", "descending": false, "page": 1, "rowsPerPage": 10, "rowsNumber": 876 }
+      // { "sortBy": "desc", "descending": false, "page": 1, "rowsPerPage": 10, "rowsNumber": 873 }
       // handle sortBy
       if (sortBy) {
         const sortFn = sortBy === 'desc'
@@ -1369,12 +1507,15 @@ export default defineComponent({
         data.sort(sortFn)
       }
       console.log("data hoy hoy", data)
-      // last page not equal to rows per page
-      if(data.length <= startRow + count){
-        return data
-      }
-
-      return data.slice(startRow, startRow + count)
+      // last page not equal to rows per page 
+      console.log("Startrowcount", startRow, count)
+      // if(data.length < pagination.value.rowsPerPage){
+      //   return data
+      // }else{  
+        
+      // }
+      return data
+      
     }
     async function averageLastTable (cols,rows){
       let x = cols.map(a => a.field);
@@ -1454,8 +1595,6 @@ export default defineComponent({
         pagination.value.rowsNumber = totalTsrsCount.value
         // console.log("pagination.value.rowsNumber ",pagination.value.rowsNumber )
 
-        let fetchCount
-
         // get all rows if "All" (0) is selected
         
         
@@ -1463,17 +1602,12 @@ export default defineComponent({
         // calculate starting row of data
         const startRow = (page - 1) * rowsPerPage
 
-        if (page == 0){
-          fetchCount = rowsPerPage === 0 ? pagination.value.rowsNumber : rowsPerPage
-        }else{
-          fetchCount = rowsPerPage === 0 ? pagination.value.rowsNumber : rowsPerPage + startRow
-        }
-
+        const fetchCount = rowsPerPage === 0 ? totalTsrsCount.value : rowsPerPage
         
-
-        console.log("rowsTable.valuerowsTable.value,",rowsTable.value)
+        
+        const returnedData = await fetchFromServer(startRow, fetchCount, filter, sortBy, descending) 
         // fetch data from "server"
-        const returnedData = await fetchFromServer(startRow, fetchCount, filter, sortBy, descending)
+        
         // should there any filter
         if (filter){
           pagination.value.rowsNumber = returnedData.length
@@ -1482,7 +1616,7 @@ export default defineComponent({
         divisionList.value = [...new Set(tsrList.value.map(item => item.division))].filter(function(val) { return val !== null; });
        
         // console.log("rettt", returnedData)
-        // returnedData.push(startRow)
+        // returnedData.push(startRow)d
 
         // clear out existing data and add new
         rows.value.splice(0, rows.value.length, ...returnedData)
@@ -1491,6 +1625,7 @@ export default defineComponent({
 
         // don't forget to update local pagination object
         pagination.value.page = page
+        console.log(rowsPerPage)
         pagination.value.rowsPerPage = rowsPerPage
         pagination.value.sortBy = sortBy
         pagination.value.descending = descending
@@ -1498,6 +1633,8 @@ export default defineComponent({
         // ...and turn of loading indicator
         loading.value = false
       }, 500)
+
+      await loadDivisionDataOverall(divisions.value)
   }
 
 
@@ -1510,7 +1647,7 @@ export default defineComponent({
       listOfTsr,
       cols,
       // file related functions
-      exportTable,
+      generateExcel,
       generatePDF,
       beforeDate,
       afterDate,
