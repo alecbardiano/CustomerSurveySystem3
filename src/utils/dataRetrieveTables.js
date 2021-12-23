@@ -122,30 +122,28 @@ async function buildOverallPerfRows (divisionsAndSections){
         }
       }
 
-      // row add percentage field
-      // console.log("mansCounts", mainCounts)
-      
       let totalPercentRow = 0
+      // total rows per service
       rowsOverallPerformance.forEach(row => {
         let res = (parseFloat(mainCounts[row.id])/ totalAnswerOverall.length * 100)
         row['percentage'] = res.toFixed(2).toString() + '%'
+        // increment total of percentage
         totalPercentRow +=res
       });
-      // console.log("yayeyey", rowsOverallPerformance)
-      let tempObj = {}
-      tempObj['value'] = parseFloat(totalPercentRow).toFixed(2).toString() + '%'
-      totalPerField.push(tempObj)
+
+      rowsOverallPerformance[4]['percentage'] = parseFloat(totalPercentRow).toFixed(2).toString() + '%'
+    
 
        for (var key in divisionsAndSections) {
           for (const element of divisionsAndSections[key]) {
           let service = element.toString().concat(key.toString())
           let a = rowsOverallPerformance.map(a => a[service]);
           let sum = a.reduce((a, b) => parseFloat(a) + parseFloat(b), 0)
-          tempObj['value'] = sum.toFixed(2).toString() + '%'
-          totalPerField.push(tempObj)
+          // rows
+          rowsOverallPerformance[4][service] = sum.toFixed(2).toString() + '%'
         }
       }
-      rowsOverallPerformance.push(totalPerField)
+      // rowsOverallPerformance.push(totalPerField)
 
       return rowsOverallPerformance
 }
@@ -181,12 +179,12 @@ function buildNumberOfCustomersRows (divisionsAndSections, tsrList){
   let rowsnumberOfCustomers = []
   // tsrList.value
 
-    tsrList = orderBy(tsrList,'created_at', 'desc')
+    tsrList = orderBy(tsrList,'submittedAt', 'desc')
       // Number of customers Row generation
       let totalRespondentsPerMonth = 0
       // group by months
       var result = _(tsrList)
-      .groupBy(v => moment(v.created_at).format('MMMM'))
+      .groupBy(v => moment(v.submittedAt).format('MMMM'))
       .value();
 
 
@@ -211,7 +209,7 @@ function buildNumberOfCustomersRows (divisionsAndSections, tsrList){
                   }
                   
                   })
-                  row[stringColField] = sample.length
+                  row[stringColField] = sample.length ? sample.length : 0
                   totalPerMonth += sample.length
                 }
               }
@@ -224,19 +222,24 @@ function buildNumberOfCustomersRows (divisionsAndSections, tsrList){
         }
         
         // total per service
+        let arrTotal = {}
+        let totalOfTotals = 0
         for (var key2 in divisionsAndSections) {
            for (const element of divisionsAndSections[key2]) {
            let stringColField = element.toString().concat(key2.toString())
            let sample = filterMyArr(rowsnumberOfCustomers, stringColField)
           //  console.log("Samp", sample)
            let sum = sample.reduce((a, b) => a + b, 0)
-           let arrTotal = {}
+           
+           arrTotal[stringColField] = sum
            // total vertical per service
-           arrTotal["value"] = sum
+           arrTotal["month"] = "Total Actual Respondents"
+           totalOfTotals += sum
           //  totalActualRespondents.push(arrTotal)
           }
         }
-
+        arrTotal['total'] = totalOfTotals
+        rowsnumberOfCustomers.push(arrTotal)
         // total actual respondents
       // let tot = {}
       // tot["value"] = totalRespondentsPerMonth

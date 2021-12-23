@@ -35,12 +35,16 @@
                     type="submit"
                     label="Go"
                     color="primary"
-                    style="margin-left: 25px; width: 150px; height: 55px;"
+                    style="margin-left: 25px; width: 70px; height: 25px;"
                     @click="onRequest({
                       pagination: pagination,
                       filter: undefined
                     })"
                 />
+
+                <!-- <div class="q-pa-md">
+                  <q-btn color="teal" @click="showLoading" label="Show Loading" />
+                </div> -->
                 </div>
     
                 </q-form>
@@ -218,11 +222,26 @@
     <viewsurveyanswer v-model="tsrData" :cols="cols"></viewsurveyanswer>
   </q-dialog>
 
+  <q-dialog v-model="uploadDialog" >
+      <q-card>
+        <q-card-section class="bg-primary text-white" >
+          <div class="text-h6">File Error</div>
+        </q-card-section>
+
+        <q-card-section>
+          Please double check excel file uploaded
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="OK" color="primary" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
 
 
 </template>
 <script>
-import { reactive, defineComponent, ref, onMounted, computed , watch} from 'vue'
+import { reactive, defineComponent, ref, onMounted, computed , watch,onBeforeUnmount} from 'vue'
 import { getQuestions, getTSRs,postAnswers , getOverall,deleteAll,totalTsrsCount, getDivList} from 'src/axioshelper.js'
 import { overAllColumns, overAllRows,numberOfCustomersColumnsData,numberOfCustomersRowsData, summaryPerDivisionRows, summaryPerDivisionColumns  } from 'src/utils/dataRetrieveTables.js'
 import { exportFile, useQuasar} from 'quasar'
@@ -255,6 +274,7 @@ export default defineComponent({
   components: { viewsurveyanswer },
   
   setup () {
+  let timer
 
   const divisioAndSectionList = ref([])
   const divisions = ref([])
@@ -271,7 +291,10 @@ export default defineComponent({
   const beforeDate = ref('')
   const afterDate = ref('')
   const dateform = ref(null)
+
   const prompt = ref(false)
+  const uploadDialog = ref(false)
+
   let today = new Date();
   today = moment().year()
 
@@ -378,9 +401,9 @@ export default defineComponent({
     
   // }
   
-  // function deleteAnswers (){
-  //   deleteAll()
-  // }
+  function deleteAnswers (){
+    deleteAll()
+  }
 
   function buildRow(rowdatafromapi){
     let rowData = []
@@ -389,16 +412,16 @@ export default defineComponent({
       // console.log("itemssss", item)
       let row = {
         tsrNo: item.tsrNo,
-        publishedDate:dateTime(item.published_at),
+        publishedDate:dateTime(item.submittedAt),
         division: item.division,
         industry: item.industry,
         service: item.service,
         section: item.section
       }
       let result = item.answers.map(a => a.question);
-      // result = result.filter(function (el) {
-      //   return el != null;
-      // });
+      result = result.filter(function (el) {
+        return el != null;
+      });
 
       // console.log("Result", result)
         for (let i=0 ; i < result.length; i++){
@@ -420,13 +443,13 @@ export default defineComponent({
     
     return rowData
   }
-  function buildTable(){
+  function buildTable(filter){
     let rowData = []
     if(cols.value.length == 0){
       cols.value.push({ name: 'tsrNo', align: 'left', label: 'TSR Number', field: 'tsrNo', sortable: true })
-      cols.value.push({ name: 'division', align: 'left', label: 'Division', field: 'division', sortable: true })
-      cols.value.push({ name: 'service', align: 'left ', label: 'Service', field: 'service', sortable: true })
-      cols.value.push({ name: 'industry', align: 'left', label: 'Industry', field: 'industry', sortable: true })
+      cols.value.push({ name: 'division', align: 'left', label: 'Division', field: 'division' })
+      cols.value.push({ name: 'service', align: 'left ', label: 'Service', field: 'service'})
+      cols.value.push({ name: 'industry', align: 'left', label: 'Industry', field: 'industry' })
       
       // var uniqueKeys = Object.keys(answers.value.reduce(function(result, obj) {
       //   return Object.assign(result, obj);
@@ -453,7 +476,6 @@ export default defineComponent({
           align: 'left',
           label: '',
           field: '',
-          sortable: true
         }
         // dynamic here for the question
         // console.log("helloooo", listOfTsr.value[0].questionsWithAnswer[j])
@@ -468,7 +490,9 @@ export default defineComponent({
         // console.log("cooooolss", cols.value)
       }
         
-      cols.value.push({ name: 'publishedDate',align: 'left', label: 'Date', field: 'publishedDate', sortable: true })
+      cols.value.push({ name: 'publishedDate',align: 'left', label: 'Submitted Date', field: 'submittedAt'
+      // , sortable: true 
+      })
     }
     
     // console.log("completed cols", cols.value)
@@ -479,7 +503,7 @@ export default defineComponent({
       // console.log("itemssss", item)
       let row = {
         tsrNo: item.tsrNo,
-        publishedDate:dateTime(item.published_at),
+        submittedAt:dateTimeMonth(item.submittedAt),
         division: item.division,
         industry: item.industry,
         service: item.service,
@@ -517,12 +541,12 @@ export default defineComponent({
     if(colsOverall.value.length > 0){
       colsOverall.value = []
     }
-    colsOverall.value.push({ name: 'Dimension' ,align: 'left', label: 'Dimension', field: 'dimension' , sortable: true, style:"width: 300px" })
+    colsOverall.value.push({ name: 'Dimension' ,align: 'left', label: 'Dimension', field: 'dimension' , style:"width: 300px" })
   
     let dataDivision = []
     // console.log("hellodivlistload divisin data", rowsOverall.value)
     // console.log("hellodivlistload divisin data", divlist)
-    colsOverall.value.push({ name: 'Score' ,align: 'left', label: 'Score All in Service', field: 'scoreservice' , sortable: true ,  style:"width: 300px"})
+    colsOverall.value.push({ name: 'Score' ,align: 'left', label: 'Score All in Service', field: 'scoreservice' , style:"width: 300px"})
     for(let i =0; i<divlist.length; i++){
       colsOverall.value.push({name: divlist[i] ,align: 'left', label: divlist[i], field: divlist[i] , sortable: true })
       for (let j=0; j<rowsOverall.value.length; j++){
@@ -602,17 +626,55 @@ export default defineComponent({
     return moment(value).format('MMMM');
   }
 
+  onBeforeUnmount(() => {
+    if (timer !== void 0) {
+      clearTimeout(timer)
+      $q.loading.hide()
+    }
+  })
 
-
-   function fileUpload(file) {
-     uploadMigrationData(file)
-     onRequest({
-        pagination: pagination.value,
-        filter: undefined
-      })
+  function fileUpload(file) {
+    if(importFile.value){
+      
+      console.log("Filelele", file.name)
+      // filename should be csms-year.xlsx any format as long as the space will be '-' and the last word will be the year in numbers 'example xxx-xx-xxx-x-2021.xlsx or any' 
+      let x = file.name.split('-')
+      if(x){
+        // .xlsx
+        let dot = x[x.length-1].split('.')
+        console.log("dot", dot)
+        if(dot){
+          // test same tsr number and tsr number on database and import
+          showLoading()
+          uploadMigrationData(file,dot[0])().then((quote) => {
+            timer = void 0
+            $q.loading.hide()
+          }).catch((error) => {
+            uploadDialog.value = true
+          });
+        }
+      }
+    }else{
+      $q.notify({
+        color: 'red-5',
+          textColor: 'white',
+          icon: 'warning',
+          message: 'File field Empty'
+        })
+    }
+    
+    
+      
      console.log("pasok")
     
    }
+   function showLoading () {
+        $q.loading.show({
+          message: 'Please wait for data to be imported..',
+          boxClass: 'bg-grey-2 text-grey-9',
+          spinnerColor: 'primary'
+        })
+      }
 
     function buildTableBody(data, columns, mode,divisionsAndSections) {
       console.log("modedede", mode)
@@ -734,7 +796,7 @@ export default defineComponent({
                     dataRow.push(row[column.field]);
                   }
                 }else{
-                  dataRow.push({text: ""});
+                  dataRow.push({text: '0'});
                 }
             })
             body.push(dataRow);
@@ -1008,7 +1070,66 @@ export default defineComponent({
                   // set previous to present row 
                 }
                  else if(prevService != row.service){
-                   
+                   body.push(
+                    [
+                    {
+                      text : "Service: ",
+                      border: [true, true, false, false]
+                    },
+                    {
+                      text : row.service,
+                      colSpan: 3,
+                      border: [false, true, false, false]
+                    },
+                    {
+                      text : "",
+                      border: [false, true, false, false]
+                    },
+                    {
+                      text : "",
+                      border: [false, true, false, false]
+                    },
+                    {
+                      text : "",
+                      border: [false, true, false, false]
+                    },
+                    {
+                      text : "",
+                      border: [false, true, false, false]
+                    },
+                    {
+                      text : "",
+                      border: [false, true, false, false]
+                    },
+                    {
+                      text : "",
+                      border: [false, true, false, false]
+                    },
+                    {
+                      text : "",
+                      border: [false, true, false, false]
+                    },
+                    {
+                      text : "",
+                      border: [false, true, false, false]
+                    },
+                    {
+                      text : "",
+                      border: [false, true, false, false]
+                    },
+                    {
+                      text : "",
+                      border: [false, true, false, false]
+                    },
+                    {
+                      text : "",
+                      border: [false, true, false, false]
+                    },
+                    {
+                      text : "",
+                      border: [false, true, true, false]
+                    }
+                  ])
                 }
               }
               prevDivision = row.division
@@ -1090,6 +1211,56 @@ export default defineComponent({
         pageSize: 'LEGAL',
         pageOrientation: 'landscape',
         pageMargins: [40, 60, 40, 40],
+        header: {
+          
+          stack: [
+            //   {
+            //     canvas: [
+            //         {
+            //             type: 'rect',
+            //             x: 0,
+            //             y: 0,
+            //             w: 850, // landscape
+            //             h: 120,
+            //             color: '#0067B9'
+            //         }
+            //     ]
+            // },
+            // {
+            //     image: 'data:image/jpeg;base64,/../assets/logo.png',
+            //     width: 100,
+            //     margin: [0, -120, 0, 0] // -120 is your rect height
+            // },
+            {
+              text: 'METALS INDUSTRY RESEARCH AND DEVELOPMENT CENTER',
+              style: 'header',
+              fontSize: 11
+            },
+            {
+              text: 'CUSTOMER SURVEY MANAGEMENT REPORT',
+              style: 'header',
+              fontSize: 13
+            },
+            {
+              text: 'TECHNICAL AND SCIENTIFIC EQUIPMENT',
+              style: 'header',
+              fontSize: 13,
+            },
+            {
+              text: 'As of 31 December 2020',
+              style: 'header',
+              fontSize: 11,
+            },
+            {
+              text:
+                'FOR WHICH ROBERT O DIZON, EXECUTIVE DIRECTOR, IS ACCOUNTABLE, HAVING ASSUMED SUCH ACCOUNTABILITY ON JANUARY 2016',
+              style: 'header',
+              bold: false,
+              fontSize: 11
+            }
+          ],
+          margin: [34, 28.91, 34, 21.54]
+        },
         footer: function (currentPage, pageCount) {
           return {
             table: {
@@ -1371,12 +1542,13 @@ export default defineComponent({
     }
   }
 
-  async function uploadMigrationData (file) {
+  async function uploadMigrationData (file,year) {
       // this.$refs.uploadMigrationButton.click()
       // console.log("fefefe2", uploadRefButton.value)
       // console.log("fefefe", file)
       // let file = uploadRefButton.value.files[0]
       // console.log('File', file)
+      let duplicatesFound = 0;
 
       var reader = new FileReader()
       loading.value = true
@@ -1385,72 +1557,111 @@ export default defineComponent({
         /* skip the first 4 rows */
         // var range = XLSX.utils.decode_range(data['!ref']);
         // range.s.r = 3; // <-- zero-indexed, so setting to 1 will skip row 0
-        // data['!ref'] = XLSX.utils.encode_range(range); 
-        const rowsMigrate = xlsx.utils.sheet_to_json(xlsx.read(data, { type: 'binary', cellDates: true }).Sheets['Details of CSF forms'])
-        // console.log('rowsMigrate', rowsMigrate)
-        let finalArrObj = []
-         rowsMigrate.forEach(r => {
-         
-            // Object { foo: "bar", x: 42 }
-          const obj = {
-              division: r.Division,
-              service: r.Service,
-              industry: r.Sector,
-              tsrNo: r.TSRNo,
-              Month: r.Month
-            }
-          let answers = []
-          for (var key in r) {
-              if (r.hasOwnProperty(key)) {
-                  // console.log(key + " -> " + r[key]);
-                  key = key.split(",");
-                  // console.log(key[0])
-                  let tsr = r.TSRNo
-                  if(key[1]){
-                    const answer = {
-                      answerid: "",
-                      value: r[key].toString(),
-                      question: key[1].toString(),
-                      tsrNo: tsr
-                    }
-                    answers.push(answer)
-                  }
-              }
-          }
-          obj["answers"] = answers
-          finalArrObj.push(obj)
-          // let division = rowMig.Division
-          // let service = rowMig.Service
-          // let industry = rowMig.Sector
-          // let TsrNo = rowMig.TSRNo
-        })
-        
-        
-
-        console.log('validData', finalArrObj)
-
-        for (const arrayItem of finalArrObj) {
-          let answers = []
-          await postAnswers(answers,arrayItem.answers,arrayItem.tsrNo,arrayItem.industry,arrayItem.service,arrayItem.division)
-          // await this.responsesSrvc.create(data2)
-        }
-
-        // finalArrObj.forEach(async function (arrayItem) {
-        //   // let answers = []
-        //   console.log("deta1wewew", arrayItem)
+        // data['!ref'] = XLSX.utils.encode_range(range);
+          const rowsMigrate = xlsx.utils.sheet_to_json(xlsx.read(data, { type: 'binary', cellDates: true }).Sheets['Details of CSF forms'])
+          // console.log('rowsMigrate', rowsMigrate)
+          let finalArrObj = []
           
-        //   let answers = []
-        //   await postAnswers(answers,arrayItem.answers,arrayItem.tsrNo,arrayItem.industry,arrayItem.service,arrayItem.division)
-        //   // await this.responsesSrvc.create(data2)
-        // })
+          rowsMigrate.forEach(r => {
+          
+              // Object { foo: "bar", x: 42 }
+            console.log("rmonth",r)
+            let dateyear = r.Month.toString() + ' ' + year.toString()
+            let datesubmit = new Date(dateyear)
+            console.log("datesubmit", dateyear)
+            const obj = {
+                division: r.Division,
+                service: r.Service,
+                industry: r.Sector,
+                tsrNo: r.TSRNo,
+                submittedAt: datesubmit
+              }
+            console.log("eto gfrom import", obj)
+            let answers = []
+            for (var key in r) {
+                if (r.hasOwnProperty(key)) {
+                    // console.log(key + " -> " + r[key]);
+                    key = key.split(",");
+                    // console.log(key[0])
+                    let tsr = r.TSRNo
+                    if(key[1]){
+                      const answer = {
+                        answerid: "",
+                        value: r[key].toString(),
+                        question: key[1].toString(),
+                        tsrNo: tsr
+                      }
+                      answers.push(answer)
+                    }
+                }
+            }
+            obj["answers"] = answers
+            finalArrObj.push(obj)
+            // let division = rowMig.Division
+            // let service = rowMig.Service
+            // let industry = rowMig.Sector
+            // let TsrNo = rowMig.TSRNo
+          })
 
-        loading.value = false
+          const uniqueValues = new Set(finalArrObj.map(v => v.tsrNo));
 
-        $q.notify({
-          message: 'Responses Migrated',
-          position: 'bottom-right',
-          color: 'positive'
-        })
+          if (uniqueValues.size < finalArrObj.length) {
+            // duplicates found true if 1; 0 if none
+            duplicatesFound = 1
+          }
+          
+          
+
+          console.log('validData', finalArrObj)
+          // false
+          let success = true;
+          if(duplicatesFound == 0){
+            for (const arrayItem of finalArrObj) {
+              let answers = []
+              let a = await postAnswers(answers,arrayItem.answers,arrayItem.tsrNo,arrayItem.industry,arrayItem.service,arrayItem.division,arrayItem.submittedAt)
+              console.log("aaaa",a)
+              if (a != '200'){
+                success = false
+                $q.notify({
+                  message: 'Responses Not Migrated, Error found: ',
+                  color: 'negative',
+                  icon: 'failed'
+                })
+                break
+              }
+                
+              // await this.responsesSrvc.create(data2)
+            }
+            if(success){
+                $q.notify({
+                message: 'Responses Migrated',
+                color: 'positive',
+                icon: 'success'
+              })
+            }
+            
+            
+          }else{
+            $q.notify({
+            color: 'red-5',
+              textColor: 'white',
+              icon: 'warning',
+              message: 'Duplicate TSR found in file'
+            })
+          }
+          
+
+          // after await
+          
+          
+          await onRequest({
+            pagination: pagination.value,
+            filter: undefined
+          })
+         
+        
+        
+        
       }
       reader.readAsBinaryString(file)
     }
@@ -1487,10 +1698,7 @@ export default defineComponent({
       rowsTable.value =  buildTable()
       console.log("sortBy,sortBy",sortBy)
       
-      let data = filter
-        ? rowsTable.value.filter(row => 
-        row.tsrNo.includes(filter))
-        : rowsTable.value.slice()
+      let data = filter ? rowsTable.value.filter(row => row.tsrNo.includes(filter)) : rowsTable.value.slice()
       // { "sortBy": "desc", "descending": false, "page": 1, "rowsPerPage": 10, "rowsNumber": 876 }
       // { "sortBy": "desc", "descending": false, "page": 1, "rowsPerPage": 10, "rowsNumber": 873 }
       // handle sortBy
@@ -1506,9 +1714,7 @@ export default defineComponent({
             )
         data.sort(sortFn)
       }
-      console.log("data hoy hoy", data)
       // last page not equal to rows per page 
-      console.log("Startrowcount", startRow, count)
       // if(data.length < pagination.value.rowsPerPage){
       //   return data
       // }else{  
@@ -1569,6 +1775,7 @@ export default defineComponent({
         totalTsrsCount.value  = await totalTsrsCount("","")
       }
       if(rowsOverall.value.length ==0){
+        
         for (let i=0; i<orderByPositionQuestions.value.length ; i++){
         let row = {
           dimension: orderByPositionQuestions.value[i].description,
@@ -1579,6 +1786,7 @@ export default defineComponent({
           }
         
        }
+       await loadDivisionDataOverall(divisions.value)
       }
       
       const { page, rowsPerPage, sortBy, descending } = props.pagination
@@ -1634,7 +1842,7 @@ export default defineComponent({
         loading.value = false
       }, 500)
 
-      await loadDivisionDataOverall(divisions.value)
+      
   }
 
 
@@ -1651,7 +1859,10 @@ export default defineComponent({
       generatePDF,
       beforeDate,
       afterDate,
+      // dialogs
       prompt,
+      uploadDialog,
+      //
       onRowClick,
       viewsurveyanswer,
       tsrData,
@@ -1670,7 +1881,10 @@ export default defineComponent({
       overAllAverage,
       //file upload
       importFile,
-      fileUpload
+      fileUpload,
+      //delete
+      // deleteAnswers,
+      showLoading
     }
   }
   

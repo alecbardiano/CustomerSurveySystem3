@@ -31,15 +31,22 @@ export default route(function ({ store }/* { store, ssrContext } */) {
 
   Router.beforeEach(async (to, from, next) => {
     let user = localStorage.getItem("user")
-    const userProfile = JSON.parse(user)
-    if(user){
-      console.log("pasok? may user")
-      await store.dispatch('auth/setUserStore', JSON.parse(user))
+    let userProfile
+    let isLoggedIn
+    if(user == '[object Object]'){
+      await store.dispatch('auth/logout')
+    }else{
+      userProfile = JSON.parse(user) ? JSON.parse(user) : ""
+      if(userProfile){
+        console.log("pasok? may user")
+        await store.dispatch('auth/setUserStore', JSON.parse(user))
+      }
+      isLoggedIn =  localStorage.getItem("isLoggedIn")
+      if(isLoggedIn){
+        await store.dispatch('auth/setLoggedIn',1)
+      }
     }
-    let isLoggedIn =  localStorage.getItem("isLoggedIn")
-    if(isLoggedIn){
-      await store.dispatch('auth/setLoggedIn',1)
-    }
+    
 
     
     
@@ -48,9 +55,10 @@ export default route(function ({ store }/* { store, ssrContext } */) {
       // this route requires auth, check if logged in
       // if not, redirect to login page.
       // let isLoggedInLocalStorage = localStorage.getItem("isAuthenticated")
-      let userProfile = store.getters["auth/getUserProfile"];
+      let getUser = store.getters["auth/getUserProfile"];
       console.log("userProfile",userProfile)
-      if (isLoggedIn != "success") {
+      if (isLoggedIn != "success" || !getUser || userProfile == "") {
+        await store.dispatch('auth/logout')
         next({ name: 'Login' })
       } else {
         userProfile = store.getters["auth/getUserProfile"];

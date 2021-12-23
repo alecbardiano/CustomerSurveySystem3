@@ -515,7 +515,7 @@ export default defineComponent({
         const newArray = await getQuestionTypes()
         console.log("newarray", newArray)
         //filter
-        const newArray2 = newArray.map(({published_at, created_at,updated_at, questions, ...item}) => item)
+        const newArray2 = newArray.map(({published_at, submittedAt,updated_at, questions, ...item}) => item)
         console.log("newarray222", newArray2)
         questionTypes.value = newArray2
         

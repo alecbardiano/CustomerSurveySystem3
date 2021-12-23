@@ -358,7 +358,7 @@ export default defineComponent({
       }
       console.log(subHeaderSurveyAnswer.answers)
       // post answers and children/subheader answers
-      let a = await postAnswers(surveyAnswer.answers,subHeaderSurveyAnswer.answers,TsrNo.value,industryData.value,serviceData.value,divData.value)
+      let a = await postAnswers(surveyAnswer.answers,subHeaderSurveyAnswer.answers,TsrNo.value,industryData.value,serviceData.value,divData.value,"")
       if (a == '403'){
         $q.notify({
           color: 'red-5',

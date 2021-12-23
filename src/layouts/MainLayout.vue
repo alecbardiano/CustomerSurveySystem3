@@ -4,7 +4,10 @@
     <q-header elevated class="text-white" height-hint="98">
       <q-toolbar>
          <q-btn  flat round icon="menu" @click="toggleLeftDrawer" /> 
-        <!-- <q-icon name="img: public/icons/mirdc_logo.png" inline /> -->
+        <q-avatar>
+          <img src="../assets/logo.png" inline>
+        </q-avatar>
+        <!-- <q-icon name="img: " inline /> -->
         <q-toolbar-title>
           Customer Survey Management System
         </q-toolbar-title>

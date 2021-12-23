@@ -2,7 +2,7 @@
   "name": "customersurveysystem3",
   "version": "0.0.1",
   "description": "A Quasar Framework app",
-  "productName": "Quasar App",
+  "productName": "Customer Survey Management System",
   "author": "Alec Bardiano",
   "private": true,
   "scripts": {

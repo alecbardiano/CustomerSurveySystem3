@@ -399,7 +399,7 @@
       // group by months
       console.log("tsrstsrstsrs", tsrs.value)
       var result = _(tsrs.value)
-      .groupBy(v => moment(v.created_at).format('MMMM'))
+      .groupBy(v => moment(v.submittedAt).format('MMMM'))
       .value();
 
         console.log("Res", result)

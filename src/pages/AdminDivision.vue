@@ -294,7 +294,7 @@ export default defineComponent({
           rowsOverall.value.forEach(function (arrayItem) {
             if(key == arrayItem.id){
               console.log("value", value)
-              value = (value/ dataDivision.length) * 100
+              value = (Math.round((value/ dataDivision.length) * 100)).toFixed(2)
               value = value.toString() + '%'
               arrayItem[orderByPositionQuestions.value[j].id] = value
             }
@@ -392,28 +392,28 @@ export default defineComponent({
         rowsTotal.value.push({
         area: "No. and % of customers who rated the Center's service as very satisfactory or better",
         number: noVerySatisfactoryTotal,
-        percentage: ((noVerySatisfactoryTotal.value/data.length) * 100).toString() + '%'
+        percentage: (Math.round((noVerySatisfactoryTotal.value/data.length) * 100)).toString() + '%'
         })
         rowsTotal.value.push({
           area: "No. and % of customers who rated the Center's service as satisfactory or better",
           number: noSatisfactoryTotal,
-          percentage: ((noSatisfactoryTotal.value/data.length) * 100).toString() + '%'
+          percentage: (Math.round((noSatisfactoryTotal.value/data.length) * 100)).toString() + '%'
         })
         rowsTotal.value.push({
           area: "No. and % of customers who rated the service as Fair or Poor",
           number: noPoorTotal,
-          percentage: ((noPoorTotal.value/data.length) * 100).toString() + '%'
+          percentage: (Math.round((noPoorTotal.value/data.length) * 100)).toString() + '%'
         })
         rowsTotal.value.push({
           area: "No. and % of customers who didn't have an Overall Answer",
           number: noRespondentsTotal,
-          percentage: ((noRespondentsTotal.value/data.length) * 100).toString() + '%'
+          percentage: (Math.round((noRespondentsTotal.value/data.length) * 100)).toString() + '%'
         })
       }else{
-        rowsTotal.value[0].percentage = ((noVerySatisfactoryTotal.value/data.length) * 100).toString() + '%'
-        rowsTotal.value[1].percentage = ((noSatisfactoryTotal.value/data.length) * 100).toString() + '%'
-        rowsTotal.value[2].percentage = ((noPoorTotal.value/data.length) * 100).toString() + '%'
-        rowsTotal.value[3].percentage = ((noRespondentsTotal.value/data.length) * 100).toString() + '%'
+        rowsTotal.value[0].percentage =  (Math.round((noVerySatisfactoryTotal.value/data.length) * 100)).toString() + '%'
+        rowsTotal.value[1].percentage = (Math.round((noSatisfactoryTotal.value/data.length) * 100)).toString() + '%'
+        rowsTotal.value[2].percentage = (Math.round((noPoorTotal.value/data.length) * 100)).toString() + '%'
+        rowsTotal.value[3].percentage = (Math.round((noRespondentsTotal.value/data.length) * 100)).toString() + '%'
       }
       
     }
