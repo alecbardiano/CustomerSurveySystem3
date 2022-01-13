@@ -35,7 +35,7 @@ function buildOverallPerfColumns (divisionsAndSections){
     return cols
 }
 
-async function buildOverallPerfRows (divisionsAndSections){
+function buildOverallPerfRows (divisionsAndSections, alltsrs){
     let rowsOverallPerformance = []
     
     rowsOverallPerformance.push({servicearea: "5 - Outstanding" , id: 5})
@@ -44,10 +44,36 @@ async function buildOverallPerfRows (divisionsAndSections){
     rowsOverallPerformance.push({servicearea: "2 - Fair & 1 - Poor", id: 2})
     rowsOverallPerformance.push({servicearea: "Total", id: 1})
     // let tsrs = await getTSRs()
-    let totalAnswerOverall = await allOverAllRatingsFromApi("","")
-      totalAnswerOverall = totalAnswerOverall.filter(function (el) {
-        return el.tsr != null;
-      });
+    // let totalAnswerOverall = await allOverAllRatingsFromApi("","")
+    //   totalAnswerOverall = totalAnswerOverall.filter(function (el) {
+    //     return el.tsr != null;
+    //   });
+    
+    let picked = alltsrs.map(({ answers, service, division }) => ({answers, service, division}));
+    // picked.filter(d => d.courses.every(c => courses.includes(c.id)));
+    // get overall
+   
+    let overallratings = picked.map(function(pi){
+       console.log("pi", pi)
+       let objectOver = {
+        tsr: {
+          service: pi.service,
+          division: pi.division
+        }
+       }
+       let answer = pi.answers.filter(function(v){
+          if( v.question == 12){
+            console.log("VVV", v.question)
+            return v
+          }
+        })
+        objectOver['answer'] = { 
+          ... answer[0]
+        }; 
+
+        return objectOver
+      })
+    // console.log("totalansweroverall", totalAnswerOverall)
     //   let totalNoResponse = totalTsrs.value - totalAnswerOverall.value.length
     let totalPerField = []
     let totalRespondentsPerMonth = 0
@@ -65,7 +91,7 @@ async function buildOverallPerfRows (divisionsAndSections){
         for (const element of divisionsAndSections[key]) {
           let stringColField = element.toString().concat(key.toString())
           // filter all data
-          let sample = totalAnswerOverall.filter((elementTSR) => {
+          let sample = overallratings.filter((elementTSR) => {
           if(elementTSR.tsr){
             if(elementTSR.tsr.division == key && elementTSR.tsr.service == element){
               return elementTSR
@@ -84,7 +110,7 @@ async function buildOverallPerfRows (divisionsAndSections){
         // console.log("x", x+=sample.length)
         // console.log("sample", sample.length)
         for (const element of sample) {
-          let num = element.value
+          let num = element.answer.value
           if (num == 1){
             counts[1] +=1
             mainCounts[1] +=1
@@ -125,7 +151,7 @@ async function buildOverallPerfRows (divisionsAndSections){
       let totalPercentRow = 0
       // total rows per service
       rowsOverallPerformance.forEach(row => {
-        let res = (parseFloat(mainCounts[row.id])/ totalAnswerOverall.length * 100)
+        let res = (parseFloat(mainCounts[row.id])/ overallratings.length * 100)
         row['percentage'] = res.toFixed(2).toString() + '%'
         // increment total of percentage
         totalPercentRow +=res
@@ -325,7 +351,7 @@ function buildSummaryPerDivisionRows (questions,divisionsAndSections,allTsrs){
            let y = 0
            let z = 0
            for(let [key, value] of Object.entries(counts)){
-             console.log("vavavaval", value)
+            //  console.log("vavavaval", value)
             rowsSummary.forEach(function (arrayItem) {
               if (arrayItem.division == key2 && arrayItem.service == element)
               if(key == arrayItem.id){
@@ -416,8 +442,8 @@ export const summaryPerDivisionColumns = (questions) => {
 export const overAllColumns = (div) => {
     return buildOverallPerfColumns(div)
 }
-export const overAllRows = (div) => {
-    return buildOverallPerfRows(div)
+export const overAllRows = (div,tsr) => {
+    return buildOverallPerfRows(div,tsr)
 }
 
 export const numberOfCustomersColumnsData= (div) => {

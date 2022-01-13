@@ -173,8 +173,8 @@
 
 <script>
 import {useQuasar} from 'quasar'
-import { watch,created,onMounted, ref,defineComponent,computed } from 'vue'
-import { getQuestions, postQuestion,postQuestionSubheader, getQuestionTypes, updateQuestion, delQuestion } from 'src/axioshelper.js'
+import { watch,onMounted, ref,defineComponent } from 'vue'
+import { getQuestions, postQuestion, getQuestionTypes, updateQuestion, delQuestion } from 'src/axioshelper.js'
 import orderBy from 'lodash.orderby'
 // import addquestion from '../components/modals/AddQuestionModal.vue'
 

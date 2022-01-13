@@ -6,17 +6,15 @@ function setAxiosHeaders (token) {
     // set localstorage
     api.defaults.headers.common['Authorization'] = 'Bearer ' + token
     localStorage.setItem('jwt', token)
-    console.log("api from actions" ,api.defaults.headers.post)
 }
 
 export async function setUserStore({ commit }, payload){
-  console.log("Hererere")
-  console.log(payload)
+  
   commit("setUserProfile", payload)
 }
 
 export async function setLoggedIn({ commit }, flag){
-  console.log("Hererere")
+  
   //logged in true
   if(flag == 1){
     commit("setLoginApiStatus", "success")
@@ -27,20 +25,11 @@ export async function setLoggedIn({ commit }, flag){
 
 
 export async function loginApi ( { commit }, payload) {
-    // return api.post('/auth/local', {
-    //     identifier: username.toString(),
-    //     password: password.toString()
-    //   }).then(function( response ){
-    //       // console.log(response.data.results)
-    //       setJWT(response.data.jwt)
-    //     }
-    //   )
     const response = await api.post('/auth/local', 
       payload)
       .catch((err) => {
         console.log(err);
       });
-    console.log("response",response)
  
     if (response && response.data && response.data.user) {
       if(response.data.user.confirmed && response.data.user.blocked == false){

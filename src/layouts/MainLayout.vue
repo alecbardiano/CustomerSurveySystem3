@@ -17,8 +17,8 @@
     </q-header>
    
 
-
-    <q-drawer  class="bg-whitetext-black" show-if-above v-model="leftDrawerOpen" side="left" :width="200" :breakpoint="500" bordered v-if="loginStatus != 'failed' && userLoggedin ">
+  
+    <q-drawer  class="bg-whitetext-black" show-if-above v-model="leftDrawerOpen" side="left" :width="200" :breakpoint="500" bordered v-if="loginStatus != 'failed' && userLoggedin.email != ''  ">
        <q-scroll-area class="fit">
         <q-list padding>
           <q-item clickable exact to="/Home" class="text-black" label="Home">
@@ -27,6 +27,7 @@
             </q-item-section>
             <q-item-section>
               Home
+              <!-- {{loginStatus}} loginyo -->
             </q-item-section>
           </q-item>
 

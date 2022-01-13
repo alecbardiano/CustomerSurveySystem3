@@ -95,22 +95,9 @@ export default defineComponent({
     const getterAuth = computed(() => store.getters["auth/getLoginApiStatus"]);
 
     async function setterAuth (payload) {
-        console.log(store)
         await store.dispatch('auth/loginApi', payload)
     }
 
-    // const getterAuth = computed(() => {
-    //     return mapGetters("auth", {
-    //         getLoginApiStatus: "getLoginApiStatus"
-    //     })
-    // })
-
-    // async function setterAuth (){
-    //     mapActions("auth", {
-    //         actionLoginApi: "loginApi"
-    //     })
-    // }
-    
 
     function onSubmit(){
         loginRefForm.value.validate().then(success => {
@@ -119,39 +106,34 @@ export default defineComponent({
             }
         })
     }
-
-    // function manageAccount () {
-    //   window.open('http://10.10.120.32:3536/#/', '', 'width=1000,height=600')
-    // }
-
     async function loginToSSOClient () {
       isLoading.value = true
       
-    //   usernameModel.value.validate()
-    //   passwordModel.value.validate()
-    const payload = {
-        identifier: usernameModel.value,
-        password: passwordModel.value,
-    };
-    await setterAuth(payload);
-    if(getterAuth.value == "success"){
-        console.log("getterAuth",getterAuth.value)
-        router.push({name: 'Dashboard'})
-    }else if(getterAuth.value == "usernotaccess"){
-      $q.notify({
-        color: 'red-5',
-        textColor: 'white',
-        icon: 'warning',
-        message: 'user does not have access to CSMS system'
-      })
-    }else{
-      $q.notify({
-        color: 'red-5',
-        textColor: 'white',
-        icon: 'warning',
-        message: 'username and password does not match'
-      })
-    }
+      const payload = {
+          identifier: usernameModel.value,
+          password: passwordModel.value,
+      };
+      await setterAuth(payload);
+      
+      if(getterAuth.value == "success"){
+        // successful login
+          router.push({name: 'Dashboard'})
+
+      }else if(getterAuth.value == "usernotaccess"){
+        $q.notify({
+          color: 'red-5',
+          textColor: 'white',
+          icon: 'warning',
+          message: 'user does not have access to CSMS system'
+        })
+      }else{
+        $q.notify({
+          color: 'red-5',
+          textColor: 'white',
+          icon: 'warning',
+          message: 'username and password does not match'
+        })
+      }
     }
 
     
@@ -169,54 +151,6 @@ export default defineComponent({
   }
  
 })
-// export default {
-//   name: 'Login',
-//   data () {
-//     return {
-//       username: null,
-//       password: null,
-//       isLoading: false,
-//       isPwd: true
-//     }
-//   },
-//   computed: {
-//     keymap () {
-//       return {
-//         enter: {
-//           keydown: this.login
-//         }
-//       }
-//     }
-//   },
-//   methods: {
-//     login () {
-//       this.isLoading = true
-//       this.$refs.username.validate()
-//       this.$refs.password.validate()
-//       this.$ssoAuthenticate(`${this.username}@mail.com`, this.password).then((user) => {
-//         this.$q.notify({
-//           position: 'top',
-//           color: 'positive',
-//           timeout: 2000,
-//           icon: 'check',
-//           message: 'You have successfully logged in.'
-//         })
-//         this.$router.push('/')
-//         this.isLoading = false
-//       }).catch(e => {
-//         this.$q.notify({
-//           position: 'top',
-//           color: 'negative',
-//           timeout: 2000,
-//           icon: 'error',
-//           message: 'Invalid credentials or Check your connection!'
-//         })
-//         this.isLoading = false
-//       })
-//     },
-    
-//   }
-// }
 </script>
 
 

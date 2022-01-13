@@ -116,6 +116,14 @@
              {{noPoor}}
           </q-td>
         </q-tr>
+        <q-tr>
+          <q-td >
+             No. and % of customers who didn't have an Overall Answer
+          </q-td>
+          <q-td>
+             {{noNoOverall}}
+          </q-td>
+        </q-tr>
 
       </template>
     </q-table>
@@ -206,6 +214,7 @@ export default defineComponent({
     const noVerySatisfactory = ref(0)
     const noSatisfactory = ref(0)
     const noRespondents = ref(0)
+    const noNoOverall = ref(0)
 
 
     const noPoorTotal = ref(0)
@@ -232,8 +241,10 @@ export default defineComponent({
       noVerySatisfactory.value = 0
       noSatisfactory.value = 0
       noRespondents.value = 0
+      noNoOverall.value = 0
+
       console.log("hey", division.value)
-      tsrs.value = await getTSRs("","",division.value,service.value,beforeDate.value,afterDate.value,3)
+      tsrs.value = await getTSRs("","",division.value,service.value,beforeDate.value,afterDate.value,3,'')
       console.log("pasok ba", tsrs.value)
       
      
@@ -271,8 +282,11 @@ export default defineComponent({
               noVerySatisfactory.value+=1
             }else if(num == 3){
               noSatisfactory.value +=1
-            }else{
+            }else if(num >= 2){
               noPoor.value+=1
+            }else{
+
+              noNoOverall.value += 1
             }
           }
           if (num == 1 || num == 2){
@@ -295,7 +309,12 @@ export default defineComponent({
             if(key == arrayItem.id){
               console.log("value", value)
               value = (Math.round((value/ dataDivision.length) * 100)).toFixed(2)
-              value = value.toString() + '%'
+              if(isNaN(value)){
+                value = '0%'
+              }else{
+                value = value.toString() + '%'
+              }
+              
               arrayItem[orderByPositionQuestions.value[j].id] = value
             }
         });
@@ -345,7 +364,6 @@ export default defineComponent({
         
         
         }
-        // console.log("cooooolss", cols.value)
       }
       console.log(colsOverall.value)
       buildRows()
@@ -367,7 +385,7 @@ export default defineComponent({
     }
     
     async function loadTotalOverall() {
-      let data = await allOverAllRatingsFromApi(beforeDate.value,afterDate.value)
+      let data = await allOverAllRatingsFromApi(beforeDate.value,afterDate.value,"")
 
       // reset 
       noVerySatisfactoryTotal.value = 0
@@ -451,7 +469,8 @@ export default defineComponent({
       tsrs,
       dateform,
       rowsTotal,
-      colsTotal
+      colsTotal,
+      noNoOverall
     }
   }
 })

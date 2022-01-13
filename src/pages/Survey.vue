@@ -143,7 +143,7 @@
 import { useQuasar } from 'quasar'
 import { defineComponent, computed, ref, reactive, onMounted, onBeforeMount,watch } from 'vue';
 import CustomSurveyField from '../components/CustomSurveyField.vue'
-import { getQuestions, postAnswers, checkTSRsOtherAPI, checkTSRsUlimsAPI, checkTSRIfExists } from 'src/axioshelper.js'
+import { getQuestions, getQuestionsWithoutAns, postAnswers, checkTSRsOtherAPI, checkTSRsUlimsAPI, checkTSRIfExists } from 'src/axioshelper.js'
 
 import viewsurveyanswer from '../components/modals/ViewSurveyAnswer.vue'
 
@@ -172,13 +172,11 @@ export default defineComponent({
 
     watch(TsrNo, (newValue, oldValue) => {
       // checkTSRsOtherAPI(newValue)
+      // check tsr field if valid
       const pattern = /^[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}$/
       if(pattern.test(newValue)){
-        console.log("watch Here")
         assignTSRData(newValue)
 
-        
-        // call api
       }
       
     })
@@ -187,9 +185,6 @@ export default defineComponent({
     const confirmFlag= ref(false)
     const displayQuestions = ref([])
 
-    const surveyDetail = ref({
-
-    })
     let totalSubHeaderLength = 0;
     // review
     const cols = ref([])
@@ -211,19 +206,21 @@ export default defineComponent({
   
     const orderKey = ref('position')
 
+
+    // assign tsr from other apis
     const assignTSRData = async (newValue) => {
+        // check oneshop
         tsrDataFromApi.value = await checkTSRsOtherAPI(newValue)
         tsrDataFromApi.value = tsrDataFromApi.value[0]
         // { "name": "Machining (Precision)", "div": "PD", "sectionCode": "PDS", "serviceCode": "MAPR", "costCenter": "28" }
-        if(tsrDataFromApi.value){
-          console.log("Watchwatchtsr", tsrDataFromApi.value )        
+        if(tsrDataFromApi.value){     
           industryData.value = tsrDataFromApi.value.sector[0]
           serviceData.value = tsrDataFromApi.value.service.name
           sectionData.value = tsrDataFromApi.value.service.sectionCode
           divData.value = tsrDataFromApi.value.service.div
         }else{
+          // check ulims
           tsrDataFromApi.value = await checkTSRsUlimsAPI(newValue)
-          console.log(tsrDataFromApi.value)
           industryData.value = tsrDataFromApi.value.industry
           if(tsrDataFromApi.value.service == 'MTR' || tsrDataFromApi.value.service == 'INS'){
             serviceData.value = "Calibration and Dimensional Measurement"
@@ -243,19 +240,15 @@ export default defineComponent({
 
       try {
         // questionsNotManipulated.value = await getData(url)
-        let sample = []
         questions.value = await getQuestions()
-        displayQuestions.value = questions.value.filter(Question =>
-        {
+        displayQuestions.value = questions.value.filter(Question =>{
           Question.children = questions.value.filter(child => child.parent?.id === Question.id )
           return Question.parent === null
         })
-        console.log("sampsampsamp", displayQuestions.value)
-        console.log("helloooo434343", questions.value)
-
         // column
+        // column in survey result
         cols.value = [...new Set(questions.value.map(({ id, description, value }) => ({id, description, value})))];
-        console.log("coclolol", cols.value)
+        
         
         // subheadersQuestion.value = questions.value.filter( row => row.subheader.length >0 )
         displayQuestions.value.forEach( val =>{
@@ -272,29 +265,6 @@ export default defineComponent({
 
         lengthQuestions.value = questions.value.length
         buildArrayOfAnswers()
-        // console.log("sd", subheadersQuestion.value )
-        // questions.value.forEach(question, index =>{
-        //   subheadersQuestion.value.forEach(sub => {
-        //     sub.subheader.forEach(val => {
-        //       if(questions.value.id = val.id){
-        //         object.splic
-
-        //       }
-        //     })
-        //   })
-        // })
-        //   console.log(row)
-        //   if (row.subheader.length>0){
-        //     console.log("pasok")
-        //     questions.value.forEach(element => {
-        //       row.subheader.forEach(subheader =>{
-        //         if (element.id == subheader.id) {
-        //           console.log("pasok2")
-        //         }
-        //       })
-        //     });
-        //   }
-        console.log("cocococol", cols.value)
         
         loading.value = false
       }
@@ -308,86 +278,80 @@ export default defineComponent({
       return orderBy(displayQuestions.value, orderKey.value)
     });
 
+    // for child questions in a subheader
     function orderByNestedSurveyQuestions (q){
+      // order by position 
       return orderBy(q, orderKey.value )
     }
 
 
     function confirmModalShow(){
       prompt.value = true
+      // all of questions without children
       for (let i = 0; i < surveyAnswer.answers.length; i++) {
         surveyAnswer.answers[i].tsrNo = TsrNo.value // answer.tsrno is to vmodel
         for (let j=0; j< cols.value.length ; j++){
           if(cols.value[j].id == surveyAnswer.answers[i].question){
+            // show in confirmation modal question answer value pair
             cols.value[j].value = surveyAnswer.answers[i].value
           }
         }
       }
+      // all of the subheaders
       for (let i = 0; i < totalSubHeaderLength; i++) {
+        // v-model index 
         subHeaderSurveyAnswer.answers[i].tsrNo = TsrNo.value // answer.tsrno is to vmodel
-        console.log("COLSLDLSDLSDLSAMPLE", cols.value)
         for (let j=0; j< cols.value.length ; j++){
           if(cols.value[j].id == subHeaderSurveyAnswer.answers[i].question){
+            // show in confirmation modal question answer value pair
             cols.value[j].value = subHeaderSurveyAnswer.answers[i].value
           }
         }
-        console.log("hello surve",subHeaderSurveyAnswer.answers[i].question)
-        // if subHeaderSurveyAnswer.answeers[i]. que
       }
     }
 
     async function submitSurvey(){
-      console.log("submitted")
-      
-
-      // remove answers without associated question (mainly subheader type question)
-      // surveyAnswer.answers = surveyAnswer.answers.filter(item => item.question !== "")
-      // subHeaderSurveyAnswer.answers = surveyAnswer.answers.filter(item => item.question !== "")
-      // if allow true, there is exist in system
       
       
-      console.log("hello post submit")
-      console.log("COLSLDLSDLSDL", cols.value)
-      console.log(surveyAnswer.answers)
-      console.log(subHeaderSurveyAnswer.answers)
       if(!(industryData.value)){
         industryData.value = ""
       }
       if(!(sectionData.value)){
         sectionData.value = ""
       }
-      console.log(subHeaderSurveyAnswer.answers)
       // post answers and children/subheader answers
       let a = await postAnswers(surveyAnswer.answers,subHeaderSurveyAnswer.answers,TsrNo.value,industryData.value,serviceData.value,divData.value,"")
-      if (a == '403'){
+      // if survey form is accepted notify
+      if (a == '200'){
+        $q.notify({
+            color: 'green-4',
+            textColor: 'white',
+            icon: 'cloud_done',
+            message: 'Submitted'
+          })
+      }else{
         $q.notify({
           color: 'red-5',
             textColor: 'white',
             icon: 'warning',
             message: 'TSR already answered'
           })
+        
       }
-      // postAnswers(,TsrNo.value)
-      
-
-      console.log("surveyanswer", surveyAnswer.answers)
-      console.log("subheader", subHeaderSurveyAnswer.answers)
     }
 
     
 
     
     function buildArrayOfAnswers ()  {
+      // totalsubheader length for dynamic v-model
       for (let i = 0; i < lengthQuestions.value; i++) { // question please rate does not need an answer
-         console.log("length")
          surveyAnswer.answers.push(answer)
       }
-      console.log("totalSubHeaderLength",totalSubHeaderLength)
+      // total subheader all for v-model 
       for (let i = 0; i < totalSubHeaderLength; i++) { // question please rate does not need an answer
-         console.log("subheader")
          subHeaderSurveyAnswer.answers.push(answer)
       }
-      console.log("subHeaderSurveyAnswerelow",subHeaderSurveyAnswer.answers)
 
 
       
@@ -395,11 +359,7 @@ export default defineComponent({
 
     onMounted( () => {
       getAllQuestionsFromApi()
-      console.log("mounted")
-      console.log("questionsvalue", questions)
-      console.log(surveyAnswer.answers )
-      console.log(subHeaderSurveyAnswer.answers )
-      console.log("hello",questions.value.slice(0, 1))
+      buildArrayOfAnswers()
       
     })
 
@@ -413,14 +373,9 @@ export default defineComponent({
  
           if (success){
             submitSurvey()
-            $q.notify({
-              color: 'green-4',
-              textColor: 'white',
-              icon: 'cloud_done',
-              message: 'Submitted'
-            })
           }
           else{
+            // required field is not satisfied
             $q.notify({
               color: 'red-5',
               textColor: 'white',
@@ -428,14 +383,14 @@ export default defineComponent({
               message: 'Please check all the fields'
             })
           }
-      }else{
-        $q.notify({
-          color: 'red-5',
-            textColor: 'white',
-            icon: 'warning',
-            message: 'TSR not Found'
-          })
-      }
+        }else{
+          $q.notify({
+            color: 'red-5',
+              textColor: 'white',
+              icon: 'warning',
+              message: 'TSR not Found'
+            })
+        }
 
         
     })
@@ -466,8 +421,6 @@ export default defineComponent({
       viewsurveyanswer,
       confirmModalShow,
       cols,
-      serviceOptions: ['Metals and Materials Testing, Calibration & Dimensional Measurement', '3D Printing' ],
-      industryOptions: ['Appliance', 'Automotive'],
       serviceData,
       industryData,
       divData,

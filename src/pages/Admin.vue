@@ -1,6 +1,6 @@
 <template>
       <div class="q-pa-lg" >
-        
+       
                 <q-form ref="dateform">
                   <div class="row inline">
                   <q-input outlined filled mask="date" v-model="beforeDate" lazy-rules :rules="[val => val <= afterDate || 'Field should be earlier than after date']" placeholder="mm/dd/yy" hint="Start Date" >
@@ -16,7 +16,6 @@
                       </q-icon>
                     </template>
                   </q-input> 
-                  <!-- :rules="[val => !!val || 'Field is required', val => !isNaN(val) || 'Field should be a number']" -->
                   <q-input outlined filled mask="date" style="padding-left: 25px" v-model="afterDate" lazy-rules :rules="[val => val >= beforeDate || 'Field should be later than before date']"   placeholder="mm/dd/yy" hint="End Date" >
                     <template v-slot:append>
                       <q-icon name="event" class="cursor-pointer">
@@ -36,15 +35,8 @@
                     label="Go"
                     color="primary"
                     style="margin-left: 25px; width: 70px; height: 25px;"
-                    @click="onRequest({
-                      pagination: pagination,
-                      filter: undefined
-                    })"
-                />
-
-                <!-- <div class="q-pa-md">
-                  <q-btn color="teal" @click="showLoading" label="Show Loading" />
-                </div> -->
+                    @click="dataUpdateWithDate()"
+                 />
                 </div>
     
                 </q-form>
@@ -72,6 +64,7 @@
                   />
             </div>
           </div>
+          <!-- generate excel button -->
           <div class="col-md-4 offset-md-4">
             <div class="row inline">
             <q-btn
@@ -81,6 +74,7 @@
               color="primary"
               @click="generateExcel()"
           />
+          <!-- generate pdf button -->
            <q-btn
               type="submit"
               label="Generate PDF Report"
@@ -103,6 +97,8 @@
     </div>
     
   <div class="q-pa-md">
+
+    <!-- all survey table -->
 
     <q-table
       class="overallAverage"
@@ -184,7 +180,8 @@
       
   </div>
   <div class="q-pa-md">
-    <!-- :loading="loading" -->
+
+    <!-- Overall Agency Citizen/ Client Satisfaction Score -->
     <q-table
         
         title="Overall Agency Citizen/ Client Satisfaction Score"
@@ -198,18 +195,11 @@
         style="height: 500px"
         :rows-per-page-options="[0]"
       >
-      <!-- <template v-slot:top-right>
-        <q-input class ="placeholderClass" borderless dense debounce="300" v-model="filter" placeholder="Search">
-          <template v-slot:append>
-            <q-icon class="searchClass" name="search" />
-          </template>
-        </q-input>
-      </template> -->
       <template v-slot:bottom-row>
         <q-tr>
           <q-td v-bind:key="column.key" v-for="column in overAllAverage">
               <p v-if="column.dimension">Average: </p>
-              <p v-else-if="column.value != 0  ">{{ column.value }}</p>
+              <p v-else>{{ column.value }}</p>
             </q-td>
         </q-tr>
       </template>
@@ -222,6 +212,8 @@
     <viewsurveyanswer v-model="tsrData" :cols="cols"></viewsurveyanswer>
   </q-dialog>
 
+
+  <!-- upload dialog -->
   <q-dialog v-model="uploadDialog" >
       <q-card>
         <q-card-section class="bg-primary text-white" >
@@ -241,32 +233,18 @@
 
 </template>
 <script>
+// import packages
 import { reactive, defineComponent, ref, onMounted, computed , watch,onBeforeUnmount} from 'vue'
-import { getQuestions, getTSRs,postAnswers , getOverall,deleteAll,totalTsrsCount, getDivList} from 'src/axioshelper.js'
+import { getQuestions, getTSRs,postAnswers , getOverall,deleteAll,totalTsrsCount, getDivList, totalTsrsCountByYear} from 'src/axioshelper.js'
 import { overAllColumns, overAllRows,numberOfCustomersColumnsData,numberOfCustomersRowsData, summaryPerDivisionRows, summaryPerDivisionColumns  } from 'src/utils/dataRetrieveTables.js'
 import { exportFile, useQuasar} from 'quasar'
 import { xlsx, pdfMake } from 'boot/axios'
-// import {pdfFonts} from "pdfmake/build/vfs_fonts";
-// import { createPdf } from 'pdfmake'
 import moment from 'moment';
 import orderBy from 'lodash.orderby'
-
-import parDocDefinition from '../utils/pdflayout'
 
 
 //components
 import viewsurveyanswer from '../components/modals/ViewSurveyAnswer.vue'
-import CardDashboardFeedbackCountVue from 'src/components/CardDashboardFeedbackCount.vue';
-import { isArray } from 'pdfmake/build/pdfmake'
-
-
-
-// let pdfMake = require('pdfmake/build/pdfmake.js')
-// if (pdfMake.vfs == undefined){
-//   let pdfFonts = require('pdfmake/build/vfs_fonts.js')
-//   pdfMake.vfs = pdfFonts.pdfMake.vfs;
-// }
-
 
 
 export default defineComponent({
@@ -300,17 +278,21 @@ export default defineComponent({
 
   const orderKey = ref('position')
 
+  // according to order by position  of the survey
   const orderByPositionQuestions = computed(() => {
       return orderBy(questions.value, orderKey.value)
     });
+  
+  // used for columns of all survey table
   const questions = ref([])
     
   const tsrList = ref ([])
-  // tables
+
+  // survey row data tables 
   const rows = ref([])
   const cols = ref([])
   
-
+  // search function
   const filter = ref('')
   
   const loading = ref(true)
@@ -332,6 +314,21 @@ export default defineComponent({
           
       }
     })
+
+    return dateTimeToApi(newValue)
+    
+  })
+  watch(beforeDate, (newValue, oldValue) => {
+
+    dateform.value.validate().then(success => {
+      // filterTable(newValue,1)
+      if (success) { 
+         
+      }
+    })
+
+    return dateTimeToApi(newValue)
+     
     
   })
 
@@ -362,54 +359,52 @@ export default defineComponent({
   const summaryQuestionPerDivisionRows = ref([])
   const summaryQuestionPerDivisionCols = ref([])
 
-  // for pdf
-  const allTsrList = ref ([]) // all data
 
-
-  // upload/import data
-  const uploadRefButton = ref(null)
-  
-
-  
-  
-
-
-  const getTSRsFromApi = async (start,limit) => {
-    // update `props.user` to `user.value` to access the Reference value
+  // const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,mode,filter) {
+  async function getTSRsFromApi (start,limit,division,service,beforeDate,afterDate,mode,filter)  {
 
       try {
         // upon startup we can initialize data to 1 - rows per page which is 50
         
-        // lengthOfAnswers.value = answers.value.length
-        if(beforeDate.value && afterDate.value){
-          console.log("Wehweh?")
-          return await getTSRs(start,limit,"","",beforeDate.value,afterDate.value,1)
+        // lengthOfAnswers.value = answers.value.length]
+        if(beforeDate && afterDate){
+          
+          if(filter){
+            console.log("here?")
+            return await getTSRs(start,limit,"","",beforeDate,afterDate,mode,filter)
+          }else{
+            console.log("here??")
+            return await getTSRs(start,limit,"","",beforeDate,afterDate,mode,"")
+          }
+          
         }else{
-          console.log("dito naman pala")
-          return await getTSRs(start,limit,"","","","",1)
+          if(filter){
+            console.log("here???")
+            return await getTSRs(start,limit,"","","","",mode,filter)
+          }else{
+            console.log("here????")
+            return await getTSRs(start,limit,"","","","",mode,"")
+            
+          }
+          
         }
         
       }
       catch(err) {
         throw(err)
-        error.value = err
       }
   }
 
-  // function tsrExist(tsrNo,arrayAnswer) {
-
-    
-  // }
   
-  function deleteAnswers (){
-    deleteAll()
-  }
+  // function deleteAnswers (){
+  //   deleteAll()
+  // }
 
   function buildRow(rowdatafromapi){
+    // build row data for pdf
     let rowData = []
 
     rowdatafromapi.map(function(item){
-      // console.log("itemssss", item)
       let row = {
         tsrNo: item.tsrNo,
         publishedDate:dateTime(item.submittedAt),
@@ -423,27 +418,20 @@ export default defineComponent({
         return el != null;
       });
 
-      // console.log("Result", result)
         for (let i=0 ; i < result.length; i++){
           if(item.answers[i].question != ""){
-            
+            // key as question
+            // sample data: { Responsiveness: 5 }
             row[item.answers[i].question] = item.answers[i].value;
           }
         }
-        // console.log("rororororw", row)'
-        // console.log("rororo", row)
-        // delete person.age;
         rowData.push(row)
       
     })
-    // let keysObject = Object.keys(averageColumns.value)
-
-      // load overall
-     console.log("rowdata",rowData)
     
     return rowData
   }
-  function buildTable(filter){
+  function buildTable(){
     let rowData = []
     if(cols.value.length == 0){
       cols.value.push({ name: 'tsrNo', align: 'left', label: 'TSR Number', field: 'tsrNo', sortable: true })
@@ -451,23 +439,7 @@ export default defineComponent({
       cols.value.push({ name: 'service', align: 'left ', label: 'Service', field: 'service'})
       cols.value.push({ name: 'industry', align: 'left', label: 'Industry', field: 'industry' })
       
-      // var uniqueKeys = Object.keys(answers.value.reduce(function(result, obj) {
-      //   return Object.assign(result, obj);
-      // }, {}))
-      // console.log("builduniquekeys", uniqueKeys)
-      // unique question
-
-      // const picked = (({ id, description }) => ({ id, description }))(result);
-      // console.log("pick", picked)
-      // filtered object of answers
-      // get questions
-      // map answers
-
-      // const idAndQuestion = [...new Set(result.map(({ id, description }) => ({id, description})))]; // [ 'A', 'B']
-      // console.log("idididid", idAndQuestion)
-      
-      // const uniqueQuestions = [...new Map(idAndQuestion.map(item =>[item['id'], item])).values()];
-      // console.log("hellooo2323232",orderByPositionQuestions.value)
+  
       for (let j =0; j < orderByPositionQuestions.value.length ; j++){
         // remove subheaders in columns filter
         if(orderByPositionQuestions.value[j].question_type.id != 5){
@@ -498,7 +470,7 @@ export default defineComponent({
     // console.log("completed cols", cols.value)
     // push columns for q table data
     //map this to columns and rows for visualization
-    console.log("tsrList.value.",tsrList.value)
+    // console.log("tsrList.value.",tsrList.value)
     tsrList.value.map(function(item){
       // console.log("itemssss", item)
       let row = {
@@ -521,22 +493,19 @@ export default defineComponent({
             row[item.answers[i].question] = item.answers[i].value;
           }
         }
-        // console.log("rororororw", row)'
-        // console.log("rororo", row)
-        // delete person.age;
         rowData.push(row)
       
     })
     // let keysObject = Object.keys(averageColumns.value)
 
       // load overall
-     console.log("rowdata",rowData)
+    //  console.log("rowdata",rowData)
     
     return rowData
 
   }
   async function loadDivisionDataOverall(divlist){
-    console.log("divlist", divlist)
+    // console.log("divlist", divlist)
     overallLoading.value = true
     if(colsOverall.value.length > 0){
       colsOverall.value = []
@@ -588,8 +557,9 @@ export default defineComponent({
       let total = 0
       let length = 0
       for (var div in partialObject){
+        // console.log("partial", div)
         if((partialObject[div]) == 0){
-          break;
+          continue;
         }
         if(isNaN(partialObject[div])){
           total += 0;
@@ -598,10 +568,12 @@ export default defineComponent({
         }
         length++
         
+        
       }
       // console.log("total",total)
       // console.log("length",length)
       let avg = parseFloat((Math.round((total/length) * 100) / 100).toFixed(2));
+      // console.log("NANana",avg)
       if(isNaN(avg)){
         avg = 0
       }
@@ -613,13 +585,17 @@ export default defineComponent({
     // console.log(rowsOverall.value)
 
     overAllAverage.value = await averageLastTable(colsOverall.value,rowsOverall.value)
-    overallLoading.value = false
     // api call from axioshelper
 
   }
 
   function dateTime(value) {
     return moment(value).format('YYYY/MM/DD');
+  }
+
+  function dateTimeToApi(value) {
+    console.log("natatawag ba to from watch")
+    return moment(value).format('YYYY-MM-DD');
   }
 
   function dateTimeMonth(value) {
@@ -633,25 +609,49 @@ export default defineComponent({
     }
   })
 
-  function fileUpload(file) {
+  async function fileUpload(file) {
     if(importFile.value){
+      showLoading()
       
-      console.log("Filelele", file.name)
+      // console.log("Filelele", file.name)
       // filename should be csms-year.xlsx any format as long as the space will be '-' and the last word will be the year in numbers 'example xxx-xx-xxx-x-2021.xlsx or any' 
       let x = file.name.split('-')
       if(x){
         // .xlsx
         let dot = x[x.length-1].split('.')
-        console.log("dot", dot)
+        // console.log("dot", dot)
         if(dot){
           // test same tsr number and tsr number on database and import
-          showLoading()
-          uploadMigrationData(file,dot[0])().then((quote) => {
-            timer = void 0
-            $q.loading.hide()
-          }).catch((error) => {
-            uploadDialog.value = true
-          });
+          let migraData = await returnMigrationData(file)
+          const rowData = xlsx.utils.sheet_to_json(xlsx.read(migraData, { type: 'binary', cellDates: true }).Sheets['Details of CSF forms'])
+          
+          let success = await uploadMigrationData(rowData,dot[0])
+          console.log("success,",success)
+          if (success == 0){
+            $q.notify({
+                message: 'Responses Migrated',
+                color: 'positive',
+                icon: 'success'
+              })
+          }
+          else if (success == 1){
+              $q.notify({
+                message: 'Responses Not Migrated, Error found: ',
+                color: 'negative',
+                icon: 'failed'
+              })
+          }
+          else if (success == 2){
+           
+            $q.notify({
+            color: 'red-5',
+              textColor: 'white',
+              icon: 'warning',
+              message: 'Duplicate TSR found in file'
+            })
+          }
+          timer = void 0
+          $q.loading.hide()
         }
       }
     }else{
@@ -665,7 +665,7 @@ export default defineComponent({
     
     
       
-     console.log("pasok")
+    //  console.log("pasok")
     
    }
    function showLoading () {
@@ -677,78 +677,68 @@ export default defineComponent({
       }
 
     function buildTableBody(data, columns, mode,divisionsAndSections) {
-      console.log("modedede", mode)
-      console.log("colssss",columns)
-      console.log("data", data)
         // survey results ALL with extra header
+        // key as label 
         var body = [];
       
         
-        // let divisions = Object.keys(divisionsAndSections)
-        console.log("columns,", columns)
         if(mode == 2){
+
+          // copydata from row
+
+          //
           let copyColumns = columns.map(a => a);
+
+          //map based on label
+
           let mainArrayColumn = columns.map((a => a.label));
+          // the column names taken from label 
           body.push(mainArrayColumn);
-          // console.log("copyColumns",copyColumns)
-          // console.log("mainArrayColumn",mainArrayColumn)
-          // console.log("divisionList",divisionList.value)
-          // console.log("data" ,data )
-          // console.log("columns")
-          // body.push(["hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy",])
           let copyData = data.map((rest ) => rest)
             
             
-            copyData.forEach(function(row) {
-                // if(row.null){
-                //   delete row.null
-                // }
-                var dataRow = [];
-                // let merged = {...row, ...columns};
-                copyColumns.forEach(function(column) {
-                    if(row[column.field]){
-                      if([column.label]){
-                        dataRow.push(row[column.field]);
-                      }
-                    }else{
-                      dataRow.push("");
+          copyData.forEach(function(row) {
+              var dataRow = [];
+              copyColumns.forEach(function(column) {
+                  if(row[column.field]){
+                    
+                    if([column.label]){
+                      dataRow.push(row[column.field]);
                     }
-                })
-                body.push(dataRow);
-            });
+                  }else{
+                    dataRow.push("");
+                  }
+              })
+              body.push(dataRow);
+          });
         
         // Overall Performance of the Center Based on CSS Responses table  
         }else if (mode == 3){
-        let copyColumns = columns.map(a => a);
-       
-        let arrFirstHeader = []
-        // first header
-        arrFirstHeader.push({})
-        arrFirstHeader.push({})
-        for(let div in divisionsAndSections){
-          console.log("div he", div)
-          console.log("div she", divisionsAndSections[div].length)
-          arrFirstHeader.push({text: div, colSpan: divisionsAndSections[div].length})
-          for(let i =0; i< divisionsAndSections[div].length-1; i++){
-            arrFirstHeader.push({})
-          }
-        }
-        body.push(arrFirstHeader)
+          let copyColumns = columns.map(a => a);
         
-        let mainArrayColumn = columns.map((a => a.label));
-        // 2nd header
-        body.push(mainArrayColumn);
-        console.log("body after push mainarray cols",mainArrayColumn)
-        let copyData = data.map((rest ) => rest)
-        console.log("copyData",copyData)
+          let arrFirstHeader = []
+          // first header according to layout provided in the report
+          arrFirstHeader.push({})
+          arrFirstHeader.push({})
+          // divisions 
+          for(let div in divisionsAndSections){
+            // push row data
+            arrFirstHeader.push({text: div, colSpan: divisionsAndSections[div].length})
+            for(let i =0; i< divisionsAndSections[div].length-1; i++){
+              // push 
+              arrFirstHeader.push({})
+            }
+          }
+          body.push(arrFirstHeader)
+          
+          let mainArrayColumn = columns.map((a => a.label));
+          // 2nd header
+          body.push(mainArrayColumn);
+          let copyData = data.map((rest ) => rest)
 
-        // data
-        copyData.forEach(function(row) {
-            // if(row.null){
-            //   delete row.null
-            // }
+          // data
+          copyData.forEach(function(row) {
             var dataRow = [];
-            // let merged = {...row, ...columns};
             copyColumns.forEach(function(column) {
                 if(row[column.field]){
                   if([column.label]){
@@ -759,7 +749,7 @@ export default defineComponent({
                 }
             })
             body.push(dataRow);
-        });
+          });
         }
       // number of customers table
       else if(mode == 4){
@@ -768,8 +758,6 @@ export default defineComponent({
         // first header
         arrFirstHeader.push({})
         for(let div in divisionsAndSections){
-          console.log("div he", div)
-          console.log("div she", divisionsAndSections[div].length)
           arrFirstHeader.push({text: div, colSpan: divisionsAndSections[div].length})
           for(let i =0; i< divisionsAndSections[div].length-1; i++){
             arrFirstHeader.push({})
@@ -781,15 +769,13 @@ export default defineComponent({
         let mainArrayColumn = columns.map((a => a.label));
         // 2nd header
         body.push(mainArrayColumn);
-        console.log("body after push mainarray cols",mainArrayColumn)
+        // console.log("body after push mainarray cols",mainArrayColumn)
         let copyData = data.map((rest ) => rest)
-        console.log("copyData",copyData)
+        // console.log("copyData",copyData)
 
         // data
         copyData.forEach(function(row) {
             var dataRow = [];
-            console.log("rowditoboy", row)
-            // let merged = {...row, ...columns};
             copyColumns.forEach(function(column) {
                 if(row[column.field]){
                   if([column.label]){
@@ -813,12 +799,6 @@ export default defineComponent({
           2: 0,
           1: 0,
         };
-        // console.log("copyColumns",copyColumns)
-        // console.log("mainArrayColumn",mainArrayColumn)
-        // console.log("divisionList",divisionList.value)
-        // console.log("data" ,data )
-        // console.log("columns")
-        // body.push(["hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy",])
         let copyData = data.map((rest ) => rest)
         
         let index = 0
@@ -834,6 +814,7 @@ export default defineComponent({
         let numberPrevSatis = 0
         let numberPrevPoor = 0
         copyData.forEach(function(row) {
+            // 11 rows before new division
             if(index % 11 == 0 ){
               body.push(
                 	["Division: ",row.division,"","","","","","","",""]
@@ -842,7 +823,6 @@ export default defineComponent({
               index+=2
             }
             var dataRow = [];
-            // let merged = {...row, ...columns};
             copyColumns.forEach(function(column) {
                 
                 if(row[column.field]){
@@ -850,33 +830,31 @@ export default defineComponent({
                   // overall rating
                   if(column.field == 12){
                     if(row[column.field]){
-                    console.log("overall?12", column)
-                    console.log("overall?12row", row)
-                    
-                    if(row.id == 5 || row.id == 4){
-                      console.log("row[column.field] inside",row[column.field])
-                     
-                      let res = parseFloat(row[column.field]) 
-                      prevVerySatis += res
-                      console.log('res parse', res)
-                      res = (res/100)  * row.countsDivision
-                      numberPrevVerySatis += res
-                      
-                     }else if (row.id == 3){
-                      let res = parseFloat(row[column.field]) 
-                      console.log('res parse', res)
-                      // res = res * row.countsDivision
-                      prevSatis += res
-                      res = (res/100)  * row.countsDivision
-                      numberPrevSatis += res
-                     }else if (row.id <= 2){
-                      let res = parseFloat(row[column.field]) 
-                      prevPoor += res
-                      console.log('res parse', res)
-                      res = (res/100) * row.countsDivision
-                      numberPrevPoor += res
-                      // res = res * row.countsDivision
-                     }
+                      // add to very satisfactory data increment
+                      if(row.id == 5 || row.id == 4){
+                        let res = parseFloat(row[column.field]) 
+                        prevVerySatis += res
+                        // console.log('res parse', res)
+                        res = (res/100)  * row.countsDivision
+                        numberPrevVerySatis += res
+                        
+                      }else if (row.id == 3){
+                        // add to satisfactory data increment
+                        let res = parseFloat(row[column.field]) 
+                        // console.log('res parse', res)
+                        // res = res * row.countsDivision
+                        prevSatis += res
+                        res = (res/100)  * row.countsDivision
+                        numberPrevSatis += res
+                      }else if (row.id <= 2){
+                        // add to poor overall data increment
+                        let res = parseFloat(row[column.field]) 
+                        prevPoor += res
+                        // console.log('res parse', res)
+                        res = (res/100) * row.countsDivision
+                        numberPrevPoor += res
+                        // res = res * row.countsDivision
+                      }
                     }
                   }
                   if([column.label]){
@@ -886,7 +864,6 @@ export default defineComponent({
                   dataRow.push("");
                   
                 }
-                // prevVerySatis = withinPrevVery
             })
             body.push(dataRow);
             
@@ -916,36 +893,26 @@ export default defineComponent({
             } 
         });
       body.push(["Total Summary of Citizen/Client Satisfaction Survey CCSS Rating ","","","","","","","","",""])
-      // body.push(["Total Summary of Citizen/Client Satisfaction Survey CCSS Rating ","","","","","","","","",""])
       body.push(["No. and % of customers who rated the Center's service as very satisfactory or better",Math.round(totalprevVerySatis),((totalprevVerySatis/totalPrevRespond)* 100).toFixed(2).toString() + '%',"","","","","","",""])
       body.push(["No. and % of customers who rated the Center's service as satisfactory or better",Math.round(totalprevSatis),((totalprevSatis/totalPrevRespond)* 100).toFixed(2).toString() + '%',"","","","","","",""])
       body.push(["No. and % of customers who rated the service as Fair or Poor",Math.round(totalprevPoor),((totalprevPoor/totalPrevRespond)* 100).toFixed(2).toString() + '%',"","","","","","",""])
-      // body.push(["No. and % of customers who didn't have an Overall Answer: ",totalprevPoor,"","","","","","","",""])
       body.push(["Total No. of Respondents : ",totalPrevRespond,"","","","","","","",""])
         
       }
       else if(mode == 6){
-          let copyColumns = columns.map(a => a);
-          let mainArrayColumn = columns.map((a => a.label));
+          let copyColumns = columns.map(data => data);
+          let mainArrayColumn = columns.map((data => data.label));
           body.push(mainArrayColumn);
-          // console.log("copyColumns",copyColumns)
-          // console.log("mainArrayColumn",mainArrayColumn)
-          // console.log("divisionList",divisionList.value)
-          // console.log("data" ,data )
-          // console.log("columns")
-          // body.push(["hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy","hoy",])
-          
+
           let copyData = data.map((rest ) => rest)
             
             let prevDivision = ''
             let prevService = ''
             let index = 0
             copyData.forEach(function(row) {
-              // if(row.null){
-              //   delete row.null
-              // }
               if (row.service && row.division){
                  if(prevDivision != row.division || index == 0){
+                  // push division and service row only if previous division not equal to current division
                   body.push(
                       [
                       {
@@ -1132,18 +1099,18 @@ export default defineComponent({
                   ])
                 }
               }
+              // assign current row data to prevdivision before check
               prevDivision = row.division
               prevService = row.service
               index ++
              
               var dataRow = [];
-              // let merged = {...row, ...columns};
               copyColumns.forEach(function(column) {
                   if(row[column.field]){
                     if([column.label]){
                       dataRow.push(
                         {
-                        text : row[column.field]
+                          text : row[column.field]
                         }
                         );
                     }
@@ -1152,50 +1119,45 @@ export default defineComponent({
                   }
               })
               body.push(dataRow);
-              // compare for next row
               
           });
       }
-     
-      
-      console.log("bodysdsdf", body)
 
         return body;
     }
 
  
-  async function buildOverall(alltsrs){
-    console.log("buildoverall",alltsrs)
+  function buildOverall(alltsrs){
     // build tables inside PDF
+    // Overall Performance of the Center Based on CSS Responses
     colsOverallPerformance.value = overAllColumns(divisioAndSectionList.value)
-    console.log("colsOverallPerformance",colsOverallPerformance)
-    rowsOverallPerformance.value = await overAllRows(divisioAndSectionList.value)
+    rowsOverallPerformance.value = overAllRows(divisioAndSectionList.value,alltsrs)
 
     // Number of Customers and CSM Respondents Per Service Area
     numberOfCustomersColumns.value = numberOfCustomersColumnsData(divisioAndSectionList.value)
     numberOfCustomersRows.value = numberOfCustomersRowsData(divisioAndSectionList.value,alltsrs)
     
+    // Summary of Citizen/Client Satisfaction Survey CCSS Rating
     summaryQuestionPerDivisionCols.value = summaryPerDivisionColumns(orderByPositionQuestions.value)
     summaryQuestionPerDivisionRows.value =  summaryPerDivisionRows(orderByPositionQuestions.value,divisioAndSectionList.value,alltsrs)
-    
-
-    console.log("summaryQuestionPerDivisionRows,",summaryQuestionPerDivisionRows.value)
-    console.log("summaryQuestionPerDivisionCols,",summaryQuestionPerDivisionCols.value)
+  
   }
     
   async function generatePDF(){
     let alltsrs
+    // get all tsrs
     if (beforeDate.value && afterDate.value){
-      alltsrs = await getTSRsFromApi(0,totalTsrsCount.value,"","",beforeDate.value,afterDate.value,1)
+      alltsrs = await getTSRsFromApi(0,totalTsrsCount.value,"","",beforeDate.value,afterDate.value,1,"")
     }else{
-      alltsrs = await getTSRsFromApi(0,totalTsrsCount.value,"","",today+'01-01',today+'12-31',1)
+      alltsrs = await getTSRsFromApi(0,totalTsrsCount.value,"","",today+'01-01',today+'12-31',1,"")
     }
-    await buildOverall(alltsrs)
+    console.log("all tsrs", alltsrs)
+    buildOverall(alltsrs)
     
     let rowalltsrs = buildRow(alltsrs)
     // for overall column table Overall Agency Citizen/ Client Satisfaction Score' deconstruct to get only field and label
     let overallCol = colsOverall.value.map(({ field, label }) => ({field, label}));
-    // all survey  Customer Satisfaction Measurement
+    // all survey columns  Customer Satisfaction Measurement
     let allSurveyCol = cols.value.map(({ field, label }) => ({field, label}));
     // column for overall performance Overall Performance of the Center Based on CSS Responses
     let overallPerformanceCols = colsOverallPerformance.value.map(({ field, label }) => ({field, label}));
@@ -1203,7 +1165,8 @@ export default defineComponent({
      let rateColsTableValue = allSurveyCol.filter(function(x) {
        return x.field != 4
      })
-
+    
+     // set before month and after month
      let beforeMonth = (beforeDate.value) ? dateTimeMonth(beforeDate.value ) : "January"
      let afterMonth =  (afterDate.value) ? dateTimeMonth(afterDate.value ) : dateTimeMonth(Date.now())
      // pdf generated
@@ -1214,23 +1177,6 @@ export default defineComponent({
         header: {
           
           stack: [
-            //   {
-            //     canvas: [
-            //         {
-            //             type: 'rect',
-            //             x: 0,
-            //             y: 0,
-            //             w: 850, // landscape
-            //             h: 120,
-            //             color: '#0067B9'
-            //         }
-            //     ]
-            // },
-            // {
-            //     image: 'data:image/jpeg;base64,/../assets/logo.png',
-            //     width: 100,
-            //     margin: [0, -120, 0, 0] // -120 is your rect height
-            // },
             {
               text: 'METALS INDUSTRY RESEARCH AND DEVELOPMENT CENTER',
               style: 'header',
@@ -1340,13 +1286,12 @@ export default defineComponent({
           {
             table:{
               headerRows:1,
-              // widths:[5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],
-              // widths: 
               body: buildTableBody(summaryQuestionPerDivisionRows.value, summaryQuestionPerDivisionCols.value,5,divisioAndSectionList.value)
               },
             style:"table"
           },
         ],
+        // page break
         pageBreakBefore: function(currentNode, followingNodesOnPage, nodesOnNextPage, previousNodesOnPage) {
           return currentNode.headlineLevel === 1 && followingNodesOnPage.length === 0;
         },
@@ -1376,33 +1321,15 @@ export default defineComponent({
       pdf.open();
    }
   
-  function wrapCsvValue (val, formatFn) {
-    let formatted = formatFn !== void 0
-      ? formatFn(val)
-      : val
-
-    formatted = formatted === void 0 || formatted === null
-      ? ''
-      : String(formatted)
-
-    formatted = formatted.split('"').join('""')
-    /**
-     * Excel accepts \n and \r in strings, but some other CSV parsers do not
-     * Uncomment the next two lines to escape new lines
-     */
-    // .split('\n').join('\\n')
-    // .split('\r').join('\\r')
-
-    return `"${formatted}"`
-  }
-  async function generateExcel (data) {
+  async function generateExcel () {
         let alltsrs
         let dateFirstRow
+        // get all tsrs needed for generate data
         if (beforeDate.value && afterDate.value){
-          alltsrs = await getTSRsFromApi(0,totalTsrsCount.value,"","",beforeDate.value,afterDate.value,1)
+           alltsrs = await getTSRsFromApi(0,totalTsrsCount.value,"","",beforeDate.value,afterDate.value,1,"")
            dateFirstRow = moment(beforeDate.value).format('MMMM') + ' - '   + moment(afterDate.value).format('MMMM')
         }else{
-          alltsrs = await getTSRsFromApi(0,totalTsrsCount.value,"","",today+'01-01',today+'12-31',1)
+           alltsrs = await getTSRsFromApi(0,totalTsrsCount.value,"","",today+'01-01',today+'12-31',1,"")
            dateFirstRow = 'January' + ' - ' + moment(Date.now()).format('MMMM')
         }
 
@@ -1419,25 +1346,16 @@ export default defineComponent({
           return x.field != 4
         })
 
-        console.log("rowsOverallPerformancerowsOverallPerformance", rowsOverallPerformance.value)
-
-        // body: buildTableBody(rowsOverall.value, overallCol,2,divisioAndSectionList.value)
-        // body: buildTableBody(rowalltsrs, rateColsTableValue,6,divisioAndSectionList.value)
-        // body: buildTableBody(rowsOverallPerformance.value, overallPerformanceCols,3,divisioAndSectionList.value)
-        // body: buildTableBody(numberOfCustomersRows.value, numberOfCustomersColumns.value,4,divisioAndSectionList.value)
-        // body: buildTableBody(summaryQuestionPerDivisionRows.value, summaryQuestionPerDivisionCols.value,5,divisioAndSectionList.value)
-        // add dates to first array
         
         
         /* make the worksheet */
         // Worksheets
         var rowsOverallWS = xlsx.utils.json_to_sheet(buildTableBody(rowsOverall.value, overallCol,2,divisioAndSectionList.value));
         
-        let a = buildTableBody(rowalltsrs, rateColsTableValue,6,divisioAndSectionList.value)
+        let bodyArr = buildTableBody(rowalltsrs, rateColsTableValue,6,divisioAndSectionList.value)
         // format to be able to export to xlsx all survey results
-        let d = a.map(function(obj) {
+        let bodyRowData = bodyArr.map(function(obj) {
           if(Array.isArray(obj)) {
-            console.log("ararar", obj)
             if(obj[0] && !(obj[0].hasOwnProperty('text'))){
               return obj
             }else{
@@ -1446,12 +1364,11 @@ export default defineComponent({
           }
           return obj
         })
-        var rowalltsrsWS = xlsx.utils.json_to_sheet(d)
+        var rowalltsrsWS = xlsx.utils.json_to_sheet(bodyRowData)
 
         // need formatting on tables with colspan ( number of customers and overall performance)
         let a1 = buildTableBody(rowsOverallPerformance.value, overallPerformanceCols,3,divisioAndSectionList.value)
         let d1 = a1.map(function(obj) {
-          console.log("objobjoverall", obj)
           if(Array.isArray(obj)) {
             for(let i =0 ; i < obj.length ; i++){
               if(obj[i] && (obj[i].hasOwnProperty('colSpan'))){
@@ -1517,188 +1434,153 @@ export default defineComponent({
     
     divisioAndSectionList.value = await getDivList()
     divisions.value = Object.keys(divisioAndSectionList.value)
-    console.log("ddsdds", divisions)
-
     
     await onRequest({
         pagination: pagination.value,
         filter: undefined
       })
+
+    await loadDivisionDataOverall(divisions.value)
     
     
   })
 
-  function onRowClick (evt, row) {
-      console.log("clicked")
-      prompt.value = true
-      tsrData.value = row
-      console.log("tssrrr", tsrData.value)
-    }
-
-  function filterDateBet(row,beforeDate,afterDate){
-    row.publishedDate = dateTime(row.publishedDate) // convert to readable date time mm/dd/yyyy
-    if ( beforeDate <= row.publishedDate && row.publishedDate <= afterDate ){
-      return row
-    }
+  async function dataUpdateWithDate(){
+    await onRequest({
+        pagination: pagination.value,
+        filter: undefined
+      })
+    await loadDivisionDataOverall(divisions.value)
+      
   }
 
-  async function uploadMigrationData (file,year) {
-      // this.$refs.uploadMigrationButton.click()
-      // console.log("fefefe2", uploadRefButton.value)
-      // console.log("fefefe", file)
-      // let file = uploadRefButton.value.files[0]
-      // console.log('File', file)
+  function onRowClick (evt, row) {
+    prompt.value = true
+    tsrData.value = row
+  }
+
+
+  async function returnMigrationData (file) {
       let duplicatesFound = 0;
+      // 0 == NO ERROR SUCCESSFUL MIGRATION
+      // 1 == ERROR FOUND IN FILE
+      // 2 == DUPLICATE FOUND
+      let success = 0;
 
       var reader = new FileReader()
-      loading.value = true
-      reader.onload = async (e) => {
-        const data = e.target.result
-        /* skip the first 4 rows */
-        // var range = XLSX.utils.decode_range(data['!ref']);
-        // range.s.r = 3; // <-- zero-indexed, so setting to 1 will skip row 0
-        // data['!ref'] = XLSX.utils.encode_range(range);
-          const rowsMigrate = xlsx.utils.sheet_to_json(xlsx.read(data, { type: 'binary', cellDates: true }).Sheets['Details of CSF forms'])
-          // console.log('rowsMigrate', rowsMigrate)
-          let finalArrObj = []
+      
+
+      return new Promise((resolve, reject) => {
+        reader.onerror = () => {
+          reader.abort();
+          reject(new DOMException("Problem parsing input file."));
+        };
+
+        reader.onload = () => {
+          resolve(reader.result);
+        };
+         reader.readAsArrayBuffer(file)
+      });
+     
+      
+    }
+
+  async function uploadMigrationData(migrationData,year){
+
+
+      let finalArrObj = []
           
-          rowsMigrate.forEach(r => {
-          
-              // Object { foo: "bar", x: 42 }
-            console.log("rmonth",r)
-            let dateyear = r.Month.toString() + ' ' + year.toString()
-            let datesubmit = new Date(dateyear)
-            console.log("datesubmit", dateyear)
-            const obj = {
-                division: r.Division,
-                service: r.Service,
-                industry: r.Sector,
-                tsrNo: r.TSRNo,
-                submittedAt: datesubmit
-              }
-            console.log("eto gfrom import", obj)
-            let answers = []
-            for (var key in r) {
-                if (r.hasOwnProperty(key)) {
-                    // console.log(key + " -> " + r[key]);
-                    key = key.split(",");
-                    // console.log(key[0])
-                    let tsr = r.TSRNo
-                    if(key[1]){
-                      const answer = {
-                        answerid: "",
-                        value: r[key].toString(),
-                        question: key[1].toString(),
-                        tsrNo: tsr
-                      }
-                      answers.push(answer)
-                    }
+      migrationData.forEach(r => {
+      
+          // Object { foo: "bar", x: 42 }
+        let dateyear = r.Month.toString() + ' ' + year.toString()
+        let datesubmit = new Date(dateyear)
+        const obj = {
+            division: r.Division,
+            service: r.Service,
+            industry: r.Sector,
+            tsrNo: r.TSRNo,
+            submittedAt: datesubmit
+          }
+        let answers = []
+        for (var key in r) {
+            if (r.hasOwnProperty(key)) {
+                // console.log(key + " -> " + r[key]);
+                key = key.split(",");
+                // console.log(key[0])
+                let tsr = r.TSRNo
+                if(key[1]){
+                  const answer = {
+                    answerid: "",
+                    value: r[key].toString(),
+                    question: key[1].toString(),
+                    tsrNo: tsr
+                  }
+                  answers.push(answer)
                 }
             }
-            obj["answers"] = answers
-            finalArrObj.push(obj)
-            // let division = rowMig.Division
-            // let service = rowMig.Service
-            // let industry = rowMig.Sector
-            // let TsrNo = rowMig.TSRNo
-          })
+        }
+        obj["answers"] = answers
+        finalArrObj.push(obj)
+      })
 
-          const uniqueValues = new Set(finalArrObj.map(v => v.tsrNo));
+      const uniqueValues = new Set(finalArrObj.map(v => v.tsrNo));
 
-          if (uniqueValues.size < finalArrObj.length) {
-            // duplicates found true if 1; 0 if none
-            duplicatesFound = 1
-          }
-          
-          
-
-          console.log('validData', finalArrObj)
-          // false
-          let success = true;
-          if(duplicatesFound == 0){
-            for (const arrayItem of finalArrObj) {
-              let answers = []
-              let a = await postAnswers(answers,arrayItem.answers,arrayItem.tsrNo,arrayItem.industry,arrayItem.service,arrayItem.division,arrayItem.submittedAt)
-              console.log("aaaa",a)
-              if (a != '200'){
-                success = false
-                $q.notify({
-                  message: 'Responses Not Migrated, Error found: ',
-                  color: 'negative',
-                  icon: 'failed'
-                })
-                break
-              }
-                
-              // await this.responsesSrvc.create(data2)
-            }
-            if(success){
-                $q.notify({
-                message: 'Responses Migrated',
-                color: 'positive',
-                icon: 'success'
-              })
-            }
+      if (uniqueValues.size < finalArrObj.length) {
+        // duplicates found true if 1; 0 if none
+        return 2
+      }else{
+        for (const arrayItem of finalArrObj) {
+          let answers = []
+          console.log("arrayitem", arrayItem)
+          let resCode = await postAnswers(answers,arrayItem.answers,arrayItem.tsrNo,arrayItem.industry,arrayItem.service,arrayItem.division,arrayItem.submittedAt)
+          if (resCode != '200'){
             
-            
-          }else{
-            $q.notify({
-            color: 'red-5',
-              textColor: 'white',
-              icon: 'warning',
-              message: 'Duplicate TSR found in file'
-            })
+            return 1
           }
-          
-
-          // after await
-          
-          
-          await onRequest({
-            pagination: pagination.value,
-            filter: undefined
-          })
-         
-        
-        
-        
+            
+          // await this.responsesSrvc.create(data2)
+        }
       }
-      reader.readAsBinaryString(file)
-    }
-
-  async function getRowsNumberCount () {
-    let tsrCount
       
-      // if (!filter) {
-      //   return rowsTable.value.length
-      // }
-      // let count = 0
-      // rowsTable.value.forEach(row => {
-      //   // question.description.toLowerCase()
-      //   // console.log("HOYOYOYOYOYOYO")
-      //   // console.log("getrowscount", row)
-      //   if (row.tsrNo.includes(filter)) {
-      //     ++count
-      //   }
-      // })
-      return tsrCount
-    }
+      
+      await onRequest({
+          pagination: pagination.value,
+          filter: undefined
+        })
+      return 0
+  }
+
+
 
   async function fetchFromServer (startRow, count, filter, sortBy, descending) {
-        console.log("startrow fetch", startRow,count)
+        // console.log("startrow fetch", startRow,count)
+        console.log("beforeDate.value && afterDate.value fetch",beforeDate.value ,afterDate.value)
         if (beforeDate.value && afterDate.value){
-          tsrList.value= await getTSRsFromApi(startRow,count,"","",beforeDate.value,afterDate.value,1)
-          console.log("tsrList.value before true and after true ", tsrList.value )
+          if(filter){
+            tsrList.value= await getTSRsFromApi(startRow,count,"","",beforeDate.value,afterDate.value,1,filter)
+          }else{
+            tsrList.value= await getTSRsFromApi(startRow,count,"","",beforeDate.value,afterDate.value,1,"")
+          }
+          
+          // console.log("tsrList.value before true and after true ", tsrList.value )
         }
         else{
-          tsrList.value = await getTSRsFromApi(startRow,count,"","",today+'01-01',today+'12-31',1)
-          console.log("tsrList.value after ", tsrList.value )
+          if(filter){
+            tsrList.value = await getTSRsFromApi(startRow,count,"","",today+'-01-01',today+'-12-31',1,filter)
+          }else{
+            tsrList.value = await getTSRsFromApi(startRow,count,"","",today+'-01-01',today+'-12-31',1,"")
+          }
+          
+          // console.log("tsrList.value after ", tsrList.value )
         }
         
       rowsTable.value =  buildTable()
-      console.log("sortBy,sortBy",sortBy)
-      
-      let data = filter ? rowsTable.value.filter(row => row.tsrNo.includes(filter)) : rowsTable.value.slice()
+
+      // if (filter){
+      //   filter = filter.toUpperCase()
+      // }
+      // let data = filter ? rowsTable.value.filter(row => row.tsrNo.includes(filter)) : rowsTable.value.slice()
       // { "sortBy": "desc", "descending": false, "page": 1, "rowsPerPage": 10, "rowsNumber": 876 }
       // { "sortBy": "desc", "descending": false, "page": 1, "rowsPerPage": 10, "rowsNumber": 873 }
       // handle sortBy
@@ -1712,7 +1594,7 @@ export default defineComponent({
               ? (a, b) => (parseFloat(b[ sortBy ]) - parseFloat(a[ sortBy ]))
               : (a, b) => (parseFloat(a[ sortBy ]) - parseFloat(b[ sortBy ]))
             )
-        data.sort(sortFn)
+        rowsTable.value.sort(sortFn)
       }
       // last page not equal to rows per page 
       // if(data.length < pagination.value.rowsPerPage){
@@ -1720,7 +1602,7 @@ export default defineComponent({
       // }else{  
         
       // }
-      return data
+      return rowsTable.value
       
     }
     async function averageLastTable (cols,rows){
@@ -1754,28 +1636,43 @@ export default defineComponent({
             sum = sum+parseFloat(filtered[j])
           }
         }
-        avgObv['value'] = parseFloat((Math.round((sum/filtered.length) * 100) / 100).toFixed(2));
+        let val = parseFloat((Math.round((sum/filtered.length) * 100) / 100).toFixed(2))
+        if (isNaN(val)){
+          avgObv['value'] = 0
+        }else{
+          avgObv['value'] = val
+        }
+        
         avgArrayWithKeys.push(avgObv)
         
       }
+      // console.log("avgArrayWithKeys",avgArrayWithKeys)
       return avgArrayWithKeys
 
     }
 
   async function onRequest(props) {
-    
-      
+
+      const { page, rowsPerPage, sortBy, descending } = props.pagination
+      const filter = props.filter
+
+      loading.value = true
+      overallLoading.value = true
+
+      // check whether there is a given date
       if(beforeDate.value && afterDate.value){
         beforeDate.value =  dateTime(beforeDate.value)
         afterDate.value =  dateTime(afterDate.value)
-        console.log("dito?")
-        totalTsrsCount.value = await totalTsrsCount(beforeDate.value, afterDate.value)
+        totalTsrsCount.value = await totalTsrsCount(beforeDate.value, afterDate.value,filter)
         
       }else{
-        totalTsrsCount.value  = await totalTsrsCount("","")
+        let currYear = new Date().getFullYear()
+        totalTsrsCount.value  = await totalTsrsCountByYear(currYear,filter)
       }
+
+      //
       if(rowsOverall.value.length ==0){
-        
+        // rows overall generate data
         for (let i=0; i<orderByPositionQuestions.value.length ; i++){
         let row = {
           dimension: orderByPositionQuestions.value[i].description,
@@ -1786,23 +1683,21 @@ export default defineComponent({
           }
         
        }
-       await loadDivisionDataOverall(divisions.value)
+       
       }
+
       
-      const { page, rowsPerPage, sortBy, descending } = props.pagination
-      const filter = props.filter
+      
+      
 
       loading.value = true
 
       // emulate server
       setTimeout(async () => {
        
-        // console.log("rowsrows", rowsTable.value)
-        
-        // pagination.value.rowsNumber =  getRowsNumberCount(filter)
-        pagination.value.rowsNumber = totalTsrsCount.value
-        // console.log("pagination.value.rowsNumber ",pagination.value.rowsNumber )
 
+       // pagination count
+        pagination.value.rowsNumber = totalTsrsCount.value
         // get all rows if "All" (0) is selected
         
         
@@ -1814,40 +1709,31 @@ export default defineComponent({
         
         
         const returnedData = await fetchFromServer(startRow, fetchCount, filter, sortBy, descending) 
+        console.log("returnedData",returnedData)
         // fetch data from "server"
-        
-        // should there any filter
-        if (filter){
-          pagination.value.rowsNumber = returnedData.length
-        }
         
         divisionList.value = [...new Set(tsrList.value.map(item => item.division))].filter(function(val) { return val !== null; });
        
-        // console.log("rettt", returnedData)
-        // returnedData.push(startRow)d
 
         // clear out existing data and add new
         rows.value.splice(0, rows.value.length, ...returnedData)
-        console.log("rowsrowsFinaltable", rows.value, "rowsrowsFinaltable2", returnedData)
+
+        // dynamic average per column
         finalAverageDataRow.value  = await averageLastTable(cols.value,rows.value)
 
         // don't forget to update local pagination object
         pagination.value.page = page
-        console.log(rowsPerPage)
         pagination.value.rowsPerPage = rowsPerPage
         pagination.value.sortBy = sortBy
         pagination.value.descending = descending
 
         // ...and turn of loading indicator
         loading.value = false
+        overallLoading.value = false
       }, 500)
 
       
   }
-
-
-
-
     return {
       rowsTable,
       rowsFilter,
@@ -1869,8 +1755,10 @@ export default defineComponent({
       dateform,
       dateTime,
       filter,
+      // pagination
       onRequest,
       pagination,
+      // row data
       rows,
       loading,
       finalAverageDataRow,
@@ -1884,7 +1772,8 @@ export default defineComponent({
       fileUpload,
       //delete
       // deleteAnswers,
-      showLoading
+      showLoading,
+      dataUpdateWithDate
     }
   }
   
