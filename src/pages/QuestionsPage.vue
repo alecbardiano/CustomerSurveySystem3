@@ -66,13 +66,11 @@
               <q-toggle v-model="isPartOfSubheader" label="Is part of another question?" />
               <q-input outlined v-model="questionDescription" label="Description" hint="ex: What industry do you belong in? " />
               <q-input outlined v-model="questionLabel" label="Label" hint="What will be the hint for this question" />
-              <q-select outlined v-model="questionType" :options="questionTypes" option-label="description" label="Question Type" hint="ex: Text, select-drop for dropdown, etc" emit-value map-options/>
+              <q-select outlined v-model="questionType"  :options="questionTypes" option-label="description" label="Question Type" hint="ex: Text, select-drop for dropdown, etc" emit-value map-options/>
               <!-- subheader -->
               <div v-if="isPartOfSubheader">
                 <q-select  outlined  v-model="partOfSubheader" :options="subHeadersQuestions" option-value="id" option-label="description" label="Which question to be included to" hint="ex: Please rate the following questions - Timeliness" />
               </div>
-             
-              
               <q-input 
         lazy-rules
         :rules="[val => !!val || 'Field is required', val => !isNaN(val) || 'Field should be a number', val => val > 0 || 'Field should be a positive number']"
@@ -110,7 +108,9 @@
               <q-input outlined v-model="updateLabel" label="Label" hint="What will be the hint for this question" />
               <!-- <q-input outlined readonly v-model="updateParent" label="Parent"/> -->
               <q-select  outlined  v-model="updateParent" :options="subHeadersQuestions"  option-label="description" label="Parent" hint="ex: Please rate the following questions - Timeliness" emit-value map-options />
-              <q-select required outlined v-model="updateQuestionType" :options="questionTypes" option-label="description" label="Question Type" hint="ex: Text, select-drop for dropdown, etc" emit-value map-options/>
+              <!-- question type is subheader -->
+              <q-select outlined v-if="updateQuestionType.id == 5" v-model="updateQuestionType" disable readonly :options="questionTypes" option-label="description" label="Question Type" disab hint="ex: Text, select-drop for dropdown, etc" emit-value map-options/>
+              <q-select outlined v-else v-model="updateQuestionType" :options="questionTypes" option-label="description" label="Question Type" disab hint="ex: Text, select-drop for dropdown, etc" emit-value map-options/>
               <!-- subheader -->
               <!-- <div v-if="isPartOfSubheader">
                 <q-select  outlined  v-model="partOfSubheader" :options="subHeadersQuestions" option-value="id" option-label="description" label="Which question to be included to" hint="ex: Please rate the following questions - Timeliness" />
