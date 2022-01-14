@@ -219,13 +219,14 @@
 
 <script type="text/javascript">
 
-  import { defineComponent, ref, computed, onMounted, watch } from 'vue'
+  import { defineComponent, ref, computed, onMounted, watch, onBeforeUnmount } from 'vue'
   import { getDivList, countPositiveFeedback, countNegativeFeedback, totalTsrsCount , totalTsrsCountByYear,getTsrYear, allOverAllRatingsFromApi} from 'src/axioshelper.js'
   import CardDashboardFeedbackCount from '../components/CardDashboardFeedbackCount.vue'
   import { Chart, registerables } from 'chart.js'
   import groupBy from 'lodash'
   import moment from 'moment';
   import {  useStore } from "vuex";
+  import { exportFile, useQuasar} from 'quasar'
 
 
 
@@ -250,6 +251,8 @@
       const totalNoResponse = ref(0)
 
       const currentYear =  ref(new Date().getFullYear())
+
+      const $q = useQuasar()
       
       const divisions = ref([])
       const divisionsAndSections = ref([])
@@ -276,6 +279,8 @@
       // bottom row customer
       const totalActualRespondents = ref([])
 
+      let timer
+
       const  yearOptions = computed(() =>{
         let earliestYear = 2000;
         let yearArr = []
@@ -289,10 +294,27 @@
 
       watch(yearTsr, (newValue, oldValue) => {
 
+        showLoading()
+
         updateTables()
         LoadFeedbackCounts(newValue)
         
       })
+
+      onBeforeUnmount(() => {
+        if (timer !== void 0) {
+          clearTimeout(timer)
+          $q.loading.hide()
+        }
+      })
+
+      function showLoading () {
+        $q.loading.show({
+          message: 'Please wait for data to be loaded..',
+          boxClass: 'bg-grey-2 text-grey-9',
+          spinnerColor: 'primary'
+        })
+      }
 
 
 
@@ -496,6 +518,8 @@
           // order according to first month January
           // api call is order descending
           rowsnumberOfCustomers.value.reverse()
+          timer = void 0
+          $q.loading.hide()
       }
 
       async function buildTable(){
