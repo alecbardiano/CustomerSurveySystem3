@@ -11,9 +11,11 @@
         <q-toolbar-title>
           Customer Survey Management System
         </q-toolbar-title>
+        <q-space />
+           <div class="fontSize">
+            Logged in: {{userLoggedin.displayName}}
+           </div>
       </q-toolbar>
-
-     
     </q-header>
    
 
@@ -140,8 +142,8 @@ export default {
     }
 
     onMounted( async () => {
-      console.log("mounted")
-      console.log("userLoggedin",userLoggedin)
+      // console.log("mounted")
+      // console.log("userLoggedin",userLoggedin)
     })
 
     return {
@@ -163,4 +165,7 @@ export default {
 //     border-color: cyan;
 //     background-color: cyan;
 // }
+.fontSize{
+  font-size: 18px;
+}
 </style>

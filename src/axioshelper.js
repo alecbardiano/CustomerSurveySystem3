@@ -3,9 +3,7 @@ import moment from 'moment';
 import {groupBy, flow, chain} from 'lodash';
 
 
-let today = new Date();
-let datetime = today
-today = moment().year()
+let today = moment().year()
 
 
 const getTSRNoFromULIMSrSystems = async function (tsrNumber) {
@@ -68,7 +66,7 @@ const getAllQuestions = function () {
     }
 
 const getTsrsViaYear = function (year){
-  console.log("yearere", year)
+  // console.log("yearere", year)
     return api.get('/tsrs?&_limit=-1&submittedAt_gte='+year+'-01-01'+'&submittedAt_lte='+year+'-12-31&_sort=division,service,submittedAt:DESC')
   .then(function( response ){
       
@@ -589,7 +587,15 @@ const numberPoorFeedbackCountPerDivision = function (beforeDate,afterDate,divisi
 }
 
 const positiveFeedbackCount = function (year)  {
-  return api.get('/answers/count?value_gte=3&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
+  return api.get('/answers/count?value_gte=3&question.question_type=2&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
+      })
+      .then(function( response ){
+          return response.data;
+      })
+}
+
+const positiveFeedbackCountData = function (start,limit,year)  {
+  return api.get('/answers/?_start='+start+'&_limit='+limit+'&value_gte=3&question.question_type=2&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
       })
       .then(function( response ){
           return response.data;
@@ -597,12 +603,37 @@ const positiveFeedbackCount = function (year)  {
 }
 
 const negativeFeedbackCount = function (year)  {
-  return api.get('/answers/count?value_lte=2&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
+  return api.get('/answers/count?value_lte=2&question.question_type=2&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
       })
       .then(function( response ){
           return response.data;
       })
 }
+
+const negativeFeedbackCountData = function (start,limit,year)  {
+  return api.get('/answers/?_start='+start+'&_limit='+limit+'&value_lte=2&question.question_type=2&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
+      })
+      .then(function( response ){
+          return response.data;
+      })
+}
+
+const noAnswerFeedbackCount = function (year)  {
+  return api.get('/answers/count?value='+ "" +'&question.question_type=2&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
+      })
+      .then(function( response ){
+          return response.data;
+      })
+}
+
+const noAnswerFeedbackCountData = function (year)  {
+  return api.get('/answers/?value='+ "" +'&question.question_type=2&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
+      })
+      .then(function( response ){
+          return response.data;
+      })
+}
+
 
 
 const totalFeedbackCountTSRByYear = function (year,filter)  {
@@ -622,11 +653,11 @@ const totalFeedbackCountTSRByYear = function (year,filter)  {
   
 }
 const totalFeedbackCountTSR = function (beforeDate,afterDate,filter)  {
-  
+    let before = moment(beforeDate).format('YYYY-MM-DD');
+    let after = moment(afterDate).format('YYYY-MM-DD');
     if (beforeDate && afterDate){
       if(filter){
-        let before = moment(beforeDate).format('YYYY-MM-DD');
-        let after = moment(afterDate).format('YYYY-MM-DD');
+        
         return api.get('/tsrs/count?tsrNo_contains='+ filter +'&submittedAt_gte='+before+'&submittedAt_lte='+after,{
             })
             .then(function( response ){
@@ -635,8 +666,6 @@ const totalFeedbackCountTSR = function (beforeDate,afterDate,filter)  {
             })
        
       }else{
-        let before = moment(beforeDate).format('YYYY-MM-DD');
-        let after = moment(afterDate).format('YYYY-MM-DD');
         return api.get('/tsrs/count?&submittedAt_gte='+before+'&submittedAt_lte='+after,{
             })
             .then(function( response ){
@@ -709,9 +738,27 @@ export const countPositiveFeedback = (year) => {
   return positiveFeedbackCount(year)
 }
 
+export const getPositiveFeedbackData = (start,limit,year) => {
+  return positiveFeedbackCountData(start,limit,year)
+}
+
+
+
 export const countNegativeFeedback = (year) => {
   return negativeFeedbackCount(year)
 }
+export const getNegativeFeedbackData= (start,limit,year) => {
+  return negativeFeedbackCountData(start,limit,year)
+}
+
+export const countNoFeedback = (year) => { 
+  return noAnswerFeedbackCount(year)
+}
+
+export const getNoAnswerFeedbackData= (start,limit,year) => { 
+  return noAnswerFeedbackCountData(start,limit,year)
+}
+
 
 
 export const totalTsrsCountByYear = (year,filter) => {

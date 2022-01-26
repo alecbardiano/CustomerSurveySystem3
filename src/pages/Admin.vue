@@ -1,7 +1,8 @@
 <template>
       <div class="q-pa-lg" >
-       
-                <q-form ref="dateform">
+                {{beforeDate}}
+                {{afterDate}}
+                <q-form ref="dateform" @submit="dataUpdateWithDate()">
                   <div class="row inline">
                   <q-input outlined filled mask="date" v-model="beforeDate" lazy-rules :rules="[val => val <= afterDate || 'Field should be earlier than after date']" placeholder="mm/dd/yy" hint="Start Date" >
                     <template v-slot:append>
@@ -35,7 +36,6 @@
                     label="Go"
                     color="primary"
                     style="margin-left: 25px; width: 70px; height: 25px;"
-                    @click="dataUpdateWithDate()"
                  />
                 </div>
     
@@ -273,7 +273,7 @@ export default defineComponent({
   const prompt = ref(false)
   const uploadDialog = ref(false)
 
-  let today = new Date();
+  let today = Date.now();
   today = moment().year()
 
   const orderKey = ref('position')
@@ -308,26 +308,15 @@ export default defineComponent({
 
   watch(afterDate, (newValue, oldValue) => {
 
-    dateform.value.validate().then(success => {
-      // filterTable(newValue,1)
-      if (success) { 
-          
-      }
-    })
-
-    return dateTimeToApi(newValue)
+    let val = newValue.toString()
+    return dateTimeToApi(val)
     
   })
   watch(beforeDate, (newValue, oldValue) => {
 
-    dateform.value.validate().then(success => {
-      // filterTable(newValue,1)
-      if (success) { 
-         
-      }
-    })
-
-    return dateTimeToApi(newValue)
+    
+    let val = newValue.toString()
+    return dateTimeToApi(val)
      
     
   })
@@ -616,9 +605,11 @@ export default defineComponent({
       // console.log("Filelele", file.name)
       // filename should be csms-year.xlsx any format as long as the space will be '-' and the last word will be the year in numbers 'example xxx-xx-xxx-x-2021.xlsx or any' 
       let x = file.name.split('-')
+      console.log("x",x)
       if(x){
         // .xlsx
         let dot = x[x.length-1].split('.')
+        console.log("dot",dot)
         // console.log("dot", dot)
         if(dot){
           // test same tsr number and tsr number on database and import
@@ -669,12 +660,25 @@ export default defineComponent({
     
    }
    function showLoading () {
-        $q.loading.show({
-          message: 'Please wait for data to be imported..',
-          boxClass: 'bg-grey-2 text-grey-9',
-          spinnerColor: 'primary'
-        })
-      }
+      $q.loading.show({
+        message: 'Please wait for data to be imported..',
+        boxClass: 'bg-grey-2 text-grey-9',
+        spinnerColor: 'primary'
+      })
+    }
+
+    function showLoadingData () {
+      $q.loading.show({
+        message: 'Please wait for data to be loaded',
+        boxClass: 'bg-grey-2 text-grey-9',
+        spinnerColor: 'primary'
+      })
+    }
+
+    function hideLoading(){
+      timer = void 0
+      $q.loading.hide()
+    }
 
     function buildTableBody(data, columns, mode,divisionsAndSections) {
         // survey results ALL with extra header
@@ -1424,6 +1428,7 @@ export default defineComponent({
 
    onMounted( async () => {
     console.log("mounted")
+    showLoadingData()
     // first to be called
     try {
         
@@ -1434,6 +1439,8 @@ export default defineComponent({
     
     divisioAndSectionList.value = await getDivList()
     divisions.value = Object.keys(divisioAndSectionList.value)
+
+   
     
     await onRequest({
         pagination: pagination.value,
@@ -1441,17 +1448,25 @@ export default defineComponent({
       })
 
     await loadDivisionDataOverall(divisions.value)
+
+    hideLoading()
+
+    
     
     
   })
 
   async function dataUpdateWithDate(){
-    await onRequest({
+    showLoadingData()
+    let suc = await dateform.value.validate()
+    if(suc){
+      await onRequest({
         pagination: pagination.value,
         filter: undefined
-      })
-    await loadDivisionDataOverall(divisions.value)
-      
+        })
+        await loadDivisionDataOverall(divisions.value)
+    }
+    hideLoading()
   }
 
   function onRowClick (evt, row) {
@@ -1493,7 +1508,10 @@ export default defineComponent({
       migrationData.forEach(r => {
       
           // Object { foo: "bar", x: 42 }
+        console.log("r", r, " year", year)
+        console.log("rmonth", r.Month, " year", year)
         let dateyear = r.Month.toString() + ' ' + year.toString()
+        
         let datesubmit = new Date(dateyear)
         const obj = {
             division: r.Division,
@@ -1525,6 +1543,16 @@ export default defineComponent({
       })
 
       const uniqueValues = new Set(finalArrObj.map(v => v.tsrNo));
+      const nounique = (finalArrObj.map(v => v.tsrNo));
+      const uniqarr = Array.from(uniqueValues);
+      console.log("finalArrObj.length",finalArrObj.length)
+      console.log("uniqueValues.length",uniqueValues.length)
+      console.log("finalArrObj.length",finalArrObj)
+      console.log("uniqueValues.length",uniqueValues)
+      let difference = uniqarr
+                 .filter(x => !nounique.includes(x))
+                 .concat(nounique.filter(x => !uniqarr.includes(x)));
+      console.log("intersection", difference)
 
       if (uniqueValues.size < finalArrObj.length) {
         // duplicates found true if 1; 0 if none
@@ -1661,8 +1689,8 @@ export default defineComponent({
 
       // check whether there is a given date
       if(beforeDate.value && afterDate.value){
-        beforeDate.value =  dateTime(beforeDate.value)
-        afterDate.value =  dateTime(afterDate.value)
+        // beforeDate.value =  dateTime(beforeDate.value)
+        // afterDate.value =  dateTime(afterDate.value)
         totalTsrsCount.value = await totalTsrsCount(beforeDate.value, afterDate.value,filter)
         
       }else{
