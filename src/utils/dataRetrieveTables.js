@@ -24,14 +24,13 @@ function buildOverallPerfColumns (divisionsAndSections){
       field: 'percentage',
       sortable: true
     })
-    for (var key in divisionsAndSections) {
-        for (const element of divisionsAndSections[key]) {
-      // console.log("divisionsAndSections232", divisionsAndSections.value[divisions.value[i]])
-      let stringColField = element.toString().concat(key.toString())
-      let col = { name: element, align: 'center', label: element, field: stringColField, sortable: true }
+    divisionsAndSections.forEach(element => {
+      let stringColField = element.keyname
+      let col = { name: element.service, align: 'center', label: element.service, field: stringColField, sortable: true }
       cols.push(col)
-      }
-    }
+    });
+      // console.log("divisionsAndSections232", divisionsAndSections.value[divisions.value[i]])
+      
     return cols
 }
 
@@ -86,20 +85,19 @@ function buildOverallPerfRows (divisionsAndSections, alltsrs){
         2: 0,
         1: 0,
       };
+      
+      divisionsAndSections.forEach(element => {
 
-      for (var key in divisionsAndSections) {
-        for (const element of divisionsAndSections[key]) {
-          let stringColField = element.toString().concat(key.toString())
+        let stringColField = element.keyname
           // filter all data
-          let sample = overallratings.filter((elementTSR) => {
-          if(elementTSR.tsr){
-            if(elementTSR.tsr.division == key && elementTSR.tsr.service == element){
-              return elementTSR
-            }
+        let sample = overallratings.filter((elementTSR) => {
+        if(elementTSR.tsr){
+          if(elementTSR.tsr.division == element.division && elementTSR.tsr.service == element.service){
+            return elementTSR
           }
-        })
-        
-        // console.log("sampless", sample)
+        }
+       })
+
         const counts = {
           5: 0, 
           4: 0,
@@ -109,8 +107,8 @@ function buildOverallPerfRows (divisionsAndSections, alltsrs){
         };
         // console.log("x", x+=sample.length)
         // console.log("sample", sample.length)
-        for (const element of sample) {
-          let num = element.answer.value
+        for (const elementSample of sample) {
+          let num = elementSample.answer.value
           if (num == 1){
             counts[1] +=1
             mainCounts[1] +=1
@@ -139,14 +137,20 @@ function buildOverallPerfRows (divisionsAndSections, alltsrs){
           rowsOverallPerformance.forEach(function (arrayItem) {
             if(key2 == arrayItem.id){
               value = (value/ sample.length) * 100
+              if(isNaN(value)){
+                value = 0
+              }
               value = value.toFixed(2).toString() + '%'
               arrayItem[stringColField] = value
             }
             
             });
           }
-        }
-      }
+        
+      });
+        
+        // console.log("sampless", sample)
+        
 
       let totalPercentRow = 0
       // total rows per service
@@ -160,15 +164,15 @@ function buildOverallPerfRows (divisionsAndSections, alltsrs){
       rowsOverallPerformance[4]['percentage'] = parseFloat(totalPercentRow).toFixed(2).toString() + '%'
     
 
-       for (var key in divisionsAndSections) {
-          for (const element of divisionsAndSections[key]) {
-          let service = element.toString().concat(key.toString())
-          let a = rowsOverallPerformance.map(a => a[service]);
-          let sum = a.reduce((a, b) => parseFloat(a) + parseFloat(b), 0)
-          // rows
-          rowsOverallPerformance[4][service] = sum.toFixed(2).toString() + '%'
-        }
-      }
+      divisionsAndSections.forEach(element => {
+        let service = element.keyname
+        let a = rowsOverallPerformance.map(a => a[service]);
+        let sum = a.reduce((a, b) => parseFloat(a) + parseFloat(b), 0)
+        // rows
+        rowsOverallPerformance[4][service] = sum.toFixed(2).toString() + '%'
+    
+       });
+          
       // rowsOverallPerformance.push(totalPerField)
 
       return rowsOverallPerformance
@@ -183,14 +187,13 @@ function buildNumberOfCustomersColumns (divisionsAndSections){
     field: 'month',
     sortable: true
   })
-    for (var key in divisionsAndSections) {
-        for (const element of divisionsAndSections[key]) {
-      // console.log("divisionsAndSections232", divisionsAndSections.value[divisions.value[i]])
-      let stringColField = element.toString().concat(key.toString())
-      let col = { name: element, align: 'center', label: element, field: stringColField, sortable: true }
-      cols.push(col)
-      }
-    }
+
+  divisionsAndSections.forEach(element => {
+    let stringColField = element.keyname
+    let col = { name: element.service, align: 'center', label: element.service, field: stringColField, sortable: true }
+    cols.push(col)
+  });
+  
     cols.push({
         name: 'Total',
         align: 'center',
@@ -222,13 +225,12 @@ function buildNumberOfCustomersRows (divisionsAndSections, tsrList){
               row['month'] = key
               
               let temp = result[key]
-              for (var key2 in divisionsAndSections) {
-                for (const element of divisionsAndSections[key2]) {
-                  let stringColField = element.toString().concat(key2.toString())
+              divisionsAndSections.forEach(element => {
+                let stringColField = element.keyname
                   // filter all data
                   let sample = temp.filter((elementTSR) => {
                   if(elementTSR.tsrNo){
-                    if(elementTSR.division == key2 && elementTSR.service == element){
+                    if(elementTSR.division == element.division && elementTSR.service == element.service){
                       // console.log("pasok oh loko" )
                       return elementTSR
                     }
@@ -237,10 +239,10 @@ function buildNumberOfCustomersRows (divisionsAndSections, tsrList){
                   })
                   row[stringColField] = sample.length ? sample.length : 0
                   totalPerMonth += sample.length
-                }
-              }
+              });
+                  
               // total horizontal
-              row['total'] = totalPerMonth
+              row['total'] = Math.round(totalPerMonth).toFixed(2).toString()
               totalRespondentsPerMonth += totalPerMonth
               
               rowsnumberOfCustomers.push(row)
@@ -250,20 +252,19 @@ function buildNumberOfCustomersRows (divisionsAndSections, tsrList){
         // total per service
         let arrTotal = {}
         let totalOfTotals = 0
-        for (var key2 in divisionsAndSections) {
-           for (const element of divisionsAndSections[key2]) {
-           let stringColField = element.toString().concat(key2.toString())
-           let sample = filterMyArr(rowsnumberOfCustomers, stringColField)
-          //  console.log("Samp", sample)
-           let sum = sample.reduce((a, b) => a + b, 0)
+        divisionsAndSections.forEach(element => {
+          let stringColField = element.keyname
+          let sample = filterMyArr(rowsnumberOfCustomers, stringColField)
+        //  console.log("Samp", sample)
+          let sum = sample.reduce((a, b) => a + b, 0)
+          
+          arrTotal[stringColField] = sum
+          // total vertical per service
+          arrTotal["month"] = "Total Actual Respondents"
+          totalOfTotals += sum
+        });
            
-           arrTotal[stringColField] = sum
-           // total vertical per service
-           arrTotal["month"] = "Total Actual Respondents"
-           totalOfTotals += sum
           //  totalActualRespondents.push(arrTotal)
-          }
-        }
         arrTotal['total'] = totalOfTotals
         rowsnumberOfCustomers.push(arrTotal)
         // total actual respondents
@@ -278,23 +279,23 @@ function buildSummaryPerDivisionRows (questions,divisionsAndSections,allTsrs){
   
   let dataDivision = []
       
-      for (var key2 in divisionsAndSections) {
+  divisionsAndSections.forEach(element => {
         
-        for (const element of divisionsAndSections[key2]) {
+     
           let index = 0
           // if(index % 5 == 0){
           //   rowsSummary.push({division: key2, service: "" ,servicearea: "5 - Outstanding" , id: 5})
           //   rowsSummary.push({division: key2, service: element, servicearea: "4 - Very Satisfactory" , id: 4 })
           // }
-          rowsSummary.push({division: key2, service: element ,servicearea: "5 - Outstanding" , id: 5})
-          rowsSummary.push({division: key2, service: element, servicearea: "4 - Very Satisfactory" , id: 4 })
-          rowsSummary.push({division: key2, service: element,servicearea: "3 - Satisfactory", id: 3 })
-          rowsSummary.push({division: key2, service: element,servicearea: "2 - Fair & 1 - Poor", id: 2})
-          rowsSummary.push({division: key2, service: element,servicearea: "No Response", id: 0})
+          rowsSummary.push({division: element.division, service: element.service ,servicearea: "5 - Outstanding" , id: 5})
+          rowsSummary.push({division: element.division, service: element.service, servicearea: "4 - Very Satisfactory" , id: 4 })
+          rowsSummary.push({division: element.division, service: element.service,servicearea: "3 - Satisfactory", id: 3 })
+          rowsSummary.push({division: element.division, service: element.service,servicearea: "2 - Fair & 1 - Poor", id: 2})
+          rowsSummary.push({division: element.division, service: element.service,servicearea: "No Response", id: 0})
           // let dataDivision = await getOverall(key2,element,questions[j].id,'01-01-2021','12-31-2021')
           // console.log("dataDivisiondataDivision",dataDivision)
           let answersperDivision = []
-          dataDivision = allTsrs.filter(a => a.division == key2 && a.service == element)
+          dataDivision = allTsrs.filter(a => a.division == element.division && a.service == element.service)
           for (let j=0; j<questions.length; j++){ 
             const counts = {
                     5: 0, 
@@ -353,11 +354,14 @@ function buildSummaryPerDivisionRows (questions,divisionsAndSections,allTsrs){
            for(let [key, value] of Object.entries(counts)){
             //  console.log("vavavaval", value)
             rowsSummary.forEach(function (arrayItem) {
-              if (arrayItem.division == key2 && arrayItem.service == element)
+              if (arrayItem.division == element.division && arrayItem.service == element.service)
               if(key == arrayItem.id){
                 
                 
                 value = (value/ dataDivision.length) * 100
+                if(isNaN(value)){
+                  value = 0
+                }
                 value = value.toFixed(2).toString() + '%'
                 arrayItem[questions[j].id] = value
                 arrayItem['countsDivision'] = dataDivision.length
@@ -389,8 +393,7 @@ function buildSummaryPerDivisionRows (questions,divisionsAndSections,allTsrs){
       
       }
       // rowsSummary.push([{text: "No of Respondents"},{text: index},"","","","","","","",""])
-    }
-  }
+  });
   return rowsSummary
   
 }

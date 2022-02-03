@@ -76,6 +76,30 @@ const getTsrsViaYear = function (year){
     })
 }
 
+const getAllTSRsByYearAndMonth = function (month,year) {
+  // mode 3 admin division
+  // mode 2 dashboard
+  // mode 1 admin
+  let bfdate = new Date(year, month)
+  let afterDate
+  if(month == 12){
+    month = 0
+    afterDate = new Date(year+1, month)
+  }else{
+    afterDate = new Date(year, month+1)
+  }
+  let before = moment(bfdate).format('YYYY-MM-DD');
+  let after = moment(afterDate).format('YYYY-MM-DD');
+  
+    return api.get('/tsrs?&_limit=-1&submittedAt_gte='+before+'&submittedAt_lt='+ after +'&_sort=division:ASC,service:ASC,submittedAt:DESC')
+      .then(function( response ){
+          
+          // console.log("from axios")
+          // console.log(response.data)
+          return response.data;
+        })
+  }
+
 const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,mode,filter) {
   // mode 3 admin division
   // mode 2 dashboard
@@ -152,6 +176,30 @@ const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,m
     }
   }
 
+const getAllAnswerSearch = function (searchTsrNo,mode,start,limit){
+  return api.get('/answers/searchAnswer/' + searchTsrNo +'/' + mode +'/' + start +'/' + limit)
+  // /answers/searchAnswer/:searchTsrNo/:mode/:rowCount/:offset
+        .then(function( response ){
+            
+            // console.log("from axios")
+            console.log(response.data)
+            return response.data;
+        })
+
+  // http://10.10.120.19:1337/answers/searchAnswer/MIRDC-012016-CLS-0010
+}
+const getCountAllAnswerSearch = function (searchTsrNo,mode){
+  return api.get('/answers/searchAnswer/' + searchTsrNo +'/' + mode)
+  // /answers/searchAnswer/:searchTsrNo/:mode/:rowCount/:offset
+        .then(function( response ){
+            
+            // console.log("from axios")
+            console.log(response.data)
+            return response.data;
+        })
+
+  // http://10.10.120.19:1337/answers/searchAnswer/MIRDC-012016-CLS-0010
+}
 const getAllAnswers = function () {
     //   loading.value = true;
     //   error.value = null;
@@ -197,33 +245,44 @@ const getTsrViaDivision = function (division) {
     })
 }
 
+const countServicePerDivision = function () {
+  return api.get('/tsrs/countPerDivisions')
+    .then(function( response ){
+      //       let arr = response.data
+      return response.data
+    })
+}
 
 const getDivisionList = function () {
-    return api.get('/tsrs/?_limit=-1')
-      .then(function( response ){
-          let arr = response.data
-          // console.log("from axios tsr division", response.data)
-          let result = [...new Set(arr.map(item => item.division))].filter(function(val) { return val !== null; });
-          let obj = arr.filter(item => item.division).map(
-            ({division,service}) => (
-              { div: division, 
-                sec: service
-              }
-              ))
-
-          let temparr = []
-          temparr = obj.reduce(function (r, a) {
-            r[a.div] = r[a.div] || [];
-            // if service already exist, dont push to array
-            if( !(r[a.div].includes(a.sec))){
-              r[a.div].push(a.sec);
-            }
-            return r;
-        }, Object.create(null));
-
-        return temparr
-
+    return api.get('/tsrs/divisions')
+    .then(function( response ){
+      //       let arr = response.data
+      return response.data
     })
+    //   .then(function( response ){
+    //       let arr = response.data
+    //       // console.log("from axios tsr division", response.data)
+    //       let result = [...new Set(arr.map(item => item.division))].filter(function(val) { return val !== null; });
+    //       let obj = arr.filter(item => item.division).map(
+    //         ({division,service}) => (
+    //           { div: division, 
+    //             sec: service
+    //           }
+    //           ))
+
+    //       let temparr = []
+    //       temparr = obj.reduce(function (r, a) {
+    //         r[a.div] = r[a.div] || [];
+    //         // if service already exist, dont push to array
+    //         if( !(r[a.div].includes(a.sec))){
+    //           r[a.div].push(a.sec);
+    //         }
+    //         return r;
+    //     }, Object.create(null));
+
+    //     return temparr
+
+    // })
 }
 
 // const getDivisionList = function () {
@@ -683,37 +742,48 @@ const totalFeedbackCountTSR = function (beforeDate,afterDate,filter)  {
     }
 }
 
+//new Dashboard
+const allOverAllRatings = function (month,year){
 
-const allOverAllRatings = function (beforeDate,afterDate,year){
+  let bfdate = new Date(year, month)
+  let afterDate
+  if(month == 12){
+    month = 0
+    afterDate = new Date(year+1, month)
+  }else{
+    afterDate = new Date(year, month+1)
+  }
+  let before = moment(bfdate).format('YYYY-MM-DD');
+  let after = moment(afterDate).format('YYYY-MM-DD');
 
   if ( year ){
-    return api.get('/answers/?_limit=-1&question.id=12&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31')
+    return api.get('/answers/?_limit=-1&question.id=12&tsr.submittedAt_gte='+before +'&tsr.submittedAt_lt='+after)
+      .then(function( response ){
+          
+          return response.data;
+      })
+    }
+}
+
+// admin division
+const allOverAllRatingsAdminDivision = function (beforeDate,afterDate){
+
+if (beforeDate && afterDate){
+  let before = moment(beforeDate).format('YYYY-MM-DD');
+  let after = moment(afterDate).format('YYYY-MM-DD');
+    return api.get('/answers/?_limit=-1&tsr.submittedAt_gte='+before+'&tsr.submittedAt_lte='+after+'&question.id=12')
       .then(function( response ){
           
           return response.data;
       })
   }else{
-    if (beforeDate && afterDate){
-      let before = moment(beforeDate).format('YYYY-MM-DD');
-      let after = moment(afterDate).format('YYYY-MM-DD');
-        return api.get('/answers/?_limit=-1&tsr.submittedAt_gte='+before+'&tsr.submittedAt_lte='+after+'&question.id=12')
-          .then(function( response ){
-              
-              return response.data;
-          })
-      }else{
-        return api.get('/answers/?_limit=-1&question.id=12&tsr.submittedAt_gte='+today+'-01-01'+'&tsr.submittedAt_lte='+today+'-12-31')
-          .then(function( response ){
-              
-              return response.data;
-          })
-      }
+    return api.get('/answers/?_limit=-1&question.id=12&tsr.submittedAt_gte='+today+'-01-01'+'&tsr.submittedAt_lte='+today+'-12-31')
+      .then(function( response ){
+          
+          return response.data;
+      })
   }
-  
-  
-  
 }
-
 
 const loginToSSO = function (username,password) {
       return api.post('/auth/local', {
@@ -845,13 +915,16 @@ export const poorFeedbackPerDivision = (beforeDate,afterDate,division,service) =
 export const getDivList = () => {
   return getDivisionList()
 }
+export const getCountServicePerDivision = () => {
+  return countServicePerDivision()
+}
 
 export const getSecList = (division) => {
   return getSectionList(division)
 }
 
-export const allOverAllRatingsFromApi = (beforeDate,afterDate,year) => {
-  return allOverAllRatings(beforeDate,afterDate,year)
+export const allOverAllRatingsFromApi = (beforeDate,year) => {
+  return allOverAllRatings(beforeDate,year)
 }
 
 export const deleteAll = () => {
@@ -866,6 +939,25 @@ export const loginToSSOStrapi = (username,password) => {
 export const getTsrYear = (year) => {
   return getTsrsViaYear(year)
 }
+
+// new
+export const getTSRYearAndMonth = (month,year) => {
+  return getAllTSRsByYearAndMonth(month,year)
+}
+
+export const getAnswerBySearch = (search,mode,start,limit) => {
+  return getAllAnswerSearch(search,mode,start,limit)
+}
+
+export const countAnswerBySearch = (search,mode) => {
+  return getCountAllAnswerSearch(search,mode)
+}
+
+
+
+
+
+
 
 
 

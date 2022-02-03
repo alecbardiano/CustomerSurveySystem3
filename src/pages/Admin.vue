@@ -235,7 +235,7 @@
 <script>
 // import packages
 import { reactive, defineComponent, ref, onMounted, computed , watch,onBeforeUnmount} from 'vue'
-import { getQuestions, getTSRs,postAnswers , getOverall,deleteAll,totalTsrsCount, getDivList, totalTsrsCountByYear} from 'src/axioshelper.js'
+import { getQuestions, getTSRs,postAnswers , getOverall,deleteAll,totalTsrsCount, getDivList, totalTsrsCountByYear,getTSRYearAndMonth,getCountServicePerDivision} from 'src/axioshelper.js'
 import { overAllColumns, overAllRows,numberOfCustomersColumnsData,numberOfCustomersRowsData, summaryPerDivisionRows, summaryPerDivisionColumns  } from 'src/utils/dataRetrieveTables.js'
 import { exportFile, useQuasar} from 'quasar'
 import { xlsx, pdfMake } from 'boot/axios'
@@ -396,7 +396,7 @@ export default defineComponent({
     rowdatafromapi.map(function(item){
       let row = {
         tsrNo: item.tsrNo,
-        publishedDate:dateTime(item.submittedAt),
+        submittedAt:dateTime(item.submittedAt),
         division: item.division,
         industry: item.industry,
         service: item.service,
@@ -506,10 +506,10 @@ export default defineComponent({
     // console.log("hellodivlistload divisin data", divlist)
     colsOverall.value.push({ name: 'Score' ,align: 'left', label: 'Score All in Service', field: 'scoreservice' , style:"width: 300px"})
     for(let i =0; i<divlist.length; i++){
-      colsOverall.value.push({name: divlist[i] ,align: 'left', label: divlist[i], field: divlist[i] , sortable: true })
+      colsOverall.value.push({name: divlist[i].division ,align: 'left', label: divlist[i].division, field: divlist[i].division , sortable: true })
       for (let j=0; j<rowsOverall.value.length; j++){
         
-        dataDivision = await getOverall(divlist[i],"",rowsOverall.value[j].id,beforeDate.value,afterDate.value)
+        dataDivision = await getOverall(divlist[i].division,"",rowsOverall.value[j].id,beforeDate.value,afterDate.value)
         if(dataDivision.length != 0){
           dataDivision = dataDivision.map(a => a.value)
           dataDivision = dataDivision.map(function (x) { 
@@ -531,10 +531,10 @@ export default defineComponent({
           // console.log("avg",avg)
           // set divName for mapping of column to row
           //rows of average
-          rowsOverall.value[j][divlist[i]] = avg
+          rowsOverall.value[j][divlist[i].division] = avg
           // rowsOverall.value[j].divlist[i] = avg
         }else{
-          rowsOverall.value[j][divlist[i]] = 0
+          rowsOverall.value[j][divlist[i].division] = 0
           rowsOverall.value[j]["scoreservice"] = 0
         }
       }
@@ -679,6 +679,7 @@ export default defineComponent({
       timer = void 0
       $q.loading.hide()
     }
+    
 
     function buildTableBody(data, columns, mode,divisionsAndSections) {
         // survey results ALL with extra header
@@ -699,6 +700,7 @@ export default defineComponent({
           // the column names taken from label 
           body.push(mainArrayColumn);
           let copyData = data.map((rest ) => rest)
+          console.log("copy", copyData)
             
             
           copyData.forEach(function(row) {
@@ -725,14 +727,16 @@ export default defineComponent({
           arrFirstHeader.push({})
           arrFirstHeader.push({})
           // divisions 
-          for(let div in divisionsAndSections){
+          divisions.value.forEach(element => {
+            
+        
             // push row data
-            arrFirstHeader.push({text: div, colSpan: divisionsAndSections[div].length})
-            for(let i =0; i< divisionsAndSections[div].length-1; i++){
+            arrFirstHeader.push({text: element.division, colSpan: element.count})
+            for(let i =0; i< element.count-1; i++){
               // push 
               arrFirstHeader.push({})
             }
-          }
+          });
           body.push(arrFirstHeader)
           
           let mainArrayColumn = columns.map((a => a.label));
@@ -761,12 +765,17 @@ export default defineComponent({
         let arrFirstHeader = []
         // first header
         arrFirstHeader.push({})
-        for(let div in divisionsAndSections){
-          arrFirstHeader.push({text: div, colSpan: divisionsAndSections[div].length})
-          for(let i =0; i< divisionsAndSections[div].length-1; i++){
-            arrFirstHeader.push({})
-          }
-        }
+        // divisions with count
+        divisions.value.forEach(element => {
+            
+        
+            // push row data
+            arrFirstHeader.push({text: element.division, colSpan: element.count})
+            for(let i =0; i< element.count-1; i++){
+              // push 
+              arrFirstHeader.push({})
+            }
+          });
         arrFirstHeader.push({})
         body.push(arrFirstHeader)
         
@@ -877,9 +886,9 @@ export default defineComponent({
               // every reset of every new division and service
               prevRespond = row.countsDivision
               body.push(["No of Respondents: ",prevRespond,"","","","","","","",""])
-              body.push(["No. and % of customers who rated the service as very satisfactory or better: ",Math.round(numberPrevVerySatis),prevVerySatis.toString() + '%',"","","","","","",""])
-              body.push(["No. and % of customers who rated the service as satisfactory or better: ",Math.round(numberPrevSatis),prevSatis.toString() + '%',"","","","","","",""])
-              body.push(["No. and % of customers who rated the service as Fair or Poor: ",Math.round(numberPrevPoor),prevPoor.toString() + '%',"","","","","","",""])
+              body.push(["No. and % of customers who rated the service as very satisfactory or better: ",Math.round(numberPrevVerySatis),prevVerySatis.toFixed(2).toString() + '%',"","","","","","",""])
+              body.push(["No. and % of customers who rated the service as satisfactory or better: ",Math.round(numberPrevSatis),prevSatis.toFixed(2).toString() + '%',"","","","","","",""])
+              body.push(["No. and % of customers who rated the service as Fair or Poor: ",Math.round(numberPrevPoor),prevPoor.toFixed(2).toString() + '%',"","","","","","",""])
               index +=4
               // add to total
               totalPrevRespond += prevRespond
@@ -909,6 +918,7 @@ export default defineComponent({
           body.push(mainArrayColumn);
 
           let copyData = data.map((rest ) => rest)
+          console.log("copys", copyData)
             
             let prevDivision = ''
             let prevService = ''
@@ -1144,19 +1154,52 @@ export default defineComponent({
     // Summary of Citizen/Client Satisfaction Survey CCSS Rating
     summaryQuestionPerDivisionCols.value = summaryPerDivisionColumns(orderByPositionQuestions.value)
     summaryQuestionPerDivisionRows.value =  summaryPerDivisionRows(orderByPositionQuestions.value,divisioAndSectionList.value,alltsrs)
-  
+    
   }
+
+  function compare( a, b ) {
+      if ( a.division < b.division ){
+        return -1;
+      }
+      if ( a.division > b.division ){
+        return 1;
+      }
+      return 0;
+    }
+
+  function compare2( a, b ) {
+      if ( a.service < b.service ){
+        return -1;
+      }
+      if ( a.service > b.service ){
+        return 1;
+      }
+      return 0;
+    }
+
     
   async function generatePDF(){
     let alltsrs
     // get all tsrs
+    
     if (beforeDate.value && afterDate.value){
-      alltsrs = await getTSRsFromApi(0,totalTsrsCount.value,"","",beforeDate.value,afterDate.value,1,"")
+      alltsrs = await getAllTsrsByYearMonth(beforeDate.value,afterDate.value)
     }else{
-      alltsrs = await getTSRsFromApi(0,totalTsrsCount.value,"","",today+'01-01',today+'12-31',1,"")
+      // first day of year
+      let yearToday = new Date().getFullYear()
+      let startDate = new Date(yearToday, 0, 1);
+      // current Date
+      let afterDate = new Date()
+      alltsrs = await getAllTsrsByYearMonth(startDate,afterDate)
     }
     console.log("all tsrs", alltsrs)
     buildOverall(alltsrs)
+
+    // sort by Division
+    alltsrs = alltsrs.sort( compare );
+    // sort by Service
+    alltsrs = alltsrs.sort( compare2 );
+    
     
     let rowalltsrs = buildRow(alltsrs)
     // for overall column table Overall Agency Citizen/ Client Satisfaction Score' deconstruct to get only field and label
@@ -1324,20 +1367,53 @@ export default defineComponent({
       // pdf.download('Customer Survey Management System Report.pdf');
       pdf.open();
    }
+
+  async function getAllTsrsByYearMonth (before,after){
+    let tsrMonth
+    let alltsrs = []
+    let beforeMom = moment(before).month()
+    let currYear = moment(before).year()
+    let diffMonths = Math.floor(moment(after).diff(moment(before), 'months', true))
+    console.log("diffmonths", diffMonths)
+    
+    for(let i=0 ; i<=diffMonths; i++){
+      tsrMonth = await getTSRYearAndMonth(beforeMom,currYear)
+      console.log("curryear", currYear)
+      console.log("beforeMom", beforeMom)
+      tsrMonth.forEach(element => {
+        alltsrs.push(element)
+      });
+      if(beforeMom == 11){
+        beforeMom = 0
+        currYear += 1
+      }else{
+        beforeMom+= 1
+      }
+      
+      
+    }
+    console.log("give all the love" , alltsrs)
+    return alltsrs
+  }
   
   async function generateExcel () {
         let alltsrs
         let dateFirstRow
         // get all tsrs needed for generate data
         if (beforeDate.value && afterDate.value){
-           alltsrs = await getTSRsFromApi(0,totalTsrsCount.value,"","",beforeDate.value,afterDate.value,1,"")
-           dateFirstRow = moment(beforeDate.value).format('MMMM') + ' - '   + moment(afterDate.value).format('MMMM')
+           alltsrs = await getAllTsrsByYearMonth(beforeDate.value,afterDate.value)
+           dateFirstRow = moment(beforeDate.value).format('MMMM-YYYY') + ' - '   + moment(afterDate.value).format('MMMM-YYYY')
         }else{
-           alltsrs = await getTSRsFromApi(0,totalTsrsCount.value,"","",today+'01-01',today+'12-31',1,"")
-           dateFirstRow = 'January' + ' - ' + moment(Date.now()).format('MMMM')
+           // first day of year
+           let currYear = new Date().getFullYear()
+           let startDate = new Date(currYear, 0, 1);
+           // current Date
+           let afterDate = new Date()
+           alltsrs = await getAllTsrsByYearMonth(startDate,afterDate)
+           dateFirstRow = 'January ' + currYear + ' - ' + moment(Date.now()).format('MMMM-YYYY')
         }
 
-        await buildOverall(alltsrs)
+        buildOverall(alltsrs)
         let rowalltsrs = buildRow(alltsrs)
     // for overall column table Overall Agency Citizen/ Client Satisfaction Score' deconstruct to get only field and label
         let overallCol = colsOverall.value.map(({ field, label }) => ({field, label}));
@@ -1438,7 +1514,8 @@ export default defineComponent({
     }
     
     divisioAndSectionList.value = await getDivList()
-    divisions.value = Object.keys(divisioAndSectionList.value)
+    divisions.value = await getCountServicePerDivision()
+    // divisions.value = divisions.value.map( item => item.division)
 
    
     

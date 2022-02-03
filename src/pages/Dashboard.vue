@@ -158,6 +158,7 @@
       row-key="col1"
       separator="cell"
       title="Overall Performance of the Center Based on CSS Responses"
+      style="height: 500px"
       :rows-per-page-options="[0]"
     >
     
@@ -167,7 +168,7 @@
           <q-tr>
             <q-th key="serviceArea" style="width: 250px" class="bg-light-blue-9 black-white"></q-th>
             <q-th key="percentage" style="width: 100px" class="bg-light-blue-9 black-white"></q-th>
-            <q-th v-for="(col,key) in divisionsAndSections" v-bind:key="col.name" v-bind:colspan="col.length"> {{key}}</q-th>
+            <q-th v-for="(col) in divisions" v-bind:key="col.name" v-bind:colspan="col.count"> {{col.division}}</q-th>
           </q-tr>
           <q-tr>
             <q-th  v-for="col in colsOverallPerformance"  v-bind:key="col.name" class="bg-light-blue-9 black-white" > {{col.name}}</q-th>
@@ -204,7 +205,7 @@
       <!-- <div  -->
         <q-tr>
           <q-th key="Month" style="width: 250px" class="primary"></q-th>
-          <q-th v-for="(col,key) in divisionsAndSections" v-bind:key="col.name" v-bind:colspan="col.length"> {{key}}</q-th>
+          <q-th v-for="(col) in divisions" v-bind:key="col.name" v-bind:colspan="col.count"> {{col.division}}</q-th>
           <q-th key="Total" style="width: 250px" class="primary"></q-th>
         </q-tr>
         <q-tr>
@@ -280,12 +281,15 @@
             </q-card-section>
 
             <q-card-section class="row items-left">
+            <div class="q-pa-md">
                <q-table
                   v-if="cardData"
                   class="my-sticky-header-table"
+                  
                   :title="cardTitle"
                   :rows="rows"
                   :columns="cardDataCols"
+                  :filter="filter"
                   v-model:pagination="pagination"
                   @request="onRequestCard"
                   binary-state-sort
@@ -303,6 +307,7 @@
                 <!-- <q-icon name="check" color="primary" text-color="white" /> @row-click="onRowClick" -->
                 <!-- modal view answer -->
             <!-- <viewsurveyanswer v-model="tsrData" :cols="cols"></viewsurveyanswer> -->
+            </div>
             </q-card-section>
 
             <!-- <q-card-actions align="right">
@@ -321,7 +326,7 @@
 <script type="text/javascript">
 
   import { defineComponent, ref, reactive, computed, onMounted, watch, onBeforeUnmount } from 'vue'
-  import { getDivList, countPositiveFeedback, countNegativeFeedback, totalTsrsCount , totalTsrsCountByYear,getTsrYear, allOverAllRatingsFromApi, getNegativeFeedbackData,getPositiveFeedbackData,countNoFeedback, getNoAnswerFeedbackData } from 'src/axioshelper.js'
+  import { getDivList, countPositiveFeedback, countNegativeFeedback, totalTsrsCount , totalTsrsCountByYear,getTsrYear, allOverAllRatingsFromApi, getNegativeFeedbackData,getPositiveFeedbackData,countNoFeedback, getNoAnswerFeedbackData,getTSRYearAndMonth,getAnswerBySearch,countAnswerBySearch,getCountServicePerDivision } from 'src/axioshelper.js'
   import CardDashboardFeedbackCount from '../components/CardDashboardFeedbackCount.vue'
   import { Chart, registerables } from 'chart.js'
   import groupBy from 'lodash'
@@ -333,6 +338,7 @@
   import DoughnutChart from '../components/DoughnutChart.vue'
   import BarChart from '../components/BarChart.vue'
   import LineChart from '../components/LineChart.vue'
+import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
 
 
 
@@ -361,6 +367,8 @@
       const totalAnswerOverall = ref([])
       const totalNoResponse = ref(0)
 
+      const mode = ref(null)
+
       const currentYear =  ref(new Date().getFullYear())
 
       const $q = useQuasar()
@@ -370,7 +378,8 @@
         descending: false,
         page: 1,
         rowsPerPage: 10,
-        rowsNumber: 5
+        rowsNumber: 5,
+        mode: 0
       })
 
 
@@ -392,6 +401,7 @@
 
       let rows = ref([])
 
+      const filter = ref(null)
 
 
 
@@ -556,9 +566,18 @@
 
     async function updateTables(){
       // reset arrays
+
+      rowsOverallPerformance.value = []
+      rowsnumberOfCustomers.value = []
       totalActualRespondents.value = []
+      totalAnswerOverall.value = []
       
       totalPerField.value = []
+
+
+      buildRowsCustomers()
+      buildRowsOverallPerformance()
+
 
       const mainCounts = {
           5: 0, 
@@ -569,23 +588,51 @@
           0: 0,
         };
 
+      
+      tsrs.value = []
+      // let a = await getTsrYear(currentYear.value)
+      // console.log("aaaaa", a)
+      
       if (yearTsr.value){
-        tsrs.value = await getTsrYear(yearTsr.value)
-        totalAnswerOverall.value =  await allOverAllRatingsFromApi("","",yearTsr.value)
+        let tsrMonth
+        let answersOverall
+        for(let i=0 ; i<12; i++){
+          tsrMonth = await getTSRYearAndMonth(i,yearTsr.value)
+          answersOverall = await allOverAllRatingsFromApi(i,yearTsr.value)
+          tsrMonth.forEach(element => {
+            tsrs.value.push(element)
+          });
+          answersOverall.forEach(element => {
+            totalAnswerOverall.value.push(element)
+          });
+          
+        }
       }else{
+        let tsrMonth
+        let answersOverall
+        for(let i=0 ; i<12; i++){
+          tsrMonth = await getTSRYearAndMonth(i,currentYear.value)
+          answersOverall = await allOverAllRatingsFromApi(i,currentYear.value)
+          tsrMonth.forEach(element => {
+            tsrs.value.push(element)
+          });
+          answersOverall.forEach(element => {
+            totalAnswerOverall.value.push(element)
+          });
+        }
         // tsrs.value = await getTsrYear(yearTsr.value)
-        tsrs.value = await getTsrYear(currentYear.value)
-        totalAnswerOverall.value = await allOverAllRatingsFromApi("","",currentYear.value)
-        totalAnswerOverall.value = totalAnswerOverall.value.filter(function (el) {
+        // totalAnswerOverall.value = await allOverAllRatingsFromApi("","",currentYear.value)
+        
+      }
+      totalAnswerOverall.value = totalAnswerOverall.value.filter(function (el) {
           return el.tsr != null;
         });
-      }
       // total overall 
       // key is the division
       // element is the service
-         for (var key in divisionsAndSections.value) {
-          for (const element of divisionsAndSections.value[key]) {
-            let stringColField = element.toString().concat(key.toString())
+         divisionsAndSections.value.forEach(key => {
+           
+            let stringColField = key.keyname
             // initialize row customers table
             // let tot ={value: 0, total:0}
             // tot[stringColField] = 0
@@ -594,7 +641,7 @@
             let sample = totalAnswerOverall.value.filter((elementTSR) => {
             if(elementTSR.tsr){
               // console.log("elementTSR", elementTSR)
-              if(elementTSR.tsr.division == key && elementTSR.tsr.service == element){
+              if(elementTSR.tsr.division == key.division && elementTSR.tsr.service == key.service){
                 return elementTSR
               }
             }
@@ -652,12 +699,12 @@
               
               });
             }
-          }
-        }
+        })
 
          // Number of customers Row generation
         
         // group by months
+        
         var result = _(tsrs.value)
         .groupBy(v => moment(v.submittedAt).format('MMMM'))
         .value();
@@ -675,29 +722,26 @@
                 
                 
                 let temp = result[key]
-                // console.log("temp", temp)
-                for (var key2 in divisionsAndSections.value) {
+                console.log("temp", temp)
+                divisionsAndSections.value.forEach(key2 => {
                   
-                  for (const element of divisionsAndSections.value[key2]) {
-                    let stringColField = element.toString().concat(key2.toString())
+                    let stringColField = key2.keyname
                     // filter all data
                     let sample = temp.filter((elementTSR) => {
-                    if(elementTSR.tsrNo){
-                      if(elementTSR.division == key2 && elementTSR.service == element){
-                        // console.log("pasok oh loko" )
-                        return elementTSR
-                      }
+                    if(elementTSR.division === key2.division && elementTSR.service === key2.service){
+                      // console.log(key2 + ' - ', element )
+                      return elementTSR
                     }
                     
                     })
                     let x = rowsnumberOfCustomers.value.find(x => x.month === key);
                     x[stringColField] = sample.length
                     totalPerMonth += sample.length
-                  }
-                }
+                })
                 let rowMonth = rowsnumberOfCustomers.value.find(x => x.month === key);
                 console.log("rowmonth error", rowMonth)
                 rowMonth['total'] = totalPerMonth
+                console.log("totalpermonth", totalPerMonth)
                 
 
                 
@@ -706,26 +750,24 @@
 
         // total Respondents per month
           let totalRespondents = 0
-          for (var key2 in divisionsAndSections.value) {
+          divisionsAndSections.value.forEach(key => {
                   
-            for (const element of divisionsAndSections.value[key2]) {
-              let stringColField = element.toString().concat(key2.toString())
-              let resultTotal = rowsnumberOfCustomers.value.map(a => {
-                if(isNaN(a[stringColField])){
-                    a[stringColField] = 0
-                }
-                return a[stringColField]
-              })
-              console.log("res", resultTotal)
-              let atotal = resultTotal.reduce((a, b) => a + b, 0)
-              
-              // totalActualRespondents.value[stringColField] = atotal
-              let tempObj = {}
-              tempObj['value'] = atotal
-              totalRespondents += atotal
-              totalActualRespondents.value.push(tempObj)
-            }
-          }
+            let stringColField = key.keyname
+            let resultTotal = rowsnumberOfCustomers.value.map(a => {
+              if(isNaN(a[stringColField])){
+                  a[stringColField] = 0
+              }
+              return a[stringColField]
+            })
+            console.log("res", resultTotal)
+            let atotal = resultTotal.reduce((a, b) => a + b, 0)
+            
+            // totalActualRespondents.value[stringColField] = atotal
+            let tempObj = {}
+            tempObj['value'] = atotal
+            totalRespondents += atotal
+            totalActualRespondents.value.push(tempObj)
+          })
           // total respondents push to last array
           let total = {}
           total['value'] = totalRespondents
@@ -756,18 +798,17 @@
         totalPerField.value.push(tempObj)
         console.log("totalPerField",totalPerField.value)
 
-        for (var key in divisionsAndSections.value) {
-            for (const element of divisionsAndSections.value[key]) {
+        divisionsAndSections.value.forEach(key => {
+          
             let tempSecDivObj = {}
-            let service = element.toString().concat(key.toString()) //sectiondivision
+            let service = key.keyname
             let a = rowsOverallPerformance.value.map(a => a[service]);
             let sum = a.reduce((a, b) => parseFloat(a) + parseFloat(b), 0)
             sum = Math.floor(sum)
             tempSecDivObj['value'] = sum.toFixed(2).toString() + '%'
             totalPerField.value.push(tempSecDivObj)
             
-          }
-        }
+        })
 
           timer = void 0
           $q.loading.hide()
@@ -856,16 +897,18 @@
           field: 'month',
           sortable: true
         })
-        for (var key in divisionsAndSections.value) {
-            for (const element of divisionsAndSections.value[key]) {
-          let stringColField = element.toString().concat(key.toString())
-          let col = { name: element, align: 'center', label: element, field: stringColField, sortable: true }
+        divisionsAndSections.value.forEach(element => {
+          let stringColField = element.keyname
+          let col = { name: element.service, align: 'center', label: element.service, field: stringColField, sortable: true }
           // columns for overallperformance
           colsOverallPerformance.value.push(col)
           // columns for number of customers
           colsnumberOfCustomers.value.push(col)
-          }
-        }
+        }); 
+          
+          
+        
+        console.log("buhay", colsnumberOfCustomers.value, colsOverallPerformance.value)
 
         colsnumberOfCustomers.value.push({
           name: 'Total',
@@ -875,12 +918,23 @@
           sortable: true
         })
 
+        console.log("colsnumberOfCustomers",colsnumberOfCustomers.value)
+
       }
 
 
       async function callCardData(mode){
 
         // build columns card data
+
+        pagination.value = {
+          sortBy: 'desc',
+          descending: false,
+          page: 1,
+          rowsPerPage: 10,
+          rowsNumber: 5,
+          mode: mode
+        }
       
 
         if(cardDataCols.value.length == 0){
@@ -924,23 +978,10 @@
           }
         
 
-        // if(mode == 1){
-        //   cardData.value = await getNegativeFeedbackData(yearTsr.value)
-        //   cardTitle.value = "Negative Feedback YTD"
-          
-        // } 
-        // else if (mode == 2){
-        //   cardData.value = await getPositiveFeedbackData(yearTsr.value)
-        //   cardTitle.value = "Positive Feedback YTD"
-        // }else{
-        //   cardData.value = await getNoAnswerFeedbackData(yearTsr.value)
-        //   cardTitle.value = "No Feedback YTD"
-        // }
-
         await onRequestCard({
           pagination: pagination.value,
           filter: undefined
-        }, mode)
+        })
 
         
         
@@ -952,22 +993,44 @@
       async function fetchFromServer (startRow, count, filter, sortBy, descending, mode) {
        
         let rows = []
-        if (mode == 1) {
-          rows = await getNegativeFeedbackData(startRow,count,yearTsr.value)
-          cardTitle.value = "Negative Feedback YTD"
+        // if(filter){
+
+        // }else{
+        if (filter){
+          rows = await getAnswerBySearch(filter,mode,startRow,count)
         }else{
-          rows = await getPositiveFeedbackData(startRow,count,yearTsr.value)
-          cardTitle.value = "Positive Feedback YTD"
+          if(yearTsr.value){
+            if (mode == 1) {
+            rows = await getNegativeFeedbackData(startRow,count,yearTsr.value)
+            cardTitle.value = "Negative Feedback YTD"
+            }else{
+              rows = await getPositiveFeedbackData(startRow,count,yearTsr.value)
+              cardTitle.value = "Positive Feedback YTD"
+            }
+          }else{
+            let currYear = new Date().getFullYear()
+            if (mode == 1) {
+              
+              rows = await getNegativeFeedbackData(startRow,count,currYear)
+              cardTitle.value = "Negative Feedback YTD"
+            }else{
+              rows = await getPositiveFeedbackData(startRow,count,currYear)
+              cardTitle.value = "Positive Feedback YTD"
+            }
+          }
         }
+        // }
+        
         
         
       return rows
       
     }
 
-      async function onRequestCard(props,mode){
+      async function onRequestCard(props){
 
-      const { page, rowsPerPage, sortBy, descending } = props.pagination
+      console.log("props", props)
+      const { page, rowsPerPage, sortBy, descending, mode } = props.pagination
       const filter = props.filter
 
       // loading.value = true
@@ -999,6 +1062,14 @@
       //  }
        
       // }
+      let year
+      if (yearTsr.value){
+        year = yearTsr.value
+      }else{
+        year = new Date().getFullYear()
+      }
+      totalNegative.value = await countNegativeFeedback(year)
+      totalPositive.value = await countPositiveFeedback(year)
       let totalCount 
       if(mode == 1){
         totalCount = totalNegative.value
@@ -1014,34 +1085,68 @@
        
 
        // pagination count
-        pagination.value.rowsNumber = totalCount
+        
         // get all rows if "All" (0) is selected
         
         
 
         // calculate starting row of data
-        const startRow = (page - 1) * rowsPerPage
-
-        const fetchCount = rowsPerPage === 0 ? totalCount : rowsPerPage
+        if(filter){
+          let x = await countAnswerBySearch(filter,mode)
+          pagination.value.rowsNumber = x
+          const fetchCount = rowsPerPage === 0 ? x : rowsPerPage
+          const startRow = (page - 1) * rowsPerPage
+          console.log("eyfilter", startRow,fetchCount)
+          const returnedData = await fetchFromServer(startRow, fetchCount, filter, sortBy, descending,mode) 
+          console.log("returnedData",returnedData)
+          // fetch data from "server"
+          
+          // clear out existing data and add new
+          
+          rows.value.splice(0, rows.value.length, ...returnedData)
+          rows.value  = rows.value.map(card =>  ({
+            // console.log("cardlog", card)
+            // may papalitan pa dito ibalik yung q
+            // let obj = { 
+              value: card.value, 
+              tsrNo: card.tsrNo,
+              division: card.division,
+              service: card.service,
+              submittedAt: moment(card.submittedAt).format('YYYY-MM-DD'),
+              question: card.question
+            // }
+            // return obj
+            })
+          )
+        }else{
+          const startRow = (page - 1) * rowsPerPage
+          pagination.value.rowsNumber = totalCount
+          const fetchCount = rowsPerPage === 0 ? totalCount : rowsPerPage
+          console.log("eytotal", startRow,fetchCount)
+          const returnedData = await fetchFromServer(startRow, fetchCount, filter, sortBy, descending,mode) 
+          console.log("returnedData",returnedData)
+          // fetch data from "server"
+          
+          // clear out existing data and add new
+          
+          rows.value.splice(0, rows.value.length, ...returnedData)
+          rows.value  = rows.value.map(card =>  ({
+            // console.log("cardlog", card)
+            // may papalitan pa dito ibalik yung q
+            // let obj = { 
+              value: card.value, 
+              tsrNo: card.tsr.tsrNo,
+              division: card.tsr.division,
+              service: card.tsr.service,
+              submittedAt: moment(card.tsr.submittedAt).format('YYYY-MM-DD'),
+              question: card.question.description
+            // }
+            // return obj
+            })
+          )
+        }
         
         
-        const returnedData = await fetchFromServer(startRow, fetchCount, filter, sortBy, descending,mode) 
-        console.log("returnedData",returnedData)
-        // fetch data from "server"
-        
-        // clear out existing data and add new
-        
-        rows.value.splice(0, rows.value.length, ...returnedData)
-        rows.value  = rows.value.map(card => (
-          { 
-            value: card.value, 
-            tsrNo: card.tsr.tsrNo,
-            division: card.tsr.division,
-            service: card.tsr.service,
-            submittedAt: moment(card.tsr.submittedAt).format('YYYY-MM-DD'),
-            question: card.question.description
-          }
-          ));
 
 
         // don't forget to update local pagination object
@@ -1049,6 +1154,7 @@
         pagination.value.rowsPerPage = rowsPerPage
         pagination.value.sortBy = sortBy
         pagination.value.descending = descending
+        pagination.value.mode = mode
 
         // ...and turn of loading indicator
       }
@@ -1058,7 +1164,8 @@
         // call functions upon start up here
         showLoading()
         divisionsAndSections.value = await getDivList()
-        divisions.value = Object.keys(divisionsAndSections.value)
+        divisions.value = await getCountServicePerDivision()
+        console.log("divisionsAndSections",divisionsAndSections.value)
 
         // 
         
@@ -1111,6 +1218,8 @@
         //card data
         showTextCard,
         cardDataCols,
+        mode,
+        filter,
         // card methods
         cardData,
         callCardData,
