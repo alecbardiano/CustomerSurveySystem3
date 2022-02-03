@@ -1,7 +1,8 @@
 <template>
       <div class="q-pa-lg" >
-       
-                <q-form ref="dateform">
+                {{beforeDate}}
+                {{afterDate}}
+                <q-form ref="dateform" @submit="dataUpdateWithDate()">
                   <div class="row inline">
                   <q-input outlined filled mask="date" v-model="beforeDate" lazy-rules :rules="[val => val <= afterDate || 'Field should be earlier than after date']" placeholder="mm/dd/yy" hint="Start Date" >
                     <template v-slot:append>
@@ -35,7 +36,6 @@
                     label="Go"
                     color="primary"
                     style="margin-left: 25px; width: 70px; height: 25px;"
-                    @click="dataUpdateWithDate()"
                  />
                 </div>
     
@@ -235,7 +235,7 @@
 <script>
 // import packages
 import { reactive, defineComponent, ref, onMounted, computed , watch,onBeforeUnmount} from 'vue'
-import { getQuestions, getTSRs,postAnswers , getOverall,deleteAll,totalTsrsCount, getDivList, totalTsrsCountByYear} from 'src/axioshelper.js'
+import { getQuestions, getTSRs,postAnswers , getOverall,deleteAll,totalTsrsCount, getDivList, totalTsrsCountByYear,getTSRYearAndMonth,getCountServicePerDivision} from 'src/axioshelper.js'
 import { overAllColumns, overAllRows,numberOfCustomersColumnsData,numberOfCustomersRowsData, summaryPerDivisionRows, summaryPerDivisionColumns  } from 'src/utils/dataRetrieveTables.js'
 import { exportFile, useQuasar} from 'quasar'
 import { xlsx, pdfMake } from 'boot/axios'
@@ -273,7 +273,7 @@ export default defineComponent({
   const prompt = ref(false)
   const uploadDialog = ref(false)
 
-  let today = new Date();
+  let today = Date.now();
   today = moment().year()
 
   const orderKey = ref('position')
@@ -308,26 +308,15 @@ export default defineComponent({
 
   watch(afterDate, (newValue, oldValue) => {
 
-    dateform.value.validate().then(success => {
-      // filterTable(newValue,1)
-      if (success) { 
-          
-      }
-    })
-
-    return dateTimeToApi(newValue)
+    let val = newValue.toString()
+    return dateTimeToApi(val)
     
   })
   watch(beforeDate, (newValue, oldValue) => {
 
-    dateform.value.validate().then(success => {
-      // filterTable(newValue,1)
-      if (success) { 
-         
-      }
-    })
-
-    return dateTimeToApi(newValue)
+    
+    let val = newValue.toString()
+    return dateTimeToApi(val)
      
     
   })
@@ -407,7 +396,7 @@ export default defineComponent({
     rowdatafromapi.map(function(item){
       let row = {
         tsrNo: item.tsrNo,
-        publishedDate:dateTime(item.submittedAt),
+        submittedAt:dateTime(item.submittedAt),
         division: item.division,
         industry: item.industry,
         service: item.service,
@@ -517,10 +506,10 @@ export default defineComponent({
     // console.log("hellodivlistload divisin data", divlist)
     colsOverall.value.push({ name: 'Score' ,align: 'left', label: 'Score All in Service', field: 'scoreservice' , style:"width: 300px"})
     for(let i =0; i<divlist.length; i++){
-      colsOverall.value.push({name: divlist[i] ,align: 'left', label: divlist[i], field: divlist[i] , sortable: true })
+      colsOverall.value.push({name: divlist[i].division ,align: 'left', label: divlist[i].division, field: divlist[i].division , sortable: true })
       for (let j=0; j<rowsOverall.value.length; j++){
         
-        dataDivision = await getOverall(divlist[i],"",rowsOverall.value[j].id,beforeDate.value,afterDate.value)
+        dataDivision = await getOverall(divlist[i].division,"",rowsOverall.value[j].id,beforeDate.value,afterDate.value)
         if(dataDivision.length != 0){
           dataDivision = dataDivision.map(a => a.value)
           dataDivision = dataDivision.map(function (x) { 
@@ -542,10 +531,10 @@ export default defineComponent({
           // console.log("avg",avg)
           // set divName for mapping of column to row
           //rows of average
-          rowsOverall.value[j][divlist[i]] = avg
+          rowsOverall.value[j][divlist[i].division] = avg
           // rowsOverall.value[j].divlist[i] = avg
         }else{
-          rowsOverall.value[j][divlist[i]] = 0
+          rowsOverall.value[j][divlist[i].division] = 0
           rowsOverall.value[j]["scoreservice"] = 0
         }
       }
@@ -616,9 +605,11 @@ export default defineComponent({
       // console.log("Filelele", file.name)
       // filename should be csms-year.xlsx any format as long as the space will be '-' and the last word will be the year in numbers 'example xxx-xx-xxx-x-2021.xlsx or any' 
       let x = file.name.split('-')
+      console.log("x",x)
       if(x){
         // .xlsx
         let dot = x[x.length-1].split('.')
+        console.log("dot",dot)
         // console.log("dot", dot)
         if(dot){
           // test same tsr number and tsr number on database and import
@@ -669,12 +660,26 @@ export default defineComponent({
     
    }
    function showLoading () {
-        $q.loading.show({
-          message: 'Please wait for data to be imported..',
-          boxClass: 'bg-grey-2 text-grey-9',
-          spinnerColor: 'primary'
-        })
-      }
+      $q.loading.show({
+        message: 'Please wait for data to be imported..',
+        boxClass: 'bg-grey-2 text-grey-9',
+        spinnerColor: 'primary'
+      })
+    }
+
+    function showLoadingData () {
+      $q.loading.show({
+        message: 'Please wait for data to be loaded',
+        boxClass: 'bg-grey-2 text-grey-9',
+        spinnerColor: 'primary'
+      })
+    }
+
+    function hideLoading(){
+      timer = void 0
+      $q.loading.hide()
+    }
+    
 
     function buildTableBody(data, columns, mode,divisionsAndSections) {
         // survey results ALL with extra header
@@ -695,6 +700,7 @@ export default defineComponent({
           // the column names taken from label 
           body.push(mainArrayColumn);
           let copyData = data.map((rest ) => rest)
+          console.log("copy", copyData)
             
             
           copyData.forEach(function(row) {
@@ -721,14 +727,16 @@ export default defineComponent({
           arrFirstHeader.push({})
           arrFirstHeader.push({})
           // divisions 
-          for(let div in divisionsAndSections){
+          divisions.value.forEach(element => {
+            
+        
             // push row data
-            arrFirstHeader.push({text: div, colSpan: divisionsAndSections[div].length})
-            for(let i =0; i< divisionsAndSections[div].length-1; i++){
+            arrFirstHeader.push({text: element.division, colSpan: element.count})
+            for(let i =0; i< element.count-1; i++){
               // push 
               arrFirstHeader.push({})
             }
-          }
+          });
           body.push(arrFirstHeader)
           
           let mainArrayColumn = columns.map((a => a.label));
@@ -757,12 +765,17 @@ export default defineComponent({
         let arrFirstHeader = []
         // first header
         arrFirstHeader.push({})
-        for(let div in divisionsAndSections){
-          arrFirstHeader.push({text: div, colSpan: divisionsAndSections[div].length})
-          for(let i =0; i< divisionsAndSections[div].length-1; i++){
-            arrFirstHeader.push({})
-          }
-        }
+        // divisions with count
+        divisions.value.forEach(element => {
+            
+        
+            // push row data
+            arrFirstHeader.push({text: element.division, colSpan: element.count})
+            for(let i =0; i< element.count-1; i++){
+              // push 
+              arrFirstHeader.push({})
+            }
+          });
         arrFirstHeader.push({})
         body.push(arrFirstHeader)
         
@@ -873,9 +886,9 @@ export default defineComponent({
               // every reset of every new division and service
               prevRespond = row.countsDivision
               body.push(["No of Respondents: ",prevRespond,"","","","","","","",""])
-              body.push(["No. and % of customers who rated the service as very satisfactory or better: ",Math.round(numberPrevVerySatis),prevVerySatis.toString() + '%',"","","","","","",""])
-              body.push(["No. and % of customers who rated the service as satisfactory or better: ",Math.round(numberPrevSatis),prevSatis.toString() + '%',"","","","","","",""])
-              body.push(["No. and % of customers who rated the service as Fair or Poor: ",Math.round(numberPrevPoor),prevPoor.toString() + '%',"","","","","","",""])
+              body.push(["No. and % of customers who rated the service as very satisfactory or better: ",Math.round(numberPrevVerySatis),prevVerySatis.toFixed(2).toString() + '%',"","","","","","",""])
+              body.push(["No. and % of customers who rated the service as satisfactory or better: ",Math.round(numberPrevSatis),prevSatis.toFixed(2).toString() + '%',"","","","","","",""])
+              body.push(["No. and % of customers who rated the service as Fair or Poor: ",Math.round(numberPrevPoor),prevPoor.toFixed(2).toString() + '%',"","","","","","",""])
               index +=4
               // add to total
               totalPrevRespond += prevRespond
@@ -905,6 +918,7 @@ export default defineComponent({
           body.push(mainArrayColumn);
 
           let copyData = data.map((rest ) => rest)
+          console.log("copys", copyData)
             
             let prevDivision = ''
             let prevService = ''
@@ -1140,19 +1154,52 @@ export default defineComponent({
     // Summary of Citizen/Client Satisfaction Survey CCSS Rating
     summaryQuestionPerDivisionCols.value = summaryPerDivisionColumns(orderByPositionQuestions.value)
     summaryQuestionPerDivisionRows.value =  summaryPerDivisionRows(orderByPositionQuestions.value,divisioAndSectionList.value,alltsrs)
-  
+    
   }
+
+  function compare( a, b ) {
+      if ( a.division < b.division ){
+        return -1;
+      }
+      if ( a.division > b.division ){
+        return 1;
+      }
+      return 0;
+    }
+
+  function compare2( a, b ) {
+      if ( a.service < b.service ){
+        return -1;
+      }
+      if ( a.service > b.service ){
+        return 1;
+      }
+      return 0;
+    }
+
     
   async function generatePDF(){
     let alltsrs
     // get all tsrs
+    
     if (beforeDate.value && afterDate.value){
-      alltsrs = await getTSRsFromApi(0,totalTsrsCount.value,"","",beforeDate.value,afterDate.value,1,"")
+      alltsrs = await getAllTsrsByYearMonth(beforeDate.value,afterDate.value)
     }else{
-      alltsrs = await getTSRsFromApi(0,totalTsrsCount.value,"","",today+'01-01',today+'12-31',1,"")
+      // first day of year
+      let yearToday = new Date().getFullYear()
+      let startDate = new Date(yearToday, 0, 1);
+      // current Date
+      let afterDate = new Date()
+      alltsrs = await getAllTsrsByYearMonth(startDate,afterDate)
     }
     console.log("all tsrs", alltsrs)
     buildOverall(alltsrs)
+
+    // sort by Division
+    alltsrs = alltsrs.sort( compare );
+    // sort by Service
+    alltsrs = alltsrs.sort( compare2 );
+    
     
     let rowalltsrs = buildRow(alltsrs)
     // for overall column table Overall Agency Citizen/ Client Satisfaction Score' deconstruct to get only field and label
@@ -1320,20 +1367,53 @@ export default defineComponent({
       // pdf.download('Customer Survey Management System Report.pdf');
       pdf.open();
    }
+
+  async function getAllTsrsByYearMonth (before,after){
+    let tsrMonth
+    let alltsrs = []
+    let beforeMom = moment(before).month()
+    let currYear = moment(before).year()
+    let diffMonths = Math.floor(moment(after).diff(moment(before), 'months', true))
+    console.log("diffmonths", diffMonths)
+    
+    for(let i=0 ; i<=diffMonths; i++){
+      tsrMonth = await getTSRYearAndMonth(beforeMom,currYear)
+      console.log("curryear", currYear)
+      console.log("beforeMom", beforeMom)
+      tsrMonth.forEach(element => {
+        alltsrs.push(element)
+      });
+      if(beforeMom == 11){
+        beforeMom = 0
+        currYear += 1
+      }else{
+        beforeMom+= 1
+      }
+      
+      
+    }
+    console.log("give all the love" , alltsrs)
+    return alltsrs
+  }
   
   async function generateExcel () {
         let alltsrs
         let dateFirstRow
         // get all tsrs needed for generate data
         if (beforeDate.value && afterDate.value){
-           alltsrs = await getTSRsFromApi(0,totalTsrsCount.value,"","",beforeDate.value,afterDate.value,1,"")
-           dateFirstRow = moment(beforeDate.value).format('MMMM') + ' - '   + moment(afterDate.value).format('MMMM')
+           alltsrs = await getAllTsrsByYearMonth(beforeDate.value,afterDate.value)
+           dateFirstRow = moment(beforeDate.value).format('MMMM-YYYY') + ' - '   + moment(afterDate.value).format('MMMM-YYYY')
         }else{
-           alltsrs = await getTSRsFromApi(0,totalTsrsCount.value,"","",today+'01-01',today+'12-31',1,"")
-           dateFirstRow = 'January' + ' - ' + moment(Date.now()).format('MMMM')
+           // first day of year
+           let currYear = new Date().getFullYear()
+           let startDate = new Date(currYear, 0, 1);
+           // current Date
+           let afterDate = new Date()
+           alltsrs = await getAllTsrsByYearMonth(startDate,afterDate)
+           dateFirstRow = 'January ' + currYear + ' - ' + moment(Date.now()).format('MMMM-YYYY')
         }
 
-        await buildOverall(alltsrs)
+        buildOverall(alltsrs)
         let rowalltsrs = buildRow(alltsrs)
     // for overall column table Overall Agency Citizen/ Client Satisfaction Score' deconstruct to get only field and label
         let overallCol = colsOverall.value.map(({ field, label }) => ({field, label}));
@@ -1424,6 +1504,7 @@ export default defineComponent({
 
    onMounted( async () => {
     console.log("mounted")
+    showLoadingData()
     // first to be called
     try {
         
@@ -1433,7 +1514,10 @@ export default defineComponent({
     }
     
     divisioAndSectionList.value = await getDivList()
-    divisions.value = Object.keys(divisioAndSectionList.value)
+    divisions.value = await getCountServicePerDivision()
+    // divisions.value = divisions.value.map( item => item.division)
+
+   
     
     await onRequest({
         pagination: pagination.value,
@@ -1441,17 +1525,25 @@ export default defineComponent({
       })
 
     await loadDivisionDataOverall(divisions.value)
+
+    hideLoading()
+
+    
     
     
   })
 
   async function dataUpdateWithDate(){
-    await onRequest({
+    showLoadingData()
+    let suc = await dateform.value.validate()
+    if(suc){
+      await onRequest({
         pagination: pagination.value,
         filter: undefined
-      })
-    await loadDivisionDataOverall(divisions.value)
-      
+        })
+        await loadDivisionDataOverall(divisions.value)
+    }
+    hideLoading()
   }
 
   function onRowClick (evt, row) {
@@ -1493,7 +1585,10 @@ export default defineComponent({
       migrationData.forEach(r => {
       
           // Object { foo: "bar", x: 42 }
+        console.log("r", r, " year", year)
+        console.log("rmonth", r.Month, " year", year)
         let dateyear = r.Month.toString() + ' ' + year.toString()
+        
         let datesubmit = new Date(dateyear)
         const obj = {
             division: r.Division,
@@ -1525,6 +1620,16 @@ export default defineComponent({
       })
 
       const uniqueValues = new Set(finalArrObj.map(v => v.tsrNo));
+      const nounique = (finalArrObj.map(v => v.tsrNo));
+      const uniqarr = Array.from(uniqueValues);
+      console.log("finalArrObj.length",finalArrObj.length)
+      console.log("uniqueValues.length",uniqueValues.length)
+      console.log("finalArrObj.length",finalArrObj)
+      console.log("uniqueValues.length",uniqueValues)
+      let difference = uniqarr
+                 .filter(x => !nounique.includes(x))
+                 .concat(nounique.filter(x => !uniqarr.includes(x)));
+      console.log("intersection", difference)
 
       if (uniqueValues.size < finalArrObj.length) {
         // duplicates found true if 1; 0 if none
@@ -1661,8 +1766,8 @@ export default defineComponent({
 
       // check whether there is a given date
       if(beforeDate.value && afterDate.value){
-        beforeDate.value =  dateTime(beforeDate.value)
-        afterDate.value =  dateTime(afterDate.value)
+        // beforeDate.value =  dateTime(beforeDate.value)
+        // afterDate.value =  dateTime(afterDate.value)
         totalTsrsCount.value = await totalTsrsCount(beforeDate.value, afterDate.value,filter)
         
       }else{

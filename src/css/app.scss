@@ -15,6 +15,17 @@
     padding-left: 50px;
 }
 
+.chart-container {
+  background-color: #eee8d5;
+  border-radius: 0.5rem;
+}
+
+.my-card {
+  width: 100%;
+  max-width: 750px
+}
+
+
 .overallAverage {
   // tr th {
   //   max-width: 5px;
@@ -90,7 +101,11 @@
       /* height of all previous header rows */
       top: 48px; 
     }
-
+    .my-sticky-header-table{
+      /* bg color is important for th; just specify one */
+      table-layout: fixed;
+      width: 100%;  
+      }
     .my-sticky-header-table .q-table__top {
         /* bg color is important for th; just specify one */
         background-color: #1976D2; 
@@ -145,4 +160,12 @@
 // login css
 .alignRight {
   padding-left: 50px;
+}
+
+.q-table-container {
+  height: 100vh !important /* filling 100% of window vertical measure */
+}
+
+.q-table-middle{
+  height:100%
 }

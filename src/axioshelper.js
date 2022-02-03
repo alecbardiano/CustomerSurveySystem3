@@ -3,9 +3,7 @@ import moment from 'moment';
 import {groupBy, flow, chain} from 'lodash';
 
 
-let today = new Date();
-let datetime = today
-today = moment().year()
+let today = moment().year()
 
 
 const getTSRNoFromULIMSrSystems = async function (tsrNumber) {
@@ -68,7 +66,7 @@ const getAllQuestions = function () {
     }
 
 const getTsrsViaYear = function (year){
-  console.log("yearere", year)
+  // console.log("yearere", year)
     return api.get('/tsrs?&_limit=-1&submittedAt_gte='+year+'-01-01'+'&submittedAt_lte='+year+'-12-31&_sort=division,service,submittedAt:DESC')
   .then(function( response ){
       
@@ -77,6 +75,30 @@ const getTsrsViaYear = function (year){
       return response.data;
     })
 }
+
+const getAllTSRsByYearAndMonth = function (month,year) {
+  // mode 3 admin division
+  // mode 2 dashboard
+  // mode 1 admin
+  let bfdate = new Date(year, month)
+  let afterDate
+  if(month == 12){
+    month = 0
+    afterDate = new Date(year+1, month)
+  }else{
+    afterDate = new Date(year, month+1)
+  }
+  let before = moment(bfdate).format('YYYY-MM-DD');
+  let after = moment(afterDate).format('YYYY-MM-DD');
+  
+    return api.get('/tsrs?&_limit=-1&submittedAt_gte='+before+'&submittedAt_lt='+ after +'&_sort=division:ASC,service:ASC,submittedAt:DESC')
+      .then(function( response ){
+          
+          // console.log("from axios")
+          // console.log(response.data)
+          return response.data;
+        })
+  }
 
 const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,mode,filter) {
   // mode 3 admin division
@@ -154,6 +176,30 @@ const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,m
     }
   }
 
+const getAllAnswerSearch = function (searchTsrNo,mode,start,limit){
+  return api.get('/answers/searchAnswer/' + searchTsrNo +'/' + mode +'/' + start +'/' + limit)
+  // /answers/searchAnswer/:searchTsrNo/:mode/:rowCount/:offset
+        .then(function( response ){
+            
+            // console.log("from axios")
+            console.log(response.data)
+            return response.data;
+        })
+
+  // http://10.10.120.19:1337/answers/searchAnswer/MIRDC-012016-CLS-0010
+}
+const getCountAllAnswerSearch = function (searchTsrNo,mode){
+  return api.get('/answers/searchAnswer/' + searchTsrNo +'/' + mode)
+  // /answers/searchAnswer/:searchTsrNo/:mode/:rowCount/:offset
+        .then(function( response ){
+            
+            // console.log("from axios")
+            console.log(response.data)
+            return response.data;
+        })
+
+  // http://10.10.120.19:1337/answers/searchAnswer/MIRDC-012016-CLS-0010
+}
 const getAllAnswers = function () {
     //   loading.value = true;
     //   error.value = null;
@@ -199,33 +245,44 @@ const getTsrViaDivision = function (division) {
     })
 }
 
+const countServicePerDivision = function () {
+  return api.get('/tsrs/countPerDivisions')
+    .then(function( response ){
+      //       let arr = response.data
+      return response.data
+    })
+}
 
 const getDivisionList = function () {
-    return api.get('/tsrs/?_limit=-1')
-      .then(function( response ){
-          let arr = response.data
-          // console.log("from axios tsr division", response.data)
-          let result = [...new Set(arr.map(item => item.division))].filter(function(val) { return val !== null; });
-          let obj = arr.filter(item => item.division).map(
-            ({division,service}) => (
-              { div: division, 
-                sec: service
-              }
-              ))
-
-          let temparr = []
-          temparr = obj.reduce(function (r, a) {
-            r[a.div] = r[a.div] || [];
-            // if service already exist, dont push to array
-            if( !(r[a.div].includes(a.sec))){
-              r[a.div].push(a.sec);
-            }
-            return r;
-        }, Object.create(null));
-
-        return temparr
-
+    return api.get('/tsrs/divisions')
+    .then(function( response ){
+      //       let arr = response.data
+      return response.data
     })
+    //   .then(function( response ){
+    //       let arr = response.data
+    //       // console.log("from axios tsr division", response.data)
+    //       let result = [...new Set(arr.map(item => item.division))].filter(function(val) { return val !== null; });
+    //       let obj = arr.filter(item => item.division).map(
+    //         ({division,service}) => (
+    //           { div: division, 
+    //             sec: service
+    //           }
+    //           ))
+
+    //       let temparr = []
+    //       temparr = obj.reduce(function (r, a) {
+    //         r[a.div] = r[a.div] || [];
+    //         // if service already exist, dont push to array
+    //         if( !(r[a.div].includes(a.sec))){
+    //           r[a.div].push(a.sec);
+    //         }
+    //         return r;
+    //     }, Object.create(null));
+
+    //     return temparr
+
+    // })
 }
 
 // const getDivisionList = function () {
@@ -589,7 +646,15 @@ const numberPoorFeedbackCountPerDivision = function (beforeDate,afterDate,divisi
 }
 
 const positiveFeedbackCount = function (year)  {
-  return api.get('/answers/count?value_gte=3&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
+  return api.get('/answers/count?value_gte=3&question.question_type=2&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
+      })
+      .then(function( response ){
+          return response.data;
+      })
+}
+
+const positiveFeedbackCountData = function (start,limit,year)  {
+  return api.get('/answers/?_start='+start+'&_limit='+limit+'&value_gte=3&question.question_type=2&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
       })
       .then(function( response ){
           return response.data;
@@ -597,12 +662,37 @@ const positiveFeedbackCount = function (year)  {
 }
 
 const negativeFeedbackCount = function (year)  {
-  return api.get('/answers/count?value_lte=2&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
+  return api.get('/answers/count?value_lte=2&question.question_type=2&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
       })
       .then(function( response ){
           return response.data;
       })
 }
+
+const negativeFeedbackCountData = function (start,limit,year)  {
+  return api.get('/answers/?_start='+start+'&_limit='+limit+'&value_lte=2&question.question_type=2&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
+      })
+      .then(function( response ){
+          return response.data;
+      })
+}
+
+const noAnswerFeedbackCount = function (year)  {
+  return api.get('/answers/count?value='+ "" +'&question.question_type=2&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
+      })
+      .then(function( response ){
+          return response.data;
+      })
+}
+
+const noAnswerFeedbackCountData = function (year)  {
+  return api.get('/answers/?value='+ "" +'&question.question_type=2&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
+      })
+      .then(function( response ){
+          return response.data;
+      })
+}
+
 
 
 const totalFeedbackCountTSRByYear = function (year,filter)  {
@@ -622,11 +712,11 @@ const totalFeedbackCountTSRByYear = function (year,filter)  {
   
 }
 const totalFeedbackCountTSR = function (beforeDate,afterDate,filter)  {
-  
+    let before = moment(beforeDate).format('YYYY-MM-DD');
+    let after = moment(afterDate).format('YYYY-MM-DD');
     if (beforeDate && afterDate){
       if(filter){
-        let before = moment(beforeDate).format('YYYY-MM-DD');
-        let after = moment(afterDate).format('YYYY-MM-DD');
+        
         return api.get('/tsrs/count?tsrNo_contains='+ filter +'&submittedAt_gte='+before+'&submittedAt_lte='+after,{
             })
             .then(function( response ){
@@ -635,8 +725,6 @@ const totalFeedbackCountTSR = function (beforeDate,afterDate,filter)  {
             })
        
       }else{
-        let before = moment(beforeDate).format('YYYY-MM-DD');
-        let after = moment(afterDate).format('YYYY-MM-DD');
         return api.get('/tsrs/count?&submittedAt_gte='+before+'&submittedAt_lte='+after,{
             })
             .then(function( response ){
@@ -654,37 +742,48 @@ const totalFeedbackCountTSR = function (beforeDate,afterDate,filter)  {
     }
 }
 
+//new Dashboard
+const allOverAllRatings = function (month,year){
 
-const allOverAllRatings = function (beforeDate,afterDate,year){
+  let bfdate = new Date(year, month)
+  let afterDate
+  if(month == 12){
+    month = 0
+    afterDate = new Date(year+1, month)
+  }else{
+    afterDate = new Date(year, month+1)
+  }
+  let before = moment(bfdate).format('YYYY-MM-DD');
+  let after = moment(afterDate).format('YYYY-MM-DD');
 
   if ( year ){
-    return api.get('/answers/?_limit=-1&question.id=12&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31')
+    return api.get('/answers/?_limit=-1&question.id=12&tsr.submittedAt_gte='+before +'&tsr.submittedAt_lt='+after)
+      .then(function( response ){
+          
+          return response.data;
+      })
+    }
+}
+
+// admin division
+const allOverAllRatingsAdminDivision = function (beforeDate,afterDate){
+
+if (beforeDate && afterDate){
+  let before = moment(beforeDate).format('YYYY-MM-DD');
+  let after = moment(afterDate).format('YYYY-MM-DD');
+    return api.get('/answers/?_limit=-1&tsr.submittedAt_gte='+before+'&tsr.submittedAt_lte='+after+'&question.id=12')
       .then(function( response ){
           
           return response.data;
       })
   }else{
-    if (beforeDate && afterDate){
-      let before = moment(beforeDate).format('YYYY-MM-DD');
-      let after = moment(afterDate).format('YYYY-MM-DD');
-        return api.get('/answers/?_limit=-1&tsr.submittedAt_gte='+before+'&tsr.submittedAt_lte='+after+'&question.id=12')
-          .then(function( response ){
-              
-              return response.data;
-          })
-      }else{
-        return api.get('/answers/?_limit=-1&question.id=12&tsr.submittedAt_gte='+today+'-01-01'+'&tsr.submittedAt_lte='+today+'-12-31')
-          .then(function( response ){
-              
-              return response.data;
-          })
-      }
+    return api.get('/answers/?_limit=-1&question.id=12&tsr.submittedAt_gte='+today+'-01-01'+'&tsr.submittedAt_lte='+today+'-12-31')
+      .then(function( response ){
+          
+          return response.data;
+      })
   }
-  
-  
-  
 }
-
 
 const loginToSSO = function (username,password) {
       return api.post('/auth/local', {
@@ -709,9 +808,27 @@ export const countPositiveFeedback = (year) => {
   return positiveFeedbackCount(year)
 }
 
+export const getPositiveFeedbackData = (start,limit,year) => {
+  return positiveFeedbackCountData(start,limit,year)
+}
+
+
+
 export const countNegativeFeedback = (year) => {
   return negativeFeedbackCount(year)
 }
+export const getNegativeFeedbackData= (start,limit,year) => {
+  return negativeFeedbackCountData(start,limit,year)
+}
+
+export const countNoFeedback = (year) => { 
+  return noAnswerFeedbackCount(year)
+}
+
+export const getNoAnswerFeedbackData= (start,limit,year) => { 
+  return noAnswerFeedbackCountData(start,limit,year)
+}
+
 
 
 export const totalTsrsCountByYear = (year,filter) => {
@@ -798,13 +915,16 @@ export const poorFeedbackPerDivision = (beforeDate,afterDate,division,service) =
 export const getDivList = () => {
   return getDivisionList()
 }
+export const getCountServicePerDivision = () => {
+  return countServicePerDivision()
+}
 
 export const getSecList = (division) => {
   return getSectionList(division)
 }
 
-export const allOverAllRatingsFromApi = (beforeDate,afterDate,year) => {
-  return allOverAllRatings(beforeDate,afterDate,year)
+export const allOverAllRatingsFromApi = (beforeDate,year) => {
+  return allOverAllRatings(beforeDate,year)
 }
 
 export const deleteAll = () => {
@@ -819,6 +939,25 @@ export const loginToSSOStrapi = (username,password) => {
 export const getTsrYear = (year) => {
   return getTsrsViaYear(year)
 }
+
+// new
+export const getTSRYearAndMonth = (month,year) => {
+  return getAllTSRsByYearAndMonth(month,year)
+}
+
+export const getAnswerBySearch = (search,mode,start,limit) => {
+  return getAllAnswerSearch(search,mode,start,limit)
+}
+
+export const countAnswerBySearch = (search,mode) => {
+  return getCountAllAnswerSearch(search,mode)
+}
+
+
+
+
+
+
 
 
 

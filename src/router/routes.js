@@ -29,6 +29,8 @@ const routes = [
   },
 
   { name: 'Login', path: '/Login', component: () => import('pages/Login.vue') },
+
+  { name: 'VPNError', path: '/VPNError', component: () => import('pages/VPNError.vue') },
   // Always leave this as last one,
   // but you can also remove it
 

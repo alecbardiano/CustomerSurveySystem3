@@ -4,8 +4,8 @@ export function setLoginApiStatus(state, data) {
   }
 
 export function  setUserProfile(state, data){
-    console.log("data mutations", data)
-    console.log("data mutations", data.role)
+    // console.log("data mutations", data)
+    // console.log("data mutations", data.role)
     const userProfile = {
       id:data.id,
       displayName: data.displayName,

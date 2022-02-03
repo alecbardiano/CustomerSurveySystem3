@@ -146,9 +146,9 @@
 
 <script>
 import { defineComponent, ref, onMounted, computed, watch } from 'vue'
-import { allOverAllRatingsFromApi, getOverall, getTSRs, getQuestions, getDivList,getSecList,positiveFeedbackPerDivision, satisfactoryFeedbackPerDivision, poorFeedbackPerDivision } from 'src/axioshelper.js'
+import { allOverAllRatingsFromApi, getOverall, getTSRs, getQuestions, getDivList,getSecList,positiveFeedbackPerDivision, satisfactoryFeedbackPerDivision, poorFeedbackPerDivision,getCountServicePerDivision } from 'src/axioshelper.js'
 import orderBy from 'lodash.orderby'
-
+import moment from 'moment';
 
 
 export default defineComponent({
@@ -228,7 +228,7 @@ export default defineComponent({
       dateform.value.validate().then(success => {
           console.log("hello")
           loadNumbers()
-          loadTotalOverall(beforeDate.value,newValue)
+          loadTotalOverall(newValue)
       })
       
     })
@@ -328,9 +328,7 @@ export default defineComponent({
     function fillSectionList(){
       console.log("hey", division.value)
       console.log("hey", divisionsAndSections.value)
-      if(division.value in divisionsAndSections.value){
-        services.value = divisionsAndSections.value[division.value]
-      }
+      services.value = divisionsAndSections.value.filter(div => div.division == division.value).map(div => div.service)
     }
 
     function buildColumns (){
@@ -384,8 +382,23 @@ export default defineComponent({
 
     }
     
-    async function loadTotalOverall() {
-      let data = await allOverAllRatingsFromApi(beforeDate.value,afterDate.value,"")
+    async function loadTotalOverall(currentdate) {
+      let year
+      if (currentdate){
+        year = moment(new Date(currentdate)).year()
+      }else{
+        year = moment(new Date()).year() 
+      }
+      
+      console.log("year",year)
+      let data = []
+      for(let i=0 ; i<12; i++){
+          let dataMonth = await allOverAllRatingsFromApi(i,year)
+          dataMonth.forEach(element => {
+            data.push(element)  
+          });
+          
+        }
 
       // reset 
       noVerySatisfactoryTotal.value = 0
@@ -439,11 +452,8 @@ export default defineComponent({
     onMounted( async () => {
       questions.value = await getQuestions()
       divisionsAndSections.value = await getDivList()
-      divisions.value = Object.keys(divisionsAndSections.value)
-      console.log("divis", divisions.value)
-      console.log("questions", questions.value)
+      divisions.value = [...new Set(divisionsAndSections.value.map(a => a.division))]
       buildColumns()
-      console.log("mounted")
       loadTotalOverall("","")
     // await onRequest({
     //     pagination: pagination.value,
