@@ -78,7 +78,6 @@ export default defineComponent({
             let obj = {}
             obj['labels'] = props.labels
             obj['datasets'] = dataSetVal.value
-            console.log("fastpitch", obj)
             return obj
         })
         const options = ref({

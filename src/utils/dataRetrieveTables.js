@@ -35,6 +35,7 @@ function buildOverallPerfColumns (divisionsAndSections){
 }
 
 function buildOverallPerfRows (divisionsAndSections, alltsrs){
+    console.log("hello?")
     let rowsOverallPerformance = []
     
     rowsOverallPerformance.push({servicearea: "5 - Outstanding" , id: 5})
@@ -159,15 +160,17 @@ function buildOverallPerfRows (divisionsAndSections, alltsrs){
         row['percentage'] = res.toFixed(2).toString() + '%'
         // increment total of percentage
         totalPercentRow +=res
+        console.log('rowsOverallPerformance',rowsOverallPerformance)
+        console.log('totalPercentRow',totalPercentRow)
       });
-
+      console.log('rowsOverallPerformance',rowsOverallPerformance)
       rowsOverallPerformance[4]['percentage'] = parseFloat(totalPercentRow).toFixed(2).toString() + '%'
     
 
       divisionsAndSections.forEach(element => {
         let service = element.keyname
         let a = rowsOverallPerformance.map(a => a[service]);
-        let sum = a.reduce((a, b) => parseFloat(a) + parseFloat(b), 0)
+        let sum = Math.round(a.reduce((a, b) => parseFloat(a) + parseFloat(b), 0))
         // rows
         rowsOverallPerformance[4][service] = sum.toFixed(2).toString() + '%'
     
@@ -446,6 +449,7 @@ export const overAllColumns = (div) => {
     return buildOverallPerfColumns(div)
 }
 export const overAllRows = (div,tsr) => {
+    console.log('rowsOverallPerformanceluh')
     return buildOverallPerfRows(div,tsr)
 }
 

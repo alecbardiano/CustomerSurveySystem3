@@ -12,7 +12,7 @@
       <div class="flex wrap gutter">
         <div class="width-1of3 sm-auto">
           <card-dashboard-feedback-count
-            title="Total TSRs YTD"
+            title= "Total Tsrs YTD"
             backgroundColor="green"
             icon-name="local_post_office"
             :total="totalTsrs">
@@ -281,7 +281,6 @@
             </q-card-section>
 
             <q-card-section class="row items-left">
-            <div class="q-pa-md">
                <q-table
                   v-if="cardData"
                   class="my-sticky-header-table"
@@ -307,7 +306,7 @@
                 <!-- <q-icon name="check" color="primary" text-color="white" /> @row-click="onRowClick" -->
                 <!-- modal view answer -->
             <!-- <viewsurveyanswer v-model="tsrData" :cols="cols"></viewsurveyanswer> -->
-            </div>
+            
             </q-card-section>
 
             <!-- <q-card-actions align="right">
@@ -687,7 +686,7 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
             // total vertical per service
             rowsOverallPerformance.value.forEach(function (arrayItem) {
               if(key2 == arrayItem.id){
-                value = (value/ sample.length) * 100
+                value = parseFloat((value/ sample.length) * 100)
                 if(isNaN(value)){
                   value = '0%'
                 }else{
@@ -781,11 +780,11 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
         let totalPercentRow = 0
         
         rowsOverallPerformance.value.forEach(row => {
-          let res = (parseFloat(mainCounts[row.id])/ totalAnswerOverall.value.length * 100)
+          let res = parseFloat(mainCounts[row.id]/ totalAnswerOverall.value.length * 100)
           totalPercentRow +=res
           // console.log("mainco", mainCounts[row.id])
           // console.log("rowid", row.id)
-          // console.log("res", res)
+          console.log("totalPercentRow", totalPercentRow)
           // chartDataModelData.push(mainCounts[row.id])
           row['countOverall'] = mainCounts[row.id]
           row['percentage'] = res.toFixed(2).toString() + '%'
@@ -794,7 +793,7 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
         });
         //total
         let tempObj = {}
-        tempObj['value'] = parseFloat(totalPercentRow).toFixed(2).toString() + '%'
+        tempObj['value'] = totalPercentRow.toFixed(2).toString() + '%'
         totalPerField.value.push(tempObj)
         console.log("totalPerField",totalPerField.value)
 
@@ -804,7 +803,7 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
             let service = key.keyname
             let a = rowsOverallPerformance.value.map(a => a[service]);
             let sum = a.reduce((a, b) => parseFloat(a) + parseFloat(b), 0)
-            sum = Math.floor(sum)
+            sum = Math.round(sum)
             tempSecDivObj['value'] = sum.toFixed(2).toString() + '%'
             totalPerField.value.push(tempSecDivObj)
             
@@ -975,6 +974,12 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
               label: 'Submitted Date',
               field: 'submittedAt'
             })
+          cardDataCols.value.push( {
+            name: 'remarks',
+            align: 'left',
+            label: 'Remarks',
+            field: 'remarks'
+          })
           }
         
 
@@ -1002,20 +1007,20 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
           if(yearTsr.value){
             if (mode == 1) {
             rows = await getNegativeFeedbackData(startRow,count,yearTsr.value)
-            cardTitle.value = "Negative Feedback YTD"
+            cardTitle.value = "Negative Feedback " + yearTsr.value.toString()
             }else{
               rows = await getPositiveFeedbackData(startRow,count,yearTsr.value)
-              cardTitle.value = "Positive Feedback YTD"
+              cardTitle.value = "Positive Feedback " + yearTsr.value.toString()
             }
           }else{
             let currYear = new Date().getFullYear()
             if (mode == 1) {
               
               rows = await getNegativeFeedbackData(startRow,count,currYear)
-              cardTitle.value = "Negative Feedback YTD"
+              cardTitle.value = "Negative Feedback " + currYear.toString()
             }else{
               rows = await getPositiveFeedbackData(startRow,count,currYear)
-              cardTitle.value = "Positive Feedback YTD"
+              cardTitle.value = "Positive Feedback " + currYear.toString()
             }
           }
         }
@@ -1113,7 +1118,8 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
               division: card.division,
               service: card.service,
               submittedAt: moment(card.submittedAt).format('YYYY-MM-DD'),
-              question: card.question
+              question: card.question,
+              remarks: card.remarks
             // }
             // return obj
             })
@@ -1139,7 +1145,7 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
               division: card.tsr.division,
               service: card.tsr.service,
               submittedAt: moment(card.tsr.submittedAt).format('YYYY-MM-DD'),
-              question: card.question.description
+              question: card.question.description,
             // }
             // return obj
             })
@@ -1230,7 +1236,8 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
         //pagination
         pagination,
         onRequestCard,
-        rows
+        rows,
+        currentYear
       };
     },
   }

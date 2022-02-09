@@ -48,8 +48,9 @@
             </div>
               <div class="row inline">
                 <div class="inputs">
-                  <CustomSurveyField v-if="question.id == 3" v-model="surveyAnswer.answers[parent_node_index]" :questionId="question.id" :question_type="question.question_type.id" :optionval="serviceOptions" :labelval="question.label" />
-                  <CustomSurveyField v-else v-model="surveyAnswer.answers[parent_node_index]" :questionId="question.id" :question_type="question.question_type.id" :optionval="industryOptions" :labelval="question.label" />
+                    <!-- {{question}} -->
+                  <CustomSurveyField v-if="question.id == 3" v-model="surveyAnswer.answers[parent_node_index]" :questionId="question.id" :question_type="question.question_type"  :labelval="question.label" />
+                  <CustomSurveyField v-else v-model="surveyAnswer.answers[parent_node_index]" :questionId="question.id" :question_type="question.question_type"  :labelval="question.label" />
                 </div>
               </div>
           </div>
@@ -57,8 +58,11 @@
             <p class="questions"> {{question.description}}</p>
             <div class="surveyquestions">
               <h5>Survey Questions</h5>
+               
                   <div v-for="(questionSubhead,index) in  (orderByNestedSurveyQuestions(question.children))" v-bind:key="questionSubhead.id">
                     <!-- {{ updateCnt(parent_node_index) }} -->
+                     <!-- {{questionSubhead}} -->
+                    <!-- {{questionSubhead}} -->
                     <!-- {{questionSubhead}} -->
                     <!-- {{ orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.subheader.length, 0)+ index }} -->
                     <div class="row">
@@ -67,13 +71,13 @@
                       </div>
                     <div class="row inline">
                       <div class="inputs">
-                        <div v-if="question.id == 12">
-                          {{question}}
-                          <CustomSurveyField v-model="subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index]" :questionId="questionSubhead.id" lazy-rules :rules="[val => val == '' || 'Field is required']"  :question_type="questionSubhead.question_type.id" :optionval="industryOptions" :labelval="questionSubhead.label" />
-                        </div>
+                        <!-- <div v-if="questionSubhead.id == 12">
+                          <CustomSurveyField v-model="subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index]" :questionId="questionSubhead.id" lazy-rules :rules="[val => val == '' || 'Field is required']"  :question_type="questionSubhead.question_type.id"  :labelval="questionSubhead.label" />
+                        </div> -->
                         <!-- indexing in nested v-model of surveyanswer -->
                         <!-- {{orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index}} -->
-                        <CustomSurveyField v-model="subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index]" :questionId="questionSubhead.id"  :question_type="questionSubhead.question_type.id" :optionval="industryOptions" :labelval="questionSubhead.label" />
+                        <!-- {{subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index]}} -->
+                        <CustomSurveyField v-model="subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index]" :questionId="questionSubhead.id"  :question_type="questionSubhead.question_type" :labelval="questionSubhead.label" />
                       </div>
                       <div>
                         <!-- {{subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index]}} -->
@@ -240,13 +244,19 @@ export default defineComponent({
 
       try {
         // questionsNotManipulated.value = await getData(url)
-        questions.value = await getQuestions()
+        questions.value = await getQuestionsWithoutAns()
+        console.log("displayQuestions.value",questions.value)
         displayQuestions.value = questions.value.filter(Question =>{
-          Question.children = questions.value.filter(child => child.parent?.id === Question.id )
+          Question.children = questions.value.filter(child => {
+            // console.log("Question",Question)
+            return child.parent === Question.id 
+          })
           return Question.parent === null
         })
         // column
         // column in survey result
+        console.log("displayQuestions.value",displayQuestions.value)
+        console.log("questions.value",questions.value)
         cols.value = [...new Set(questions.value.map(({ id, description, value }) => ({id, description, value})))];
         
         
@@ -372,7 +382,18 @@ export default defineComponent({
         if ( divData.value != "" && serviceData.value != ""){
  
           if (success){
-            submitSurvey()
+            let overallAns = subHeaderSurveyAnswer.answers.find(element => element.question == 12);
+            if(overallAns.value || overallAns.value != ''){
+              submitSurvey()
+            }else{
+              $q.notify({
+              color: 'red-5',
+              textColor: 'white',
+              icon: 'warning',
+              message: 'Please answer Overall Rating Question'
+              })
+            }
+            
           }
           else{
             // required field is not satisfied

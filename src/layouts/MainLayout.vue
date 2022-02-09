@@ -77,6 +77,11 @@
                 Per Division Admin
             </q-item-section>
             </q-item>
+             <q-item :content-inset-level="1" clickable class="text-black"  align="center" to="/Resolutions" label="Resolutions" >
+            <q-item-section>
+                 Resolutions
+              </q-item-section>
+          </q-item>
           </q-expansion-item>
             
 

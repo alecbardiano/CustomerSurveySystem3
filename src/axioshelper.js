@@ -1,9 +1,11 @@
-import { api, oneshopapi, ulimsTSRapi} from 'boot/axios'
+import { api, oneshopapi, ulimsTSRapi,mailapi,csmsURL} from 'boot/axios'
 import moment from 'moment';
 import {groupBy, flow, chain} from 'lodash';
+import { v4 as uuidv4 } from 'uuid';
 
-
+let todayDate = new Date()
 let today = moment().year()
+let datetime = todayDate
 
 
 const getTSRNoFromULIMSrSystems = async function (tsrNumber) {
@@ -459,7 +461,13 @@ const postAnswersToBackend = async function(answers,subheaderans,tsrNo,industry,
   let errorMessage = ""
   let submitDate
   let resStatus = 200
-  
+  let flagNegative = 0
+  let tsrId
+  let answerForFeedback = []
+  let resultTsr 
+  let uuid = uuidv4();
+  // if flag == 1 : send email for that tsr
+  // if flag == 0 : dont send
 try {
   if(dateImport){
     submitDate = dateImport
@@ -471,13 +479,15 @@ try {
       "industry": industry,
       "service": service,
       "division": division,
-      "submittedAt": submitDate
+      "submittedAt": submitDate,
+      "uuid": uuid
   }
-  let tsrId
+  
   await api.post("/tsrs", tsr)
   
   .then(response => { 
     tsrId = response.data.id
+    resultTsr = response.data
   })
   .catch(function (error) {
     console.log(error.response.status);
@@ -507,7 +517,13 @@ try {
       tsr_q_id: tsrId +'_' +answer.question,
       tsrNo: tsrNo
     }
+    let val = parseInt(ans.value) 
+    if(val <= 2){
+      flagNegative = 1
+    }
+
     await api.post("/answers", ans)
+    
   }
   for (const answer of subheaderans){
     console.log("tsrsrsts", tsrId)
@@ -520,15 +536,125 @@ try {
       tsrNo: tsrNo,
       remarks: answer.remarks
     }
+    let val = parseInt(ans.value)
+    if( val <= 2) {
+      flagNegative = 1
+    }
     await api.post("/answers", ans)
 
+    
+
+  }
+  if (flagNegative == 1){
+    await sendEmailNegativeFeedback(resultTsr)
   }
   // all good, all post requests are successful
   return resStatus
-} catch (error) {
-  console.log(error)
+
+  } catch (error) {
+    console.log(error)
+  }
+
 }
 
+const sendEmailNegativeFeedback = async function(tsr) {
+      let tsrNo = tsr.tsrNo
+      let uid = tsr.uuid
+      // console.log("data",data)
+      // let questionDesc = data.question.description
+      console.log("yosendemail")
+      let division = tsr.division
+      let recipient
+      let cc
+      let ccArr = []
+//       "Edilbert Dela Peña" <emdelapena@mirdc.dost.gov.ph>; "Engr. Rommel N. Corona" <rncorona@mirdc.dost.gov.ph>; "jmvelasco" <jmvelasco@mirdc.dost.gov.ph>; rspagtalunan@mirdc.dost.gov.ph; ljgasmando@mirdc.dost.gov.ph; ljgasmando@mirdc.dost.gov.ph
+// "salvacion.ruiles" <salvacion.ruiles@mirdc.dost.gov.ph>; fpliza@mirdc.dost.gov.ph; "Rodnel O. Tamayo" <rotamayo@mirdc.dost.gov.ph>; girl; "mmmillo" <mmmillo@mirdc.dost.gov.ph>; "rnmariposque" <rnmariposque@mirdc.dost.gov.ph>
+      // switch(division) {
+      //     case 'ATD':
+      //       // code block
+      //       recipient = 'rspagtalunan@mirdc.dost.gov.ph'
+      //       cc = 'ljgasmando@mirdc.dost.gov.ph'
+      //       break;
+      //     case 'PD':
+      //       // code block
+      //       recipient = 'rotamayo@mirdc.dost.gov.ph'
+      //       break;
+      //     case 'TDD-TABDS':
+      //       //code block
+      //       recipient = 'mmmillo@mirdc.dost.gov.ph'
+      //       cc = 'rnmariposque@mirdc.dost.gov.ph'
+      //       break;
+      //     case 'TSSS':
+      //       //code block
+      //       recipient = 'jmvelasco@mirdc.dost.gov.ph'
+      //       cc = 'emdelapena@mirdc.dost.gov.ph' + ',' + 'rncorona@mirdc.dost.gov.ph'
+      //       break
+      //     case 'MPRD':
+      //       //code block
+      //       recipient = 'fpliza@mirdc.dost.gov.ph'
+      //       cc = 'salvacion.ruiles@mirdc.dost.gov.ph'
+      //       break;
+      //     default:
+      //       // code block
+      //   }
+
+      let config = {
+              headers: {
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json'
+              }
+      }
+      //  method: 'POST',
+      
+      let dataBody = {
+          "from": "ithelpdesk@mirdc.dost.gov.ph",
+          "to": "bardiano.work@gmail.com", // recipient
+          "subject": tsrNo + ' - ' + 'Negative Feedback',
+          "system": "Customer Survey Management System",
+          "html": {
+              "firstName": "Pogi",
+              "message": "Customer Survey Management System is requesting you to review the tsrNo:" + tsrNo + " because it received a negative feedback, please provide a resolution on the provided link" ,
+              "url": {
+                "text": "Access Resolution Form",
+                "link": csmsURL+'#/feedback/ResolutionFromFeedback/' + uid
+              },
+              "message2": "For remote access or work from home (WFH) setup, please connect to Virtual Private Network (VPN) using your username and password provided by the MIS unit. After a successful connection to the VPN, click on the button above.",
+              "message3": "If you do not have a VPN account, please request thru Ms. Mercedita G. Abutal, Chief PMD and ISMR at email: mgabutal@mirdc.dost.gov.ph."
+          }
+      }
+      const rawResponse = await mailapi.post('sendMail', dataBody,config)
+          .then(response => response.data )
+          .catch(error => {
+              // element.parentElement.innerHTML = `Error: ${error.message}`;
+              console.error('There was an error!', error);
+          });
+      console.log("rawResponse",rawResponse)
+
+      // const content = await rawResponse.json();
+      
+      // console.log(content);
+}
+
+const postResFromApi = async function (answers){
+  console.log("answers",answers)
+  let config = {
+    headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+  }
+  answers.forEach( async ans => {
+    await api.put("/answers/"+ ans.ansID,ans,config)
+    .then(res => {
+      return 200
+    })
+    .catch(error => {
+      this.errorMessage = error.message;
+      console.error("There was an error!", error);
+      return error
+    });
+    
+  });
 }
 
 const postQuestionToBackend = async function(question) {
@@ -745,6 +871,7 @@ const totalFeedbackCountTSR = function (beforeDate,afterDate,filter)  {
 //new Dashboard
 const allOverAllRatings = function (month,year){
 
+
   let bfdate = new Date(year, month)
   let afterDate
   if(month == 12){
@@ -953,8 +1080,27 @@ export const countAnswerBySearch = (search,mode) => {
   return getCountAllAnswerSearch(search,mode)
 }
 
+export const getTsrByID = (id) => {
+  // http://10.10.120.19:1337/answers/?tsr.uuid=d0476b3c-c260-4fc6-92a9-ac4e8068e488&value_lte=2&value_gte=""
+  return api.get('/answers/?tsr.uuid='+id+'&value_lte=2&value_gte=""')
+      .then(function( response ){
+          
+          return response.data;
+      })
+}
+
+export const getQuestionByID = (id) => {
+  return api.get('/questions/'+id)
+      .then(function( response ){
+          
+          return response.data;
+      })
+}
 
 
+export const updateAnswerResolution = (answers) => {
+  return postResFromApi(answers)
+}
 
 
 
