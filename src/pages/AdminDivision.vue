@@ -146,7 +146,7 @@
 
 <script>
 import { defineComponent, ref, onMounted, computed, watch } from 'vue'
-import { allOverAllRatingsFromApi, getOverall, getTSRs, getQuestions, getDivList,getSecList,positiveFeedbackPerDivision, satisfactoryFeedbackPerDivision, poorFeedbackPerDivision,getCountServicePerDivision } from 'src/axioshelper.js'
+import { allOverAllRatingsFromApi, getOverall, getTSRs, getQuestions, getDivList,getSecList,positiveFeedbackPerDivision, satisfactoryFeedbackPerDivision, poorFeedbackPerDivision,getCountServicePerDivision, getQuestionsWithoutAns } from 'src/axioshelper.js'
 import orderBy from 'lodash.orderby'
 import moment from 'moment';
 
@@ -199,9 +199,6 @@ export default defineComponent({
 
 
     const divisions = ref([])
-    const options = ref(
-      ["yo", "yo2"]
-    )
     const colsOverall = ref([
     //  { name: 'tsrNo', align: 'left', label: 'TSR', field: 'tsrNo', sortable: true }
     ])
@@ -272,6 +269,7 @@ export default defineComponent({
           4: 0, 
           3:0, 
           2:0,
+          1:0,
           0:0
         };
         for (const num of dataDivision) {
@@ -282,14 +280,16 @@ export default defineComponent({
               noVerySatisfactory.value+=1
             }else if(num == 3){
               noSatisfactory.value +=1
-            }else if(num >= 2){
+            }else if(num <= 2){
               noPoor.value+=1
             }else{
-
               noNoOverall.value += 1
             }
           }
-          if (num == 1 || num == 2){
+          if (num == 1){
+            counts[1] +=1
+          }
+          else if( num == 2){
             console.log("wew")
             
             counts[2] +=1
@@ -341,7 +341,7 @@ export default defineComponent({
         })
       for (let j =0; j < orderByPositionQuestions.value.length ; j++){
         // remove subheaders in columns filter
-        if(orderByPositionQuestions.value[j].question_type.id != 5){
+        if(orderByPositionQuestions.value[j].question_type != 5){
         let column = {
           name: '',
           align: 'left',
@@ -356,7 +356,7 @@ export default defineComponent({
         column.name = orderByPositionQuestions.value[j].description
         column.label = orderByPositionQuestions.value[j].description
         column.field = orderByPositionQuestions.value[j].id
-        if(orderByPositionQuestions.value[j].question_type.id == 2){
+        if(orderByPositionQuestions.value[j].question_type == 2){
             colsOverall.value.push(column)
           }
         
@@ -372,6 +372,7 @@ export default defineComponent({
       rowsOverall.value.push({servicearea: "4 - Very Satisfactory" , id: 4 })
       rowsOverall.value.push({servicearea: "3 - Satisfactory", id: 3 })
       rowsOverall.value.push({servicearea: "2 - Fair & 1 - Poor", id: 2})
+      rowsOverall.value.push({servicearea: "1 - Poor", id: 1})
       rowsOverall.value.push({servicearea: "No Response", id: 0})
       colsOverall.value.forEach(function(column) {
         console.log("column", column)
@@ -450,7 +451,7 @@ export default defineComponent({
     }
 
     onMounted( async () => {
-      questions.value = await getQuestions()
+      questions.value = await getQuestionsWithoutAns()
       divisionsAndSections.value = await getDivList()
       divisions.value = [...new Set(divisionsAndSections.value.map(a => a.division))]
       buildColumns()
@@ -459,9 +460,8 @@ export default defineComponent({
     //     pagination: pagination.value,
     //     filter: undefined
     //   })
-  })
+   })
     return {
-      options,
       divisions,
       division,
       services,

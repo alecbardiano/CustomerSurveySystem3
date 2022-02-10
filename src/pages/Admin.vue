@@ -1,7 +1,5 @@
 <template>
       <div class="q-pa-lg" >
-                {{beforeDate}}
-                {{afterDate}}
                 <q-form ref="dateform" @submit="dataUpdateWithDate()">
                   <div class="row inline">
                   <q-input outlined filled mask="date" v-model="beforeDate" lazy-rules :rules="[val => val <= afterDate || 'Field should be earlier than after date']" placeholder="mm/dd/yy" hint="Start Date" >
@@ -235,7 +233,7 @@
 <script>
 // import packages
 import { reactive, defineComponent, ref, onMounted, computed , watch,onBeforeUnmount} from 'vue'
-import { getQuestions, getTSRs,postAnswers , getOverall,deleteAll,totalTsrsCount, getDivList, totalTsrsCountByYear,getTSRYearAndMonth,getCountServicePerDivision} from 'src/axioshelper.js'
+import { getQuestions,getQuestionsWithoutAns, getTSRs,postAnswers , getOverall,deleteAll,totalTsrsCount, getDivList, totalTsrsCountByYear,getTSRYearAndMonth,getCountServicePerDivision} from 'src/axioshelper.js'
 import { overAllColumns, overAllRows,numberOfCustomersColumnsData,numberOfCustomersRowsData, summaryPerDivisionRows, summaryPerDivisionColumns  } from 'src/utils/dataRetrieveTables.js'
 import { exportFile, useQuasar} from 'quasar'
 import { xlsx, pdfMake } from 'boot/axios'
@@ -428,10 +426,10 @@ export default defineComponent({
       cols.value.push({ name: 'service', align: 'left ', label: 'Service', field: 'service'})
       cols.value.push({ name: 'industry', align: 'left', label: 'Industry', field: 'industry' })
       
-  
+      console.log("orderByPositionQuestions,va",orderByPositionQuestions.value)
       for (let j =0; j < orderByPositionQuestions.value.length ; j++){
         // remove subheaders in columns filter
-        if(orderByPositionQuestions.value[j].question_type.id != 5){
+        if(orderByPositionQuestions.value[j].question_type != 5){
         let column = {
           name: '',
           align: 'left',
@@ -805,13 +803,7 @@ export default defineComponent({
         let copyColumns = columns.map(a => a);
         let mainArrayColumn = columns.map((a => a.label));
         body.push(mainArrayColumn);
-        const mainCounts = {
-          5: 0, 
-          4: 0,
-          3: 0, 
-          2: 0,
-          1: 0,
-        };
+        
         let copyData = data.map((rest ) => rest)
         
         let index = 0
@@ -828,7 +820,7 @@ export default defineComponent({
         let numberPrevPoor = 0
         copyData.forEach(function(row) {
             // 11 rows before new division
-            if(index % 11 == 0 ){
+            if(index % 12 == 0 ){
               body.push(
                 	["Division: ",row.division,"","","","","","","",""]
                 )
@@ -881,7 +873,7 @@ export default defineComponent({
             body.push(dataRow);
             
             index +=1
-            if (((index +4) % 11 == 0 ) || index == 7){
+            if (((index +4) % 12 == 0 ) || index == 8){
               // off set rows for other fields in the rows (no of respondents, etc)
               // every reset of every new division and service
               prevRespond = row.countsDivision
@@ -1179,7 +1171,7 @@ export default defineComponent({
 
     
   async function generatePDF(){
-    let alltsrs
+    let alltsrs = []
     // get all tsrs
     
     if (beforeDate.value && afterDate.value){
@@ -1194,8 +1186,14 @@ export default defineComponent({
     }
     console.log("all tsrs", alltsrs)
     buildOverall(alltsrs)
-
-    // sort by Division
+    if (alltsrs.length == 0  ){
+      $q.notify({
+        message: 'No data found, PDF Creation Failed',
+        color: 'negative',
+        position: 'top'
+      })
+    }else{
+      // sort by Division
     alltsrs = alltsrs.sort( compare );
     // sort by Service
     alltsrs = alltsrs.sort( compare2 );
@@ -1366,6 +1364,9 @@ export default defineComponent({
       var pdf = pdfMake.createPdf(dd);
       // pdf.download('Customer Survey Management System Report.pdf');
       pdf.open();
+    }
+
+    
    }
 
   async function getAllTsrsByYearMonth (before,after){
@@ -1397,7 +1398,7 @@ export default defineComponent({
   }
   
   async function generateExcel () {
-        let alltsrs
+        let alltsrs = []
         let dateFirstRow
         // get all tsrs needed for generate data
         if (beforeDate.value && afterDate.value){
@@ -1413,8 +1414,20 @@ export default defineComponent({
            dateFirstRow = 'January ' + currYear + ' - ' + moment(Date.now()).format('MMMM-YYYY')
         }
 
-        buildOverall(alltsrs)
-        let rowalltsrs = buildRow(alltsrs)
+        if(alltsrs.length == 0){
+          $q.notify({
+            message: 'No data found,  Excel Creation Failed',
+            color: 'negative',
+            position: 'top'
+          })
+        }else{
+          buildOverall(alltsrs)
+          alltsrs = alltsrs.sort( compare );
+    // sort by Service
+          alltsrs = alltsrs.sort( compare2 );
+          
+          []
+          let rowalltsrs = buildRow(alltsrs)
     // for overall column table Overall Agency Citizen/ Client Satisfaction Score' deconstruct to get only field and label
         let overallCol = colsOverall.value.map(({ field, label }) => ({field, label}));
         // all survey  Customer Satisfaction Measurement
@@ -1498,6 +1511,9 @@ export default defineComponent({
 
         /* generate an XLSX file */
         xlsx.writeFile(Workbook, dateFirstRow.toString() +" CSMS Raw Data .xlsx");
+        }
+
+        
         
       }
     
@@ -1508,13 +1524,19 @@ export default defineComponent({
     // first to be called
     try {
         
-        questions.value = await getQuestions() // check
-    }catch{
-      
+        questions.value = await  getQuestionsWithoutAns() // check
+        // questions.value = await  getQuestions() // check
+        
+    }catch (err){
+      console.log("error", error)
     }
     
     divisioAndSectionList.value = await getDivList()
     divisions.value = await getCountServicePerDivision()
+    let a = await getQuestionsWithoutAns()
+
+    console.log("A",a )
+    console.log("questions.value",questions.value)
     // divisions.value = divisions.value.map( item => item.division)
 
    
@@ -1783,7 +1805,7 @@ export default defineComponent({
           dimension: orderByPositionQuestions.value[i].description,
           id: orderByPositionQuestions.value[i].id
         }
-          if(orderByPositionQuestions.value[i].question_type.id == 2){
+          if(orderByPositionQuestions.value[i].question_type == 2){
             rowsOverall.value.push(row)
           }
         

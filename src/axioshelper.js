@@ -510,19 +510,21 @@ try {
   for (const answer of answers) {
     console.log("tsrsrsts", tsrId)
     // console.log("from axioss sssssdsd23232", answer)
-    let ans = {
-      tsr: tsrId,
-      question: answer.question,
-      value: answer.value,
-      tsr_q_id: tsrId +'_' +answer.question,
-      tsrNo: tsrNo
-    }
-    let val = parseInt(ans.value) 
-    if(val <= 2){
-      flagNegative = 1
-    }
+    if(answer.question != ''){
+      let ans = {
+        tsr: tsrId,
+        question: answer.question,
+        value: answer.value,
+        tsr_q_id: tsrId +'_' +answer.question,
+        tsrNo: tsrNo
+      }
+      let val = parseInt(ans.value) 
+      if(val <= 2){
+        flagNegative = 1
+      }
 
-    await api.post("/answers", ans)
+      await api.post("/answers", ans)
+    }
     
   }
   for (const answer of subheaderans){
@@ -562,7 +564,6 @@ const sendEmailNegativeFeedback = async function(tsr) {
       let uid = tsr.uuid
       // console.log("data",data)
       // let questionDesc = data.question.description
-      console.log("yosendemail")
       let division = tsr.division
       let recipient
       let cc
@@ -788,7 +789,7 @@ const positiveFeedbackCountData = function (start,limit,year)  {
 }
 
 const negativeFeedbackCount = function (year)  {
-  return api.get('/answers/count?value_lte=2&question.question_type=2&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
+  return api.get('/answers/count?value_lte=2&value_gt=0&question.question_type=2&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
       })
       .then(function( response ){
           return response.data;
@@ -796,8 +797,16 @@ const negativeFeedbackCount = function (year)  {
 }
 
 const negativeFeedbackCountData = function (start,limit,year)  {
-  return api.get('/answers/?_start='+start+'&_limit='+limit+'&value_lte=2&question.question_type=2&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
+  return api.get('/answers/?_start='+start+'&_limit='+limit+'&value_lte=2&value_gt=0&question.question_type=2&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
+      }) 
+      .then(function( response ){
+          return response.data;
       })
+}
+
+const negativeFeedbackCountDataResolutions = function (start,limit,division,service,year)  {
+  return api.get('/answers/?_start='+start+'&_limit='+limit+'&tsr.division='+division+'&tsr.service='+service+'&value_lte=2&value_gt=0&question.question_type=2&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
+      }) 
       .then(function( response ){
           return response.data;
       })
@@ -948,6 +957,10 @@ export const getNegativeFeedbackData= (start,limit,year) => {
   return negativeFeedbackCountData(start,limit,year)
 }
 
+export const getNegativeFeedbackDataResolution = (start,limit,division,service,year) => {
+  return negativeFeedbackCountDataResolutions(start,limit,division,service,year)
+}
+
 export const countNoFeedback = (year) => { 
   return noAnswerFeedbackCount(year)
 }
@@ -955,8 +968,6 @@ export const countNoFeedback = (year) => {
 export const getNoAnswerFeedbackData= (start,limit,year) => { 
   return noAnswerFeedbackCountData(start,limit,year)
 }
-
-
 
 export const totalTsrsCountByYear = (year,filter) => {
   return totalFeedbackCountTSRByYear(year,filter)
@@ -1080,14 +1091,20 @@ export const countAnswerBySearch = (search,mode) => {
   return getCountAllAnswerSearch(search,mode)
 }
 
+
+//  new pages
+// resolution page email
 export const getTsrByID = (id) => {
   // http://10.10.120.19:1337/answers/?tsr.uuid=d0476b3c-c260-4fc6-92a9-ac4e8068e488&value_lte=2&value_gte=""
-  return api.get('/answers/?tsr.uuid='+id+'&value_lte=2&value_gte=""')
+  return api.get('/answers/?tsr.uuid='+id+'&value_lte=2&value_gt=""')
       .then(function( response ){
           
           return response.data;
       })
 }
+
+
+// http://10.10.120.19:1337/answers/?value_lte=2&value_gt=0
 
 export const getQuestionByID = (id) => {
   return api.get('/questions/'+id)

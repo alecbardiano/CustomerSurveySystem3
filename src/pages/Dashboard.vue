@@ -612,6 +612,7 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
         for(let i=0 ; i<12; i++){
           tsrMonth = await getTSRYearAndMonth(i,currentYear.value)
           answersOverall = await allOverAllRatingsFromApi(i,currentYear.value)
+          console.log("answersOverall",answersOverall)
           tsrMonth.forEach(element => {
             tsrs.value.push(element)
           });
@@ -632,10 +633,6 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
          divisionsAndSections.value.forEach(key => {
            
             let stringColField = key.keyname
-            // initialize row customers table
-            // let tot ={value: 0, total:0}
-            // tot[stringColField] = 0
-            // totalActualRespondents.value.push(tot)
             // filter all answer overall specific to tsr
             let sample = totalAnswerOverall.value.filter((elementTSR) => {
             if(elementTSR.tsr){
@@ -655,6 +652,7 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
             1: 0,
             0: 0
           };
+          console.log("sample", sample)
           for (const element of sample) {
             
             let num = element.value
@@ -679,6 +677,7 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
               mainCounts[0] +=1
             }
           };
+          console.log("counts",counts)
           
 
           // average per overallperformance value
@@ -838,7 +837,8 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
         rowsOverallPerformance.value.push({servicearea: "5 - Outstanding" , id: 5,})
         rowsOverallPerformance.value.push({servicearea: "4 - Very Satisfactory" ,  id: 4 })
         rowsOverallPerformance.value.push({servicearea: "3 - Satisfactory", id: 3})
-        rowsOverallPerformance.value.push({servicearea: "2 - Fair & 1 - Poor", id: 2})
+        rowsOverallPerformance.value.push({servicearea: "2 - Fair", id: 2})
+        rowsOverallPerformance.value.push({servicearea: "1 - Poor", id: 1})
         rowsOverallPerformance.value.push({servicearea: "No Response", id: 0})
         
   
@@ -979,7 +979,7 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
             align: 'left',
             label: 'Remarks',
             field: 'remarks'
-          })
+            })
           }
         
 

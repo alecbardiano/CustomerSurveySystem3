@@ -41,8 +41,9 @@ function buildOverallPerfRows (divisionsAndSections, alltsrs){
     rowsOverallPerformance.push({servicearea: "5 - Outstanding" , id: 5})
     rowsOverallPerformance.push({servicearea: "4 - Very Satisfactory" ,  id: 4 })
     rowsOverallPerformance.push({servicearea: "3 - Satisfactory", id: 3})
-    rowsOverallPerformance.push({servicearea: "2 - Fair & 1 - Poor", id: 2})
-    rowsOverallPerformance.push({servicearea: "Total", id: 1})
+    rowsOverallPerformance.push({servicearea: "2 - Fair", id: 2})
+    rowsOverallPerformance.push({servicearea: "1 - Poor", id: 1})
+    rowsOverallPerformance.push({servicearea: "Total", id: 6})
     // let tsrs = await getTSRs()
     // let totalAnswerOverall = await allOverAllRatingsFromApi("","")
     //   totalAnswerOverall = totalAnswerOverall.filter(function (el) {
@@ -85,6 +86,7 @@ function buildOverallPerfRows (divisionsAndSections, alltsrs){
         3: 0, 
         2: 0,
         1: 0,
+        6: 0,
       };
       
       divisionsAndSections.forEach(element => {
@@ -98,13 +100,14 @@ function buildOverallPerfRows (divisionsAndSections, alltsrs){
           }
         }
        })
-
+       // service area object counts with total
         const counts = {
           5: 0, 
           4: 0,
           3: 0, 
           2: 0,
-          1: 0
+          1: 0,
+          6:0
         };
         // console.log("x", x+=sample.length)
         // console.log("sample", sample.length)
@@ -164,15 +167,17 @@ function buildOverallPerfRows (divisionsAndSections, alltsrs){
         console.log('totalPercentRow',totalPercentRow)
       });
       console.log('rowsOverallPerformance',rowsOverallPerformance)
-      rowsOverallPerformance[4]['percentage'] = parseFloat(totalPercentRow).toFixed(2).toString() + '%'
+      // total
+      rowsOverallPerformance[5]['percentage'] = totalPercentRow.toFixed(2).toString() + '%'
     
 
       divisionsAndSections.forEach(element => {
         let service = element.keyname
         let a = rowsOverallPerformance.map(a => a[service]);
         let sum = Math.round(a.reduce((a, b) => parseFloat(a) + parseFloat(b), 0))
+        console.log("sum",sum)
         // rows
-        rowsOverallPerformance[4][service] = sum.toFixed(2).toString() + '%'
+        rowsOverallPerformance[5][service] = sum.toFixed(2).toString() + '%'
     
        });
           
@@ -293,7 +298,8 @@ function buildSummaryPerDivisionRows (questions,divisionsAndSections,allTsrs){
           rowsSummary.push({division: element.division, service: element.service ,servicearea: "5 - Outstanding" , id: 5})
           rowsSummary.push({division: element.division, service: element.service, servicearea: "4 - Very Satisfactory" , id: 4 })
           rowsSummary.push({division: element.division, service: element.service,servicearea: "3 - Satisfactory", id: 3 })
-          rowsSummary.push({division: element.division, service: element.service,servicearea: "2 - Fair & 1 - Poor", id: 2})
+          rowsSummary.push({division: element.division, service: element.service,servicearea: "2 - Fair", id: 2})
+          rowsSummary.push({division: element.division, service: element.service,servicearea: "1 - Poor", id: 1})
           rowsSummary.push({division: element.division, service: element.service,servicearea: "No Response", id: 0})
           // let dataDivision = await getOverall(key2,element,questions[j].id,'01-01-2021','12-31-2021')
           // console.log("dataDivisiondataDivision",dataDivision)
@@ -305,6 +311,7 @@ function buildSummaryPerDivisionRows (questions,divisionsAndSections,allTsrs){
                     4: 0, 
                     3:0, 
                     2:0,
+                    1:0,
                     0:0
                   };
           if(allTsrs.length != 0){
@@ -313,10 +320,7 @@ function buildSummaryPerDivisionRows (questions,divisionsAndSections,allTsrs){
               if (typeof nestedObject.answers != 'undefined'){
                 nestedObject.answers.map(a => {
                   if( a.question == questions[j].id){
-                    if (a.value == 1 || a.value == 2){
-                      counts[2] +=1
-                    }
-                    else if (isNaN(a.value)){
+                    if (isNaN(a.value)){
                       counts[0] += 1
                     }else{
                       counts[a.value] = (counts[a.value] ? counts[a.value] + 1 : 1) 
@@ -325,77 +329,38 @@ function buildSummaryPerDivisionRows (questions,divisionsAndSections,allTsrs){
                   }
                  
                 })
+                    
+                  }
 
-                // console.log("answerPickedanswerPicked", answerPicked)
-                // console.log("answerPickedanswerPicked", answerPicked[0])
-                
-                // let answers = nestedObject.answers
-                // answers = answers.filter(a => {
-                //   return a.question== questions[j].id
-                // })
-                // console.log("answered", answers)
-                // console.log("questions", questions[j])
-                // answers.map( a => {
-                //   if (a.value == 1 || a.value == 2){
-                //     console.log("wew")
-                //     counts[2] +=1
-                //   }
-                //   else if (isNaN(a.value)){
-                //     counts[0] += 1
-                //   }else{
-                //     counts[a.value] = (counts[a.value] ? counts[a.value] + 1 : 1) 
-                //   }
-                // })
-                
-              }
-
-              // console.log("The subject Name="+nestedObject.subjectDetails.subjectName);
-           })
-           let x = 0
-           let y = 0
-           let z = 0
-           for(let [key, value] of Object.entries(counts)){
-            //  console.log("vavavaval", value)
-            rowsSummary.forEach(function (arrayItem) {
-              if (arrayItem.division == element.division && arrayItem.service == element.service)
-              if(key == arrayItem.id){
-                
-                
-                value = (value/ dataDivision.length) * 100
-                if(isNaN(value)){
-                  value = 0
-                }
-                value = value.toFixed(2).toString() + '%'
-                arrayItem[questions[j].id] = value
-                arrayItem['countsDivision'] = dataDivision.length
-                arrayItem['verysatis'] = x
-                
-                // arrayItem['countsDivision'] = dataDivision.length
-              }
-          });
-        }
-            // dataDivision = dataDivision.map(function (x) { 
-            //   return parseInt(x, 10); 
-            // });]
-              // if(questions[j].id == 12){
-              //   // noRespondents.value  +=  1
-              //   if (num == 5|| num == 4){
-              //     console.log("pasok dito")
-              //     noVerySatisfactory.value+=1
-              //   }else if(num == 3){
-              //     noSatisfactory.value +=1
-              //   }else{
-              //     noPoor.value+=1
-              //   }
-              // }
-            
+              })
+              let x = 0
+              for(let [key, value] of Object.entries(counts)){
+                //  console.log("vavavaval", value)
+                rowsSummary.forEach(function (arrayItem) {
+                  if (arrayItem.division == element.division && arrayItem.service == element.service)
+                  if(key == arrayItem.id){
+                    
+                    
+                    value = (value/ dataDivision.length) * 100
+                    if(isNaN(value)){
+                      value = 0
+                    }
+                    value = value.toFixed(2).toString() + '%'
+                    arrayItem[questions[j].id] = value
+                    arrayItem['countsDivision'] = dataDivision.length
+                    arrayItem['verysatis'] = x
+                    
+                    // arrayItem['countsDivision'] = dataDivision.length
+                  }
+              });
             }
+            
+        }
 
         
 
-      
+      console.log("rowsSummary",rowsSummary)
       }
-      // rowsSummary.push([{text: "No of Respondents"},{text: index},"","","","","","","",""])
   });
   return rowsSummary
   
@@ -413,7 +378,7 @@ function buildSummaryPerDivisionColumns (questions){
   })
   for (let j =0; j < questions.length ; j++){
     // remove subheaders in columns filter
-    if(questions[j].question_type.id != 5){
+    if(questions[j].question_type != 5){
     let column = {
       name: '',
       align: 'left',
@@ -428,7 +393,7 @@ function buildSummaryPerDivisionColumns (questions){
     column.name = questions[j].description
     column.label = questions[j].description
     column.field = questions[j].id
-    if(questions[j].question_type.id == 2){
+    if(questions[j].question_type == 2){
       columnSummary.push(column)
       }
     }

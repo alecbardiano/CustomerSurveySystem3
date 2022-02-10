@@ -273,6 +273,7 @@ export default defineComponent({
           })
         })
 
+        // total questions length subtract questions subheader
         lengthQuestions.value = questions.value.length
         buildArrayOfAnswers()
         
@@ -331,6 +332,8 @@ export default defineComponent({
       }
       // post answers and children/subheader answers
       let a = await postAnswers(surveyAnswer.answers,subHeaderSurveyAnswer.answers,TsrNo.value,industryData.value,serviceData.value,divData.value,"")
+      console.log("surveyAnswer.answers","subHeaderSurveyAnswer",subHeaderSurveyAnswer.answers)
+      console.log("surveyAnswer.answers","surveyAnswer",surveyAnswer.answers)
       // if survey form is accepted notify
       if (a == '200'){
         $q.notify({

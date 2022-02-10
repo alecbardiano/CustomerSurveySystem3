@@ -12,7 +12,7 @@
           Customer Survey Management System
         </q-toolbar-title>
         <q-space />
-           <div class="fontSize">
+           <div v-if="loginStatus != 'failed' && userLoggedin.email != ''  " class="fontSize">
             Logged in: {{userLoggedin.displayName}}
            </div>
       </q-toolbar>
@@ -53,15 +53,6 @@
             </q-item-section>
           </q-item>
 
-          <q-item clickable v-ripple to="/Question" class="text-black" label="Dashboard">
-            <q-item-section avatar>
-              <q-icon name="question_answer" />
-            </q-item-section>
-            <q-item-section>
-              Questions
-            </q-item-section>
-          </q-item>
-
           <q-expansion-item
             expand-separator
             icon="admin_panel_settings"
@@ -83,6 +74,31 @@
               </q-item-section>
           </q-item>
           </q-expansion-item>
+
+          <q-expansion-item
+            expand-separator
+            icon="library_books"
+            label="Libraries"
+          >
+          <q-item :content-inset-level="1" clickable class="text-black"  align="center" to="/Question" label="Questions" >
+            <q-item-section avatar>
+              <q-icon name="question_answer" />
+              </q-item-section>
+            <q-item-section>
+              Questions
+            </q-item-section>
+          </q-item>
+          <q-item :content-inset-level="2" clickable  class="text-black" align="center" to="/Divisions" label="Division"  >
+          <q-item-section avatar>
+              <q-icon name="group" />
+              </q-item-section>
+              <q-item-section>
+                Divisions
+            </q-item-section>
+          </q-item>
+          </q-expansion-item>
+
+          
             
 
           <q-item clickable v-ripple to="/" @click="logout" class="text-black" label="Logout">
