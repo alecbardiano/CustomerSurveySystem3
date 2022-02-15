@@ -69,7 +69,7 @@ export default defineComponent({
             datasets: [{
                 data: props.chartData,
                 label: props.label,
-                backgroundColor: ['green', 'Orange', 'yellow', 'red', '#97B0C4']
+                backgroundColor: ['green', '#DFFF00', '#CCCC00', 'orange', 'red', '#97B0C4']
             }]
         }
     ))

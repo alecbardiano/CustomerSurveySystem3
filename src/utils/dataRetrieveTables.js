@@ -216,12 +216,12 @@ function buildNumberOfCustomersRows (divisionsAndSections, tsrList){
   let rowsnumberOfCustomers = []
   // tsrList.value
 
-    tsrList = orderBy(tsrList,'submittedAt', 'desc')
+    tsrList = orderBy(tsrList,'submittedAt', 'asc')
       // Number of customers Row generation
       let totalRespondentsPerMonth = 0
       // group by months
       var result = _(tsrList)
-      .groupBy(v => moment(v.submittedAt).format('MMMM'))
+      .groupBy(v => moment(v.submittedAt).format('MMMM/YYYY'))
       .value();
 
 

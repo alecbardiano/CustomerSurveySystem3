@@ -1,6 +1,13 @@
 <template>
       <div class="q-pa-lg" >
-                <q-form ref="dateform" @submit="dataUpdateWithDate()">
+        <div class="q-pa-md">
+          <q-toggle v-model="showFilter" label="Show Filters" />
+        </div>
+                <q-form ref="dateform" @submit="dataUpdateWithDate()" v-if="showFilter">
+                    <div class="row" style="padding-bottom: 20px">
+                      <q-select v-model="division" @update:model-value="fillSectionList()" :options="divisionsWithServ" label="Division" style="width: 200px; " />
+                      <q-select v-model="service" :options="services" label="Service" style="width: 200px;  margin-left: 40px" />
+                    </div>
                   <div class="row inline">
                   <q-input outlined filled mask="date" v-model="beforeDate" lazy-rules :rules="[val => val <= afterDate || 'Field should be earlier than after date']" placeholder="mm/dd/yy" hint="Start Date" >
                     <template v-slot:append>
@@ -38,8 +45,12 @@
                 </div>
     
                 </q-form>
+
+        <div class="q-pa-md">
+          <q-toggle v-model="showFunctions" label="Show Functions" />
+        </div>
   
-        <div class="row">
+        <div class="row" v-if="showFunctions">
           <div class="col-md-4">
             <div class="row inline">
             <q-file  v-model="importFile" ref="uploadRefButton" label="Import Data "
@@ -182,7 +193,7 @@
     <!-- Overall Agency Citizen/ Client Satisfaction Score -->
     <q-table
         
-        title="Overall Agency Citizen/ Client Satisfaction Score"
+        :title="titleOverall"
         :rows="rowsOverall"
         :columns="colsOverall"
         :loading="overallLoading"
@@ -233,7 +244,7 @@
 <script>
 // import packages
 import { reactive, defineComponent, ref, onMounted, computed , watch,onBeforeUnmount} from 'vue'
-import { getQuestions,getQuestionsWithoutAns, getTSRs,postAnswers , getOverall,deleteAll,totalTsrsCount, getDivList, totalTsrsCountByYear,getTSRYearAndMonth,getCountServicePerDivision} from 'src/axioshelper.js'
+import { getQuestions,getQuestionsWithoutAns, getTSRs,postAnswers , getOverall,deleteAll,totalTsrsCount, getDivList, totalTsrsCountByYear,getTSRYearAndMonth,getCountServicePerDivision,totalTsrsCountWithDivisions,totalTsrsCountWithDivisionsByYear} from 'src/axioshelper.js'
 import { overAllColumns, overAllRows,numberOfCustomersColumnsData,numberOfCustomersRowsData, summaryPerDivisionRows, summaryPerDivisionColumns  } from 'src/utils/dataRetrieveTables.js'
 import { exportFile, useQuasar} from 'quasar'
 import { xlsx, pdfMake } from 'boot/axios'
@@ -302,6 +313,11 @@ export default defineComponent({
     rowsNumber: 5
   })
   // pdf
+
+  const division = ref(null)
+  const divisionsWithServ = ref([])
+  const services = ref([])
+  const service = ref(null)
   
 
   watch(afterDate, (newValue, oldValue) => {
@@ -319,6 +335,20 @@ export default defineComponent({
     
   })
 
+  // watch(division, (newValue, oldValue) => {
+
+    
+  //   pagination.value.page = 1
+  // })
+
+  // watch(service, (newValue, oldValue) => {
+
+    
+  //   pagination.value.page = 1
+     
+    
+  // })
+
   
   
   
@@ -333,6 +363,7 @@ export default defineComponent({
   const colsOverall = ref([])
   const rowsOverall = ref([])
   const overallLoading = ref(true)
+  const titleOverall = ref("Overall Agency Citizen/ Client Satisfaction Score YTD " + new Date().getFullYear())
 
   // overall Perf for PDF
   const rowsOverallPerformance = ref([])
@@ -345,6 +376,16 @@ export default defineComponent({
    // Summary of Citizen/Client Satisfaction Survey CCSS Rating PDF
   const summaryQuestionPerDivisionRows = ref([])
   const summaryQuestionPerDivisionCols = ref([])
+  
+
+  const showFilter = ref(false)
+  const showFunctions = ref(false)
+
+  
+
+  function fillSectionList(){
+    services.value = divisioAndSectionList.value.filter(div => div.division == division.value).map(div => div.service)
+  }
 
 
   // const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,mode,filter) {
@@ -357,20 +398,16 @@ export default defineComponent({
         if(beforeDate && afterDate){
           
           if(filter){
-            console.log("here?")
-            return await getTSRs(start,limit,"","",beforeDate,afterDate,mode,filter)
+            return await getTSRs(start,limit,division,service,beforeDate,afterDate,mode,filter)
           }else{
-            console.log("here??")
-            return await getTSRs(start,limit,"","",beforeDate,afterDate,mode,"")
+            return await getTSRs(start,limit,division,service,beforeDate,afterDate,mode,"")
           }
           
         }else{
           if(filter){
-            console.log("here???")
-            return await getTSRs(start,limit,"","","","",mode,filter)
+            return await getTSRs(start,limit,division,service,"","",mode,filter)
           }else{
-            console.log("here????")
-            return await getTSRs(start,limit,"","","","",mode,"")
+            return await getTSRs(start,limit,division,service,"","",mode,"")
             
           }
           
@@ -426,7 +463,6 @@ export default defineComponent({
       cols.value.push({ name: 'service', align: 'left ', label: 'Service', field: 'service'})
       cols.value.push({ name: 'industry', align: 'left', label: 'Industry', field: 'industry' })
       
-      console.log("orderByPositionQuestions,va",orderByPositionQuestions.value)
       for (let j =0; j < orderByPositionQuestions.value.length ; j++){
         // remove subheaders in columns filter
         if(orderByPositionQuestions.value[j].question_type != 5){
@@ -494,9 +530,15 @@ export default defineComponent({
   async function loadDivisionDataOverall(divlist){
     // console.log("divlist", divlist)
     overallLoading.value = true
+    
     if(colsOverall.value.length > 0){
       colsOverall.value = []
     }
+
+    if(beforeDate.value && afterDate.value){
+      titleOverall.value = "Overall Agency Citizen/ Client Satisfaction Score-" + moment(beforeDate.value).format('MMMM-YYYY') + " to " + moment(afterDate.value).format('MMMM-YYYY')
+    }
+
     colsOverall.value.push({ name: 'Dimension' ,align: 'left', label: 'Dimension', field: 'dimension' , style:"width: 300px" })
   
     let dataDivision = []
@@ -581,7 +623,6 @@ export default defineComponent({
   }
 
   function dateTimeToApi(value) {
-    console.log("natatawag ba to from watch")
     return moment(value).format('YYYY-MM-DD');
   }
 
@@ -603,11 +644,9 @@ export default defineComponent({
       // console.log("Filelele", file.name)
       // filename should be csms-year.xlsx any format as long as the space will be '-' and the last word will be the year in numbers 'example xxx-xx-xxx-x-2021.xlsx or any' 
       let x = file.name.split('-')
-      console.log("x",x)
       if(x){
         // .xlsx
         let dot = x[x.length-1].split('.')
-        console.log("dot",dot)
         // console.log("dot", dot)
         if(dot){
           // test same tsr number and tsr number on database and import
@@ -1531,12 +1570,16 @@ export default defineComponent({
       console.log("error", error)
     }
     
+    // filters
     divisioAndSectionList.value = await getDivList()
+    divisionsWithServ.value = [...new Set(divisioAndSectionList.value.map(a => a.division))]
+
+    // count of services per division
     divisions.value = await getCountServicePerDivision()
     let a = await getQuestionsWithoutAns()
 
-    console.log("A",a )
-    console.log("questions.value",questions.value)
+    // console.log("A",a )
+    // console.log("questions.value",questions.value)
     // divisions.value = divisions.value.map( item => item.division)
 
    
@@ -1557,6 +1600,7 @@ export default defineComponent({
 
   async function dataUpdateWithDate(){
     showLoadingData()
+    pagination.value.page = 1
     let suc = await dateform.value.validate()
     if(suc){
       await onRequest({
@@ -1683,20 +1727,32 @@ export default defineComponent({
   async function fetchFromServer (startRow, count, filter, sortBy, descending) {
         // console.log("startrow fetch", startRow,count)
         console.log("beforeDate.value && afterDate.value fetch",beforeDate.value ,afterDate.value)
+        let mode
+        if(division.value || service.value ){
+          mode = 4
+        }else{
+          mode = 1
+        }
         if (beforeDate.value && afterDate.value){
+          console.log("if")
+          console.log("division.value",division.value)
+          console.log("service.value",service.value)
           if(filter){
-            tsrList.value= await getTSRsFromApi(startRow,count,"","",beforeDate.value,afterDate.value,1,filter)
+            tsrList.value= await getTSRsFromApi(startRow,count,division.value,service.value,beforeDate.value,afterDate.value,mode,filter)
           }else{
-            tsrList.value= await getTSRsFromApi(startRow,count,"","",beforeDate.value,afterDate.value,1,"")
+            tsrList.value= await getTSRsFromApi(startRow,count,division.value,service.value,beforeDate.value,afterDate.value,mode,"")
           }
           
           // console.log("tsrList.value before true and after true ", tsrList.value )
         }
         else{
+          console.log("else")
+          console.log("division.value",division.value)
+          console.log("service.value",service.value)
           if(filter){
-            tsrList.value = await getTSRsFromApi(startRow,count,"","",today+'-01-01',today+'-12-31',1,filter)
+            tsrList.value = await getTSRsFromApi(startRow,count,division.value,service.value,today+'-01-01',today+'-12-31',mode,filter)
           }else{
-            tsrList.value = await getTSRsFromApi(startRow,count,"","",today+'-01-01',today+'-12-31',1,"")
+            tsrList.value = await getTSRsFromApi(startRow,count,division.value,service.value,today+'-01-01',today+'-12-31',mode,"")
           }
           
           // console.log("tsrList.value after ", tsrList.value )
@@ -1732,7 +1788,7 @@ export default defineComponent({
       return rowsTable.value
       
     }
-    async function averageLastTable (cols,rows){
+    function averageLastTable (cols,rows){
       let x = cols.map(a => a.field);
       
       // const unique = [...new Set(cols.map(item => item.group))]; // [ 'A', 'B']
@@ -1788,13 +1844,23 @@ export default defineComponent({
 
       // check whether there is a given date
       if(beforeDate.value && afterDate.value){
-        // beforeDate.value =  dateTime(beforeDate.value)
-        // afterDate.value =  dateTime(afterDate.value)
-        totalTsrsCount.value = await totalTsrsCount(beforeDate.value, afterDate.value,filter)
+        beforeDate.value =  dateTime(beforeDate.value)
+        afterDate.value =  dateTime(afterDate.value)
+        if(division.value || service.value){
+          totalTsrsCount.value = await totalTsrsCountWithDivisions(division.value,service.value,beforeDate.value, afterDate.value,filter)
+        }else{
+          totalTsrsCount.value = await totalTsrsCount(beforeDate.value, afterDate.value,filter)
+        }
+        console.log("totalTsrsCount.value ",totalTsrsCount.value )
         
       }else{
         let currYear = new Date().getFullYear()
-        totalTsrsCount.value  = await totalTsrsCountByYear(currYear,filter)
+        if(division.value || service.value){
+          totalTsrsCount.value = await totalTsrsCountWithDivisionsByYear(division.value,service.value,currYear,filter)
+        }else{
+          totalTsrsCount.value  = await totalTsrsCountByYear(currYear,filter)
+        }
+        
       }
 
       //
@@ -1820,44 +1886,43 @@ export default defineComponent({
       loading.value = true
 
       // emulate server
-      setTimeout(async () => {
+
        
 
-       // pagination count
-        pagination.value.rowsNumber = totalTsrsCount.value
-        // get all rows if "All" (0) is selected
-        
-        
+      // pagination count
+      pagination.value.rowsNumber = totalTsrsCount.value
+      // get all rows if "All" (0) is selected
+      
+      
 
-        // calculate starting row of data
-        const startRow = (page - 1) * rowsPerPage
+      // calculate starting row of data
+      const startRow = (page - 1) * rowsPerPage
 
-        const fetchCount = rowsPerPage === 0 ? totalTsrsCount.value : rowsPerPage
-        
-        
-        const returnedData = await fetchFromServer(startRow, fetchCount, filter, sortBy, descending) 
-        console.log("returnedData",returnedData)
-        // fetch data from "server"
-        
-        divisionList.value = [...new Set(tsrList.value.map(item => item.division))].filter(function(val) { return val !== null; });
-       
+      const fetchCount = rowsPerPage === 0 ? totalTsrsCount.value : rowsPerPage
+      
+      
+      const returnedData = await fetchFromServer(startRow, fetchCount, filter, sortBy, descending) 
+      console.log("returnedData",returnedData)
+      // fetch data from "server"
+      
+      divisionList.value = [...new Set(tsrList.value.map(item => item.division))].filter(function(val) { return val !== null; });
+      
 
-        // clear out existing data and add new
-        rows.value.splice(0, rows.value.length, ...returnedData)
+      // clear out existing data and add new
+      rows.value.splice(0, rows.value.length, ...returnedData)
 
-        // dynamic average per column
-        finalAverageDataRow.value  = await averageLastTable(cols.value,rows.value)
+      // dynamic average per column
+      finalAverageDataRow.value  = averageLastTable(cols.value,rows.value)
 
-        // don't forget to update local pagination object
-        pagination.value.page = page
-        pagination.value.rowsPerPage = rowsPerPage
-        pagination.value.sortBy = sortBy
-        pagination.value.descending = descending
+      // don't forget to update local pagination object
+      pagination.value.page = page
+      pagination.value.rowsPerPage = rowsPerPage
+      pagination.value.sortBy = sortBy
+      pagination.value.descending = descending
 
-        // ...and turn of loading indicator
-        loading.value = false
-        overallLoading.value = false
-      }, 500)
+      // ...and turn of loading indicator
+      loading.value = false
+      overallLoading.value = false
 
       
   }
@@ -1894,13 +1959,23 @@ export default defineComponent({
       colsOverall,
       overallLoading,
       overAllAverage,
+      titleOverall,
       //file upload
       importFile,
       fileUpload,
       //delete
       // deleteAnswers,
       showLoading,
-      dataUpdateWithDate
+      dataUpdateWithDate,
+      // filter divisions
+      division,
+      service,
+      services,
+      divisions,
+      fillSectionList,
+      divisionsWithServ,
+      showFilter,
+      showFunctions
     }
   }
   

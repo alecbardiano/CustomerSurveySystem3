@@ -1,8 +1,64 @@
 <template>
   <div class="q-pa-md">
     <!-- @update:model-value="build()"  -->
-    <q-select   outlined v-model="yearTsr" style="max-width: 200px" option-label="text" :options="yearOptions" width="30px" label="Year" />
-  </div>
+       <div class="row">
+          <div class="col-3"> <q-select   outlined v-model="modeDashboard" style="max-width: 200px" :options="modeOptions" width="30px" label="Mode" /></div>
+          <div class="col-6"> 
+            <q-select  v-if="modeDashboard == 'Annual'"  outlined v-model="yearTsr" style="max-width: 200px" option-label="text" :options="yearOptions" width="30px" label="Year" />
+            <div class="row"  v-if="modeDashboard == 'Quarterly'">
+              <div class="col-3"><q-select  outlined v-model="yearTsrQuarter" style="max-width: 200px" option-label="text" :options="yearOptions" width="30px" label="Year" /></div>
+              
+              <div class="col-6"><q-select  outlined v-model="quarterTSR" option-value="value" style="max-width: 200px" :options="quarterOptions" width="30px" label="Quarter" /></div>
+            </div>
+
+             <div class="row"  v-if="modeDashboard == 'Date Range'">
+              <q-form ref="dateform" @submit="submitDate()">
+                  
+                  <div class="row inline">
+                  <q-input outlined filled mask="date" v-model="beforeDate" lazy-rules :rules="[val => val <= afterDate || 'Field should be earlier than after date']" placeholder="mm/dd/yy" hint="Start Date" >
+                    <template v-slot:append>
+                      <q-icon name="event" class="cursor-pointer">
+                        <q-popup-proxy ref="qDateProxy" transition-show="scale" transition-hide="scale">
+                          <q-date v-model="beforeDate">
+                            <div class="row items-center justify-end">
+                              <q-btn v-close-popup label="Close" color="primary" flat />
+                            </div>
+                          </q-date>
+                        </q-popup-proxy>
+                      </q-icon>
+                    </template>
+                  </q-input> 
+                  <q-input outlined filled mask="date" style="padding-left: 25px" v-model="afterDate" lazy-rules :rules="[val => val >= beforeDate || 'Field should be later than before date']"   placeholder="mm/dd/yy" hint="End Date" >
+                    <template v-slot:append>
+                      <q-icon name="event" class="cursor-pointer">
+                        <q-popup-proxy ref="qDateProxy" transition-show="scale" transition-hide="scale">
+                          <q-date v-model="afterDate">
+                            <div class="row items-center justify-end">
+                              <q-btn v-close-popup label="Close" color="primary" flat />
+                            </div>
+                          </q-date>
+                        </q-popup-proxy>
+                      </q-icon>
+                    </template>
+                  </q-input>
+
+                  <q-btn
+                    type="submit"
+                    label="Go"
+                    color="primary"
+                    style="margin-left: 25px; width: 70px; height: 25px;"
+                 />
+                </div>
+    
+                </q-form>
+            </div>
+          </div>
+           
+      </div>
+        <!-- <div> <q-select   outlined v-model="yearTsr" style="max-width: 200px" option-label="text" :options="yearOptions" width="30px" label="Year" /></div> -->
+  
+      
+    </div>
 
    
 
@@ -12,20 +68,20 @@
       <div class="flex wrap gutter">
         <div class="width-1of3 sm-auto">
           <card-dashboard-feedback-count
-            title= "Total Tsrs YTD"
+            title= "Total TSRs"
             backgroundColor="green"
             icon-name="local_post_office"
             :total="totalTsrs">
           </card-dashboard-feedback-count>
         </div>
         <div class="width-1of3 sm-auto">
-          <card-dashboard-feedback-count  @click="callCardData(1)" title="Negative Feedback YTD" backgroundColor="red" :total="totalNegative" > </card-dashboard-feedback-count>
+          <card-dashboard-feedback-count  @click="callCardData(1)" title="Negative Feedback" backgroundColor="red" :total="totalNegative" > </card-dashboard-feedback-count>
          
         </div>
         <div class="width-1of3 sm-auto">
           <card-dashboard-feedback-count
             @click="callCardData(2)" 
-            title="Positive Feedback YTD"
+            title="Positive Feedback"
             backgroundColor="blue"
             :total="totalPositive">
           </card-dashboard-feedback-count>
@@ -325,7 +381,7 @@
 <script type="text/javascript">
 
   import { defineComponent, ref, reactive, computed, onMounted, watch, onBeforeUnmount } from 'vue'
-  import { getDivList, countPositiveFeedback, countNegativeFeedback, totalTsrsCount , totalTsrsCountByYear,getTsrYear, allOverAllRatingsFromApi, getNegativeFeedbackData,getPositiveFeedbackData,countNoFeedback, getNoAnswerFeedbackData,getTSRYearAndMonth,getAnswerBySearch,countAnswerBySearch,getCountServicePerDivision } from 'src/axioshelper.js'
+  import { countNegativeFeedbackByDateRange,countPositiveFeedbackByDateRange,getDivList, countPositiveFeedback, countNegativeFeedback, totalTsrsCount , totalTsrsCountByYear,getTsrYear, allOverAllRatingsFromApi, getNegativeFeedbackData,getPositiveFeedbackData,countNoFeedback, getNoAnswerFeedbackData,getTSRYearAndMonth,getAnswerBySearch,countAnswerBySearch,getCountServicePerDivision } from 'src/axioshelper.js'
   import CardDashboardFeedbackCount from '../components/CardDashboardFeedbackCount.vue'
   import { Chart, registerables } from 'chart.js'
   import groupBy from 'lodash'
@@ -381,6 +437,11 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
         mode: 0
       })
 
+      const modeDashboard = ref("Annual")
+
+      const beforeDate = ref(null)
+      const afterDate = ref(null)
+
 
       
       const chartDataModelLabel = ref([]) // overall
@@ -418,6 +479,8 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
       const colsnumberOfCustomers = ref([])
 
       const yearTsr = ref()
+      const quarterTSR = ref()
+      const yearTsrQuarter = ref()
       
       const columns = ref([])
 
@@ -459,6 +522,12 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
         return yearArr
       })
 
+      const quarterOptions = [
+        1,2,3,4
+      ]
+
+      const modeOptions = ref(["Annual", "Quarterly", "Date Range"])
+
       watch(yearTsr, (newValue, oldValue) => {
 
         showLoading()
@@ -468,100 +537,174 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
         
         
       })
+      
+      
 
-      onBeforeUnmount(() => {
-        if (timer !== void 0) {
-          clearTimeout(timer)
-          $q.loading.hide()
+      watch(quarterTSR, (newValue, oldValue) => {
+
+        showLoading()
+
+        let before
+        let after
+
+        updateTables()
+        switch(quarterTSR.value) {
+          case 1:
+            // code block
+            before = ('01/01/'+yearTsrQuarter.value)
+            after = ('03/31/'+yearTsrQuarter.value)
+            break;
+          case 2:
+            // code block
+            before = ('04/01/'+yearTsrQuarter.value)
+            after = ('06/30/'+yearTsrQuarter.value)
+            break;
+          case 3:
+            before = ('07/01/'+yearTsrQuarter.value)
+            after = ('09/30/'+yearTsrQuarter.value)
+            // code block
+            break;
+          case 4:
+            before = ('10/01/'+yearTsrQuarter.value)
+            after = ('12/31/'+yearTsrQuarter.value)
+            // code block
+            break;
+          default:
+            // code block
         }
+        console.log("before,after,",before,after)
+        LoadFeedbackCountsDateRange(before,after)
+        
+        
       })
-
-      function showLoading () {
-        $q.loading.show({
-          message: 'Please wait for data to be loaded..',
-          boxClass: 'bg-grey-2 text-grey-9',
-          spinnerColor: 'primary'
-        })
+    onBeforeUnmount(() => {
+      if (timer !== void 0) {
+        clearTimeout(timer)
+        $q.loading.hide()
       }
+    })
+
+    function showLoading () {
+      $q.loading.show({
+        message: 'Please wait for data to be loaded..',
+        boxClass: 'bg-grey-2 text-grey-9',
+        spinnerColor: 'primary'
+      })
+    }
 
       // function()
 
-      async function loadCharts(){
-        
-        let dataArr = []
-        let custArr = []
-        let custArrServiceArea = []
-        // if(chartDataModelData.value.length > 0){
+    async function loadCharts(){
+      
+      let dataArr = []
+      let custArr = []
+      let custArrServiceArea = []
+      // if(chartDataModelData.value.length > 0){
 
-        if(chartDataModelLabel.value.length > 0 || chartDataModelCustomersLabel.value.length > 0){
-          chartDataModelLabel.value = []
-          chartDataModelCustomersLabel.value = []
-        }
-          
-        // }else{
-        rowsOverallPerformance.value.forEach(element => {
-        // console.log("11")
-          chartDataModelLabel.value.push(element.servicearea)
-          dataArr.push(element.countOverall)
-          
-        });
-        let keys = []
-        rowsnumberOfCustomers.value.forEach(element => {
-          if(keys.length == 0){
-            keys = Object.keys(element)
-          }
-          chartDataModelCustomersLabel.value.push(element.month)
-          custArr.push(element.total)
-          
-        });
-        keys.shift()
-        keys.shift()
-        keys.shift()
-        console.log("mouthfu;", keys)
-        keys.forEach(element => {
-          let arr = rowsnumberOfCustomers.value.map(a =>
-            a[element] 
-          )
-          custArrServiceArea.push(arr)
-          lineChartLabel.value.push(element)
-          console.log("custArrServiceArea",custArrServiceArea)
-        });
-        
-        
-        chartDataModelData.value = dataArr
-
-        // rowsnumberOfCustomers.value.forEach(element => {
-        //   console.log("rowsnumberOfCustomers", rowsnumberOfCustomers.value)
-        //   chartDataModelCustomersLabel.value.push(element.month)
-        //   custArr.push(element.total)
-          
-        // });
-        chartDataModelCustomersData.value = custArr
-        chartDataModelNumberPerServiceArea.value = custArrServiceArea
-        
-
-
-        
-
-
+      if(chartDataModelLabel.value.length > 0 || chartDataModelCustomersLabel.value.length > 0){
+        chartDataModelLabel.value = []
+        chartDataModelCustomersLabel.value = []
       }
-
-
-
-      async function LoadFeedbackCounts(year){
-        if (year){
-          totalTsrs.value = await totalTsrsCountByYear(year)
-        }else{
-          totalTsrs.value = await totalTsrsCountByYear("")
+        
+      // }else{
+      rowsOverallPerformance.value.forEach(element => {
+      // console.log("11")
+        chartDataModelLabel.value.push(element.servicearea)
+        dataArr.push(element.countOverall)
+        
+      });
+      let keys = []
+      rowsnumberOfCustomers.value.forEach(element => {
+        if(keys.length == 0){
+          keys = Object.keys(element)
         }
+        chartDataModelCustomersLabel.value.push(element.month)
+        custArr.push(element.total)
         
+      });
+      keys.shift()
+      keys.shift()
+      keys.shift()
+      console.log("mouthfu;", keys)
+      keys.forEach(element => {
+        let arr = rowsnumberOfCustomers.value.map(a =>
+          a[element] 
+        )
+        custArrServiceArea.push(arr)
+        lineChartLabel.value.push(element)
+        console.log("custArrServiceArea",custArrServiceArea)
+      });
+      
+      
+      chartDataModelData.value = dataArr
 
-        totalNegative.value = await countNegativeFeedback(year)
-        totalPositive.value = await countPositiveFeedback(year)
-        totalNoFeedback.value = await countNoFeedback(year)
+      // rowsnumberOfCustomers.value.forEach(element => {
+      //   console.log("rowsnumberOfCustomers", rowsnumberOfCustomers.value)
+      //   chartDataModelCustomersLabel.value.push(element.month)
+      //   custArr.push(element.total)
         
+      // });
+      chartDataModelCustomersData.value = custArr
+      chartDataModelNumberPerServiceArea.value = custArrServiceArea
 
+    }
+
+
+    async function LoadFeedbackCounts(year){
+      if (year){
+        totalTsrs.value = await totalTsrsCountByYear(year)
+      }else{
+        totalTsrs.value = await totalTsrsCountByYear("")
       }
+      
+
+      totalNegative.value = await countNegativeFeedback(year)
+      totalPositive.value = await countPositiveFeedback(year)
+      totalNoFeedback.value = await countNoFeedback(year)
+    }
+
+    async function LoadFeedbackCountsDateRange(beforeDate,afterDate){
+      totalTsrs.value = await totalTsrsCount(beforeDate,afterDate,"")
+      totalNegative.value = await countNegativeFeedbackByDateRange(beforeDate,afterDate)
+      totalPositive.value = await countPositiveFeedbackByDateRange(beforeDate,afterDate)
+      // totalNoFeedback.value = await countNoFeedbackByDateRange(beforeDate,afterDate)
+    }
+    
+    async function getAllTsrsByYearMonth (before,after){
+    let tsrMonth
+    let alltsrs = []
+    let answerOverall = []
+    let beforeMom = moment(before).month()
+    let currYear = moment(before).year()
+    let diffMonths = Math.floor(moment(after).diff(moment(before), 'months', true))
+    console.log("diffmonths", diffMonths)
+    
+    for(let i=0 ; i<=diffMonths; i++){
+      tsrMonth = await getTSRYearAndMonth(beforeMom,currYear)
+      answerOverall = await allOverAllRatingsFromApi(i,currYear)
+      console.log("curryear", currYear)
+      console.log("beforeMom", beforeMom)
+      tsrMonth.forEach(element => {
+        tsrs.value.push(element)
+      });
+      answerOverall.forEach(element => {
+        totalAnswerOverall.value.push(element)
+        
+      });
+      if(beforeMom == 11){
+        beforeMom = 0
+        currYear += 1
+      }else{
+        beforeMom+= 1
+      }
+      
+      
+    }
+    console.log("give all the love" , alltsrs)
+    return alltsrs
+  }
+
+    
 
     async function updateTables(){
       // reset arrays
@@ -606,7 +749,48 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
           });
           
         }
-      }else{
+      }
+      else if(quarterTSR.value){
+        let tsrMonth
+        let answersOverall
+        let quart
+        switch(quarterTSR.value) {
+          case 1:
+            // code block
+            quart = 0
+            break;
+          case 2:
+            // code block
+            quart = 3
+            break;
+          case 3:
+            quart = 6
+            // code block
+            break;
+          case 4:
+            quart = 9
+            // code block
+            break;
+          default:
+            // code block
+        }
+        for(let i=quart ; i<quart+3; i++){
+          tsrMonth = await getTSRYearAndMonth(i,yearTsrQuarter.value)
+          answersOverall = await allOverAllRatingsFromApi(i,yearTsrQuarter.value)
+          tsrMonth.forEach(element => {
+            tsrs.value.push(element)
+          });
+          answersOverall.forEach(element => {
+            totalAnswerOverall.value.push(element)
+          });
+          
+        }
+      }
+      else if(beforeDate.value && afterDate.value){
+
+        let alltsrs = await getAllTsrsByYearMonth(beforeDate.value,afterDate.value)
+      }
+      else{
         let tsrMonth
         let answersOverall
         for(let i=0 ; i<12; i++){
@@ -624,6 +808,8 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
         // totalAnswerOverall.value = await allOverAllRatingsFromApi("","",currentYear.value)
         
       }
+
+
       totalAnswerOverall.value = totalAnswerOverall.value.filter(function (el) {
           return el.tsr != null;
         });
@@ -823,13 +1009,6 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
         buildRowsOverallPerformance()
         
         totalNoResponse.value = totalTsrs.value - totalAnswerOverall.value.length
-
-        // await updateTables()
-
-     
-
-        // [ { "dimension": [], "value": 0 }, { "scoreservice": [], "value": 3.18 }, { "ATD": [], "value": 3.16 }, { "PD": [], "value": 3.22 } ]
-        
       }
       function buildRowsOverallPerformance (){
 
@@ -1165,6 +1344,23 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
         // ...and turn of loading indicator
       }
 
+      async function submitDate(){
+        let alltsrs
+        showLoading()
+        
+
+
+        await updateTables()
+        await LoadFeedbackCountsDateRange(beforeDate.value,afterDate.value)
+        clearTimeout(timer)
+        $q.loading.hide()
+
+
+
+        // updateTables()
+        // LoadFeedbackCounts(newValue)
+      }
+
       
       onMounted( async () => {
         // call functions upon start up here
@@ -1176,18 +1372,12 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
         // 
         
         LoadFeedbackCounts(currentYear.value)
-        
         // build tables
         await buildTable()
 
         await updateTables()
 
         // yearTsr.value = currentYear.value
-
-        
-
-        
-
       })
 
 
@@ -1210,6 +1400,8 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
         yearOptions,
         yearTsr,
         updateTables,
+        beforeDate,
+        afterDate,
 
         // chart data
         chartDataModelData,
@@ -1237,7 +1429,15 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
         pagination,
         onRequestCard,
         rows,
-        currentYear
+        currentYear,
+
+        modeOptions,
+        modeDashboard,
+        yearTsrQuarter,
+        quarterOptions,
+        quarterTSR,
+
+        submitDate
       };
     },
   }

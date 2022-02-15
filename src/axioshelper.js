@@ -103,6 +103,7 @@ const getAllTSRsByYearAndMonth = function (month,year) {
   }
 
 const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,mode,filter) {
+  // mode 4 admin with filter
   // mode 3 admin division
   // mode 2 dashboard
   // mode 1 admin
@@ -136,7 +137,28 @@ const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,m
               return response.data;
           })
         }
-      }else{
+      }
+      else if (mode == 4){
+        if(beforeDate && afterDate){
+          return api.get('/tsrs?_start='+start+'&_limit='+limit+'&submittedAt_gt='+before+'&submittedAt_lte='+after+'&division='+division+'&service='+service +'&_sort=division,service,submittedAt:DESC')
+          .then(function( response ){
+              
+              console.log("from axios")
+              console.log(response.data)
+              return response.data;
+          })
+
+        }else{
+          return api.get('/tsrs?_start='+start+'&_limit='+limit+'&submittedAt_gte='+today+'-01-01'+'&submittedAt_lte='+today+'-12-31&division='+division+'&service='+service+'&_sort=division,service,submittedAt:DESC&division=')
+          .then(function( response ){
+              
+              // console.log("from axios")
+              // console.log(response.data)
+              return response.data;
+          })
+        }
+      }
+      else{
         if( beforeDate && afterDate){
           if(filter != ""){
             return api.get('/tsrs?tsrNo_contains='+ filter +'&_start='+start+'&_limit='+limit+'&submittedAt_gte='+before+'&submittedAt_lte='+after+'&_sort=division:ASC,service:ASC,submittedAt:DESC')
@@ -144,7 +166,7 @@ const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,m
             
             // console.log("from axios")
             // console.log(response.data)
-            console.log("Dapat dito to diba with filter?", filter)
+            // console.log("Dapat dito to diba with filter?", filter)
             return response.data;
            })
           }else{
@@ -153,7 +175,7 @@ const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,m
               
               // console.log("from axios")
               // console.log(response.data)
-              console.log("Dapat dito to diba")
+              // console.log("Dapat dito to diba")
               return response.data;
             })
           }
@@ -425,13 +447,13 @@ const getAnswersForOverall = function (division,service,questionID,beforeDate,af
     after = moment(afterDate).format('YYYY-MM-DD');
     if (service != ""){
       if(beforeDate && afterDate){
-        return api.get('/answers/?_limit=-1&tsr.division='+ division + '&tsr.service=' + service + '&&question.id='+questionID+ '&tsr.submittedAt_gte='+before+'&tsr.submittedAt_lte='+after)
+        return api.get('/answers/?_limit=-1&tsr.division='+ division + '&tsr.service=' + service + '&question.id='+questionID+ '&tsr.submittedAt_gte='+before+'&tsr.submittedAt_lte='+after)
         .then(function( response ){
             // console.log("from axios tsr division", response.data)
             return response.data;
       })
     }else{
-      return api.get('/answers/?_limit=-1&tsr.division='+ division + '&tsr.service=' + service+ '&&question.id='+questionID+'&tsr.submittedAt_gte='+today+'-01-01'+'tsr.&submittedAt_lte='+today+'-12-31')
+      return api.get('/answers/?_limit=-1&tsr.division='+ division + '&tsr.service=' + service+ '&question.id='+questionID+'&tsr.submittedAt_gte='+today+'-01-01'+'tsr.&submittedAt_lte='+today+'-12-31')
         .then(function( response ){
             // console.log("from axios tsr division", response.data)
             return response.data;
@@ -780,6 +802,16 @@ const positiveFeedbackCount = function (year)  {
       })
 }
 
+const positiveFeedbackCountByDateRange = function (beforeDate,afterDate)  {
+  let before = moment(beforeDate).format('YYYY-MM-DD');
+  let after = moment(afterDate).format('YYYY-MM-DD');
+  return api.get('/answers/count?value_gte=3&question.question_type=2&tsr.submittedAt_gte='+before+'&tsr.submittedAt_lte='+after,{
+      })
+      .then(function( response ){
+          return response.data;
+      })
+}
+
 const positiveFeedbackCountData = function (start,limit,year)  {
   return api.get('/answers/?_start='+start+'&_limit='+limit+'&value_gte=3&question.question_type=2&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
       })
@@ -790,6 +822,15 @@ const positiveFeedbackCountData = function (start,limit,year)  {
 
 const negativeFeedbackCount = function (year)  {
   return api.get('/answers/count?value_lte=2&value_gt=0&question.question_type=2&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
+      })
+      .then(function( response ){
+          return response.data;
+      })
+}
+const negativeFeedbackCountByDateRange = function (beforeDate,afterDate)  {
+  let before = moment(beforeDate).format('YYYY-MM-DD');
+  let after = moment(afterDate).format('YYYY-MM-DD');
+  return api.get('/answers/count?value_lte=2&tsr.submittedAt_gte='+before+'&tsr.submittedAt_lte='+after,{
       })
       .then(function( response ){
           return response.data;
@@ -828,6 +869,21 @@ const noAnswerFeedbackCountData = function (year)  {
       })
 }
 
+const totalFeedbackCountTSRByYearWithDivisions = function (division,service,year,filter)  {
+  if(filter){
+    return api.get('/tsrs/count?&division='+division+'&service='+service+'tsrNo_contains='+ filter +'&submittedAt_gte='+year+'-01-01'+'&submittedAt_lte='+year+'-12-31',{
+    })
+    .then(function( response ){
+        return response.data;
+    })
+  }else{
+    return api.get('/tsrs/count?&division='+division+'&service='+service+'submittedAt_gte='+year+'-01-01'+'&submittedAt_lte='+year+'-12-31',{
+    })
+    .then(function( response ){
+        return response.data;
+    })
+  }
+}
 
 
 const totalFeedbackCountTSRByYear = function (year,filter)  {
@@ -875,6 +931,37 @@ const totalFeedbackCountTSR = function (beforeDate,afterDate,filter)  {
               return response.data;
           })
     }
+}
+
+const totalFeedbackCountTSRWithDivisions = function (division,service,beforeDate,afterDate,filter)  {
+  let before = moment(beforeDate).format('YYYY-MM-DD');
+  let after = moment(afterDate).format('YYYY-MM-DD');
+  if (beforeDate && afterDate){
+    if(filter){
+      
+      return api.get('/tsrs/count?&division='+division+'&service='+service+'&tsrNo_contains='+ filter +'&submittedAt_gte='+before+'&submittedAt_lte='+after,{
+          })
+          .then(function( response ){
+              
+              return response.data;
+          })
+     
+    }else{
+      return api.get('/tsrs/count?&division='+division+'&service='+service+'&submittedAt_gte='+before+'&submittedAt_lte='+after,{
+          })
+          .then(function( response ){
+              
+              return response.data;
+          })
+    }
+    
+  }else{
+    return api.get('/tsrs/count',{
+        })
+        .then(function( response ){
+            return response.data;
+        })
+  }
 }
 
 //new Dashboard
@@ -948,7 +1035,13 @@ export const getPositiveFeedbackData = (start,limit,year) => {
   return positiveFeedbackCountData(start,limit,year)
 }
 
+export const countPositiveFeedbackByDateRange = (before,after) => {
+  return positiveFeedbackCountByDateRange(before,after)
+}
 
+export const countNegativeFeedbackByDateRange = (before,after) => {
+  return negativeFeedbackCountByDateRange(before,after)
+}
 
 export const countNegativeFeedback = (year) => {
   return negativeFeedbackCount(year)
@@ -976,6 +1069,15 @@ export const totalTsrsCountByYear = (year,filter) => {
 export const totalTsrsCount = (before,after,filter) => {
   return totalFeedbackCountTSR(before,after,filter)
 }
+
+export const totalTsrsCountWithDivisions = (division,service,before,after,filter) => {
+  return totalFeedbackCountTSRWithDivisions(division,service,before,after,filter)
+}
+export const totalTsrsCountWithDivisionsByYear = (division,service,year,filter) => {
+  return totalFeedbackCountTSRByYearWithDivisions(division,service,year,filter)
+}
+
+
 // exports
 // raw data
 export const checkTSRsOtherAPI = (tsrNumber) => {

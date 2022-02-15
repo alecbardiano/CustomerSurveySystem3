@@ -1,6 +1,6 @@
 <template>
   <div class="q-pa-md">
-  <q-toggle v-model="showFilter" label="Show Filter" />
+  <q-toggle v-model="showFilter" label="Show Filters" />
   </div>
 
   <div class="q-pa-md" style="margin-left: 40px" v-if="showFilter" >
