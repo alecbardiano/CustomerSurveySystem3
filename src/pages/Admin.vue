@@ -112,7 +112,6 @@
     <q-table
       class="overallAverage"
       v-if="rows"
-      title="Customer Satisfaction Measurement"
       :rows="rows"
       :columns="cols"
       row-key="name"
@@ -120,10 +119,50 @@
       :loading="loading"
       :filter="filter"
       v-model:pagination="pagination"
+      :visible-columns="visibleColumns"
       @request="onRequest"
       binary-state-sort
       separator="cell"
     >
+
+    <template v-slot:top="props">
+        <div class="col-4 q-table__title">Customer Satisfaction Measurement
+          
+          
+        </div>
+        <div class="col absolute-right">
+          <q-btn
+            flat round dense
+            :icon="props.inFullscreen ? 'fullscreen_exit' : 'fullscreen'"
+            @click="props.toggleFullscreen"
+            class="q-ml-md"
+          />
+        </div>
+
+          <q-space />
+
+          <div v-if="$q.screen.gt.xs" class="row">
+            <div v-bind:key="tog.val" v-for="tog in toggles">
+            <q-toggle v-model="visibleColumns" :val="tog.val" color="yellow" :label="tog.label" />
+            </div>
+          </div>
+          <q-select
+            v-else
+            v-model="visibleColumns"
+            multiple
+            borderless
+            dense
+            options-dense
+            :display-value="$q.lang.table.columns"
+            emit-value
+            map-options
+            :options="cols"
+            option-value="name"
+            style="min-width: 150px"
+          />
+
+          
+      </template>
    
     <template v-slot:top-right>
       <q-input class="placeholderClass" borderless dense debounce="300" v-model="filter" placeholder="Search">
@@ -177,11 +216,13 @@
       
       <template v-slot:bottom-row>
         <q-tr>
-          <q-td v-bind:key="column.key" v-for="column in finalAverageDataRow">  
+          
+          <q-td v-bind:key="column.id" v-for="column in visibleColumnsAverage">  
+              <!-- {{column}} -->
               <p v-if="column.tsrNo">Average: </p>
               <!-- nan values remove -->
               
-              <p v-else-if="column.value != 0 && !(isNaN(column.value))">{{ column.value }}</p>
+              <p v-else-if="column.value != 0 && !(isNaN(column.value)) && column.visible">{{column.value}}</p>
             </q-td>
         </q-tr>
       </template>
@@ -263,6 +304,7 @@ export default defineComponent({
   setup () {
   let timer
 
+  const visibleColumns = ref([ "tsrNo", "division", "service", "industry", "Overall Rating","publishedDate"])
   const divisioAndSectionList = ref([])
   const divisions = ref([])
 
@@ -312,6 +354,8 @@ export default defineComponent({
     rowsPerPage: 10,
     rowsNumber: 5
   })
+
+  const toggles = ref([])
   // pdf
 
   const division = ref(null)
@@ -479,6 +523,12 @@ export default defineComponent({
         column.name = orderByPositionQuestions.value[j].description
         column.label = orderByPositionQuestions.value[j].description
         column.field = orderByPositionQuestions.value[j].id
+        let tog = {
+          val: orderByPositionQuestions.value[j].description,
+          label: column.label
+        }
+        toggles.value.push(tog)
+        
         cols.value.push(column)
         
         }
@@ -737,7 +787,7 @@ export default defineComponent({
           // the column names taken from label 
           body.push(mainArrayColumn);
           let copyData = data.map((rest ) => rest)
-          console.log("copy", copyData)
+          // console.log("copy", copyData)
             
             
           copyData.forEach(function(row) {
@@ -949,7 +999,7 @@ export default defineComponent({
           body.push(mainArrayColumn);
 
           let copyData = data.map((rest ) => rest)
-          console.log("copys", copyData)
+          // console.log("copys", copyData)
             
             let prevDivision = ''
             let prevService = ''
@@ -1223,7 +1273,7 @@ export default defineComponent({
       let afterDate = new Date()
       alltsrs = await getAllTsrsByYearMonth(startDate,afterDate)
     }
-    console.log("all tsrs", alltsrs)
+    // console.log("all tsrs", alltsrs)
     buildOverall(alltsrs)
     if (alltsrs.length == 0  ){
       $q.notify({
@@ -1414,12 +1464,12 @@ export default defineComponent({
     let beforeMom = moment(before).month()
     let currYear = moment(before).year()
     let diffMonths = Math.floor(moment(after).diff(moment(before), 'months', true))
-    console.log("diffmonths", diffMonths)
+    // console.log("diffmonths", diffMonths)
     
     for(let i=0 ; i<=diffMonths; i++){
       tsrMonth = await getTSRYearAndMonth(beforeMom,currYear)
-      console.log("curryear", currYear)
-      console.log("beforeMom", beforeMom)
+      // console.log("curryear", currYear)
+      // console.log("beforeMom", beforeMom)
       tsrMonth.forEach(element => {
         alltsrs.push(element)
       });
@@ -1432,7 +1482,7 @@ export default defineComponent({
       
       
     }
-    console.log("give all the love" , alltsrs)
+    // console.log("give all the love" , alltsrs)
     return alltsrs
   }
   
@@ -1651,8 +1701,8 @@ export default defineComponent({
       migrationData.forEach(r => {
       
           // Object { foo: "bar", x: 42 }
-        console.log("r", r, " year", year)
-        console.log("rmonth", r.Month, " year", year)
+        // console.log("r", r, " year", year)
+        // console.log("rmonth", r.Month, " year", year)
         let dateyear = r.Month.toString() + ' ' + year.toString()
         
         let datesubmit = new Date(dateyear)
@@ -1688,14 +1738,14 @@ export default defineComponent({
       const uniqueValues = new Set(finalArrObj.map(v => v.tsrNo));
       const nounique = (finalArrObj.map(v => v.tsrNo));
       const uniqarr = Array.from(uniqueValues);
-      console.log("finalArrObj.length",finalArrObj.length)
-      console.log("uniqueValues.length",uniqueValues.length)
-      console.log("finalArrObj.length",finalArrObj)
-      console.log("uniqueValues.length",uniqueValues)
+      // console.log("finalArrObj.length",finalArrObj.length)
+      // console.log("uniqueValues.length",uniqueValues.length)
+      // console.log("finalArrObj.length",finalArrObj)
+      // console.log("uniqueValues.length",uniqueValues)
       let difference = uniqarr
                  .filter(x => !nounique.includes(x))
                  .concat(nounique.filter(x => !uniqarr.includes(x)));
-      console.log("intersection", difference)
+      // console.log("intersection", difference)
 
       if (uniqueValues.size < finalArrObj.length) {
         // duplicates found true if 1; 0 if none
@@ -1703,7 +1753,7 @@ export default defineComponent({
       }else{
         for (const arrayItem of finalArrObj) {
           let answers = []
-          console.log("arrayitem", arrayItem)
+          // console.log("arrayitem", arrayItem)
           let resCode = await postAnswers(answers,arrayItem.answers,arrayItem.tsrNo,arrayItem.industry,arrayItem.service,arrayItem.division,arrayItem.submittedAt)
           if (resCode != '200'){
             
@@ -1726,7 +1776,7 @@ export default defineComponent({
 
   async function fetchFromServer (startRow, count, filter, sortBy, descending) {
         // console.log("startrow fetch", startRow,count)
-        console.log("beforeDate.value && afterDate.value fetch",beforeDate.value ,afterDate.value)
+        // console.log("beforeDate.value && afterDate.value fetch",beforeDate.value ,afterDate.value)
         let mode
         if(division.value || service.value ){
           mode = 4
@@ -1734,9 +1784,9 @@ export default defineComponent({
           mode = 1
         }
         if (beforeDate.value && afterDate.value){
-          console.log("if")
-          console.log("division.value",division.value)
-          console.log("service.value",service.value)
+          // console.log("if")
+          // console.log("division.value",division.value)
+          // console.log("service.value",service.value)
           if(filter){
             tsrList.value= await getTSRsFromApi(startRow,count,division.value,service.value,beforeDate.value,afterDate.value,mode,filter)
           }else{
@@ -1746,9 +1796,9 @@ export default defineComponent({
           // console.log("tsrList.value before true and after true ", tsrList.value )
         }
         else{
-          console.log("else")
-          console.log("division.value",division.value)
-          console.log("service.value",service.value)
+          // console.log("else")
+          // console.log("division.value",division.value)
+          // console.log("service.value",service.value)
           if(filter){
             tsrList.value = await getTSRsFromApi(startRow,count,division.value,service.value,today+'-01-01',today+'-12-31',mode,filter)
           }else{
@@ -1789,7 +1839,12 @@ export default defineComponent({
       
     }
     function averageLastTable (cols,rows){
-      let x = cols.map(a => a.field);
+      let x = cols.map(a => {
+        return {
+          field: a.field,
+          label: a.name
+        }
+        });
       
       // const unique = [...new Set(cols.map(item => item.group))]; // [ 'A', 'B']
       // name of all columns
@@ -1798,12 +1853,13 @@ export default defineComponent({
       for(let i =0; i< x.length; i++){
         let avgObv = {}
         // build last row data object with key being the questionID
-        avgObv[x[i]] = []
+        avgObv[x[i].field] = []
+        avgObv['id'] = x[i].label
         //  push array of answers per question
         
         // map all keys with value and return in to the array
         let xy = rows.map(function(item){ 
-          return item[x[i]]; 
+          return item[x[i].field]; 
           });
         // console.log("xy", xy)
 
@@ -1825,7 +1881,7 @@ export default defineComponent({
         }else{
           avgObv['value'] = val
         }
-        
+        avgObv['visible'] = false
         avgArrayWithKeys.push(avgObv)
         
       }
@@ -1851,7 +1907,7 @@ export default defineComponent({
         }else{
           totalTsrsCount.value = await totalTsrsCount(beforeDate.value, afterDate.value,filter)
         }
-        console.log("totalTsrsCount.value ",totalTsrsCount.value )
+        // console.log("totalTsrsCount.value ",totalTsrsCount.value )
         
       }else{
         let currYear = new Date().getFullYear()
@@ -1902,7 +1958,7 @@ export default defineComponent({
       
       
       const returnedData = await fetchFromServer(startRow, fetchCount, filter, sortBy, descending) 
-      console.log("returnedData",returnedData)
+      // console.log("returnedData",returnedData)
       // fetch data from "server"
       
       divisionList.value = [...new Set(tsrList.value.map(item => item.division))].filter(function(val) { return val !== null; });
@@ -1975,7 +2031,21 @@ export default defineComponent({
       fillSectionList,
       divisionsWithServ,
       showFilter,
-      showFunctions
+      showFunctions,
+      visibleColumns,
+      visibleColumnsAverage:  computed(() => {
+        finalAverageDataRow.value.forEach(element => {
+          let arr = Object.values(visibleColumns.value)
+          if (arr.includes(element.id) ){
+            element.visible = true
+          }else{
+            element.visible = false
+          }
+          
+        });
+        return finalAverageDataRow.value.filter(a => a.visible)
+      }),
+      toggles
     }
   }
   

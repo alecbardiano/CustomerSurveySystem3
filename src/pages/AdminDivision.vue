@@ -11,7 +11,7 @@
 
   <div class="q-pa-md" style="margin-left: 40px" >
     <div class="row">
-      <q-form ref="dateform">
+      <q-form ref="dateform" @submit="dataUpdateWithDate()">
         <div class="row inline">
           <q-input outlined filled mask="date" v-model="beforeDate" lazy-rules :rules="[val => val <= afterDate || 'Field should be earlier than after date']" placeholder="mm/dd/yy" hint="Start Date" >
             <template v-slot:append>
@@ -40,6 +40,12 @@
               </q-icon>
             </template>
           </q-input>
+          <q-btn
+                    type="submit"
+                    label="Go"
+                    color="primary"
+                    style="margin-left: 25px; width: 70px; height: 25px;"
+                 />
         </div>
       </q-form>
     </div>
@@ -116,14 +122,14 @@
              {{noPoor}}
           </q-td>
         </q-tr>
-        <q-tr>
+        <!-- <q-tr>
           <q-td >
              No. and % of customers who didn't have an Overall Answer
           </q-td>
           <q-td>
              {{noNoOverall}}
           </q-td>
-        </q-tr>
+        </q-tr> -->
 
       </template>
     </q-table>
@@ -149,6 +155,7 @@ import { defineComponent, ref, onMounted, computed, watch } from 'vue'
 import { allOverAllRatingsFromApi, getOverall, getTSRs, getQuestions, getDivList,getSecList,positiveFeedbackPerDivision, satisfactoryFeedbackPerDivision, poorFeedbackPerDivision,getCountServicePerDivision, getQuestionsWithoutAns } from 'src/axioshelper.js'
 import orderBy from 'lodash.orderby'
 import moment from 'moment';
+import { useQuasar} from 'quasar'
 
 
 export default defineComponent({
@@ -162,6 +169,9 @@ export default defineComponent({
     const orderKey = ref('position')
     const tsrs = ref([])
     const dateform = ref(null)
+
+    const $q = useQuasar()
+    let timer
 
     const rowsTotal = ref([])
     const colsTotal = ref([
@@ -200,6 +210,7 @@ export default defineComponent({
 
     const divisions = ref([])
     const colsOverall = ref([
+
     //  { name: 'tsrNo', align: 'left', label: 'TSR', field: 'tsrNo', sortable: true }
     ])
     const rowsOverall = ref([])
@@ -221,14 +232,7 @@ export default defineComponent({
 
 
 
-    watch(afterDate, (newValue, oldValue) => {
-      dateform.value.validate().then(success => {
-          console.log("hello")
-          loadNumbers()
-          loadTotalOverall(newValue)
-      })
-      
-    })
+  
 
 
 
@@ -241,11 +245,12 @@ export default defineComponent({
       noNoOverall.value = 0
 
       console.log("hey", division.value)
-      tsrs.value = await getTSRs("","",division.value,service.value,beforeDate.value,afterDate.value,3,'')
-      console.log("pasok ba", tsrs.value)
+      // tsrs.value = await getTSRs("","",division.value,service.value,beforeDate.value,afterDate.value,3,'')
+      // console.log("pasok ba", tsrs.value)
       
      
     for (let j=0; j<orderByPositionQuestions.value.length; j++){
+      console.log("orderByPositionQuestions.value[j].id",orderByPositionQuestions.value[j].id,orderByPositionQuestions.value[j].label)
       // overall rating
       // if(orderByPositionQuestions.value[j].id == 12){
       //   if(orderByPositionQuestions.value[j])
@@ -272,6 +277,7 @@ export default defineComponent({
           1:0,
           0:0
         };
+        console.log("datads", dataDivision)
         for (const num of dataDivision) {
           if(orderByPositionQuestions.value[j].id == 12){
              noRespondents.value  +=  1
@@ -308,7 +314,7 @@ export default defineComponent({
           rowsOverall.value.forEach(function (arrayItem) {
             if(key == arrayItem.id){
               console.log("value", value)
-              value = (Math.round((value/ dataDivision.length) * 100)).toFixed(2)
+              value = ((value/ dataDivision.length) * 100).toFixed(2)
               if(isNaN(value)){
                 value = '0%'
               }else{
@@ -317,13 +323,36 @@ export default defineComponent({
               
               arrayItem[orderByPositionQuestions.value[j].id] = value
             }
-        });
+         });
 
         }
         console.log("rowsoverall", rowsOverall.value)
       }
      }
     }
+
+    function showLoading () {
+      $q.loading.show({
+        message: 'Please wait for data to be loaded',
+        boxClass: 'bg-grey-2 text-grey-9',
+        spinnerColor: 'primary'
+      })
+    }
+
+    function hideLoading(){
+      timer = void 0
+      $q.loading.hide()
+    }
+
+     async function dataUpdateWithDate(){
+        showLoading()
+        let suc = await dateform.value.validate()
+        if(suc){
+          await loadNumbers()
+          await loadTotalOverall(afterDate.value)
+        }
+        hideLoading()
+      }
 
     function fillSectionList(){
       console.log("hey", division.value)
@@ -371,7 +400,7 @@ export default defineComponent({
       rowsOverall.value.push({servicearea: "5 - Outstanding" , id: 5})
       rowsOverall.value.push({servicearea: "4 - Very Satisfactory" , id: 4 })
       rowsOverall.value.push({servicearea: "3 - Satisfactory", id: 3 })
-      rowsOverall.value.push({servicearea: "2 - Fair & 1 - Poor", id: 2})
+      rowsOverall.value.push({servicearea: "2 - Fair", id: 2})
       rowsOverall.value.push({servicearea: "1 - Poor", id: 1})
       rowsOverall.value.push({servicearea: "No Response", id: 0})
       colsOverall.value.forEach(function(column) {
@@ -436,16 +465,16 @@ export default defineComponent({
           number: noPoorTotal,
           percentage: (Math.round((noPoorTotal.value/data.length) * 100)).toString() + '%'
         })
-        rowsTotal.value.push({
-          area: "No. and % of customers who didn't have an Overall Answer",
-          number: noRespondentsTotal,
-          percentage: (Math.round((noRespondentsTotal.value/data.length) * 100)).toString() + '%'
-        })
+        // rowsTotal.value.push({
+        //   area: "No. and % of customers who didn't have an Overall Answer",
+        //   number: noRespondentsTotal,
+        //   percentage: (Math.round((noRespondentsTotal.value/data.length) * 100)).toString() + '%'
+        // })
       }else{
         rowsTotal.value[0].percentage =  (Math.round((noVerySatisfactoryTotal.value/data.length) * 100)).toString() + '%'
         rowsTotal.value[1].percentage = (Math.round((noSatisfactoryTotal.value/data.length) * 100)).toString() + '%'
         rowsTotal.value[2].percentage = (Math.round((noPoorTotal.value/data.length) * 100)).toString() + '%'
-        rowsTotal.value[3].percentage = (Math.round((noRespondentsTotal.value/data.length) * 100)).toString() + '%'
+        // rowsTotal.value[3].percentage = (Math.round((noRespondentsTotal.value/data.length) * 100)).toString() + '%'
       }
       
     }
@@ -480,7 +509,8 @@ export default defineComponent({
       dateform,
       rowsTotal,
       colsTotal,
-      noNoOverall
+      noNoOverall,
+      dataUpdateWithDate
     }
   }
 })

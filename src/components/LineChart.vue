@@ -1,6 +1,7 @@
 
 
 <template>
+
          <LineChart
             ref="lineRef"
             :chart-data="data"
@@ -35,8 +36,6 @@ export default defineComponent({
     },
     setup(props){
         const lineRef = ref(null)
-        const dataValues = ref([
-        ])
          const dataSetVal = computed(() => 
 
 

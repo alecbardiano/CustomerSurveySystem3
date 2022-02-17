@@ -381,8 +381,9 @@
 <script type="text/javascript">
 
   import { defineComponent, ref, reactive, computed, onMounted, watch, onBeforeUnmount } from 'vue'
-  import { countNegativeFeedbackByDateRange,countPositiveFeedbackByDateRange,getDivList, countPositiveFeedback, countNegativeFeedback, totalTsrsCount , totalTsrsCountByYear,getTsrYear, allOverAllRatingsFromApi, getNegativeFeedbackData,getPositiveFeedbackData,countNoFeedback, getNoAnswerFeedbackData,getTSRYearAndMonth,getAnswerBySearch,countAnswerBySearch,getCountServicePerDivision } from 'src/axioshelper.js'
+  import { getNegativeFeedbackDataRange,getPositiveFeedbackDataRange,countNegativeFeedbackByDateRange,countPositiveFeedbackByDateRange,getDivList, countPositiveFeedback, countNegativeFeedback, totalTsrsCount , totalTsrsCountByYear,getTsrYear, allOverAllRatingsFromApi, getNegativeFeedbackData,getPositiveFeedbackData,countNoFeedback, getNoAnswerFeedbackData,getTSRYearAndMonth,getAnswerBySearch,countAnswerBySearch,getCountServicePerDivision } from 'src/axioshelper.js'
   import CardDashboardFeedbackCount from '../components/CardDashboardFeedbackCount.vue'
+  import { numberOfCustomersRowsData, numberOfCustomersColumnsData} from 'src/utils/dataRetrieveTables.js'
   import { Chart, registerables } from 'chart.js'
   import groupBy from 'lodash'
   import moment from 'moment';
@@ -393,7 +394,6 @@
   import DoughnutChart from '../components/DoughnutChart.vue'
   import BarChart from '../components/BarChart.vue'
   import LineChart from '../components/LineChart.vue'
-import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
 
 
 
@@ -438,6 +438,20 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
       })
 
       const modeDashboard = ref("Annual")
+
+      watch(modeDashboard, (newValue, oldValue) => {
+
+        yearTsr.value = null
+        quarterTSR.value = null
+        yearTsrQuarter.value = null
+        beforeDate.value = null
+        afterDate.value = null
+        
+        
+        
+      })
+
+
 
       const beforeDate = ref(null)
       const afterDate = ref(null)
@@ -529,12 +543,12 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
       const modeOptions = ref(["Annual", "Quarterly", "Date Range"])
 
       watch(yearTsr, (newValue, oldValue) => {
+        if(yearTsr.value){
+          showLoading()
 
-        showLoading()
-
-        updateTables()
-        LoadFeedbackCounts(newValue)
-        
+          updateTables()
+          LoadFeedbackCounts(newValue)
+        }
         
       })
       
@@ -542,40 +556,38 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
 
       watch(quarterTSR, (newValue, oldValue) => {
 
-        showLoading()
-
-        let before
-        let after
-
-        updateTables()
-        switch(quarterTSR.value) {
-          case 1:
-            // code block
-            before = ('01/01/'+yearTsrQuarter.value)
-            after = ('03/31/'+yearTsrQuarter.value)
-            break;
-          case 2:
-            // code block
-            before = ('04/01/'+yearTsrQuarter.value)
-            after = ('06/30/'+yearTsrQuarter.value)
-            break;
-          case 3:
-            before = ('07/01/'+yearTsrQuarter.value)
-            after = ('09/30/'+yearTsrQuarter.value)
-            // code block
-            break;
-          case 4:
-            before = ('10/01/'+yearTsrQuarter.value)
-            after = ('12/31/'+yearTsrQuarter.value)
-            // code block
-            break;
-          default:
-            // code block
+        
+        if(quarterTSR.value){
+          showLoading()
+          switch(quarterTSR.value) {
+            case 1:
+              // code block
+              beforeDate.value = new Date('01/01/'+yearTsrQuarter.value)
+              afterDate.value = new Date('03/31/'+yearTsrQuarter.value)
+              break;
+            case 2:
+              // code block
+              beforeDate.value = new Date('04/01/'+yearTsrQuarter.value)
+              afterDate.value = new Date('06/30/'+yearTsrQuarter.value)
+              break;
+            case 3:
+              beforeDate.value = new Date('07/01/'+yearTsrQuarter.value)
+              afterDate.value = new Date('09/30/'+yearTsrQuarter.value)
+              // code block
+              break;
+            case 4:
+              beforeDate.value = new Date('10/01/'+yearTsrQuarter.value)
+              afterDate.value = new Date('12/31/'+yearTsrQuarter.value)
+              // code block
+              break;
+            default:
+              // code block
+          }
+          updateTables()
+          // console.log("before,after,",before,after)
+          LoadFeedbackCountsDateRange(beforeDate.value,afterDate.value)
+        
         }
-        console.log("before,after,",before,after)
-        LoadFeedbackCountsDateRange(before,after)
-        
-        
       })
     onBeforeUnmount(() => {
       if (timer !== void 0) {
@@ -596,17 +608,20 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
 
     async function loadCharts(){
       
+      console.log("rowsnumberOfCustomers 777 pretty boy",rowsnumberOfCustomers.value)
       let dataArr = []
       let custArr = []
       let custArrServiceArea = []
       // if(chartDataModelData.value.length > 0){
 
-      if(chartDataModelLabel.value.length > 0 || chartDataModelCustomersLabel.value.length > 0){
+      if(chartDataModelLabel.value.length > 0 || chartDataModelCustomersLabel.value.length > 0 || lineChartLabel.value.length>0){
         chartDataModelLabel.value = []
         chartDataModelCustomersLabel.value = []
+        lineChartLabel.value = []
       }
         
       // }else{
+      // doughnut graph
       rowsOverallPerformance.value.forEach(element => {
       // console.log("11")
         chartDataModelLabel.value.push(element.servicearea)
@@ -614,6 +629,7 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
         
       });
       let keys = []
+      // bar graph
       rowsnumberOfCustomers.value.forEach(element => {
         if(keys.length == 0){
           keys = Object.keys(element)
@@ -622,17 +638,26 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
         custArr.push(element.total)
         
       });
-      keys.shift()
-      keys.shift()
-      keys.shift()
+      // format for charts
+      if(modeDashboard.value == 'Date Range'){
+        keys.pop()
+        keys.pop()
+        keys.pop() 
+      }else{
+        keys.shift()
+        keys.shift()
+        keys.shift()  
+      }
+      
       console.log("mouthfu;", keys)
+      //line graph
       keys.forEach(element => {
         let arr = rowsnumberOfCustomers.value.map(a =>
           a[element] 
         )
         custArrServiceArea.push(arr)
         lineChartLabel.value.push(element)
-        console.log("custArrServiceArea",custArrServiceArea)
+        // console.log("custArrServiceArea",custArrServiceArea)
       });
       
       
@@ -665,43 +690,43 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
 
     async function LoadFeedbackCountsDateRange(beforeDate,afterDate){
       totalTsrs.value = await totalTsrsCount(beforeDate,afterDate,"")
-      totalNegative.value = await countNegativeFeedbackByDateRange(beforeDate,afterDate)
-      totalPositive.value = await countPositiveFeedbackByDateRange(beforeDate,afterDate)
+      totalNegative.value = await countNegativeFeedbackByDateRange("","",beforeDate,afterDate)
+      totalPositive.value = await countPositiveFeedbackByDateRange("","",beforeDate,afterDate)
       // totalNoFeedback.value = await countNoFeedbackByDateRange(beforeDate,afterDate)
     }
     
     async function getAllTsrsByYearMonth (before,after){
-    let tsrMonth
-    let alltsrs = []
-    let answerOverall = []
-    let beforeMom = moment(before).month()
-    let currYear = moment(before).year()
-    let diffMonths = Math.floor(moment(after).diff(moment(before), 'months', true))
-    console.log("diffmonths", diffMonths)
-    
-    for(let i=0 ; i<=diffMonths; i++){
-      tsrMonth = await getTSRYearAndMonth(beforeMom,currYear)
-      answerOverall = await allOverAllRatingsFromApi(i,currYear)
-      console.log("curryear", currYear)
-      console.log("beforeMom", beforeMom)
-      tsrMonth.forEach(element => {
-        tsrs.value.push(element)
-      });
-      answerOverall.forEach(element => {
-        totalAnswerOverall.value.push(element)
-        
-      });
-      if(beforeMom == 11){
-        beforeMom = 0
-        currYear += 1
-      }else{
-        beforeMom+= 1
+      let tsrMonth
+      let alltsrs = []
+      let answerOverall = []
+      let beforeMom = moment(before).month()
+      let currYear = moment(before).year()
+      let diffMonths = Math.floor(moment(after).diff(moment(before), 'months', true))
+      // console.log("diffmonths", diffMonths)
+      
+      for(let i=0 ; i<=diffMonths; i++){
+        tsrMonth = await getTSRYearAndMonth(beforeMom,currYear)
+        answerOverall = await allOverAllRatingsFromApi(i,currYear)
+        // console.log("curryear", currYear)
+        // console.log("beforeMom", beforeMom)
+        tsrMonth.forEach(element => {
+          tsrs.value.push(element)
+        });
+        answerOverall.forEach(element => {
+          totalAnswerOverall.value.push(element)
+          
+        });
+        if(beforeMom == 11){
+          beforeMom = 0
+          currYear += 1
+        }else{
+          beforeMom+= 1
       }
       
       
     }
-    console.log("give all the love" , alltsrs)
-    return alltsrs
+    // console.log("give all the love" , alltsrs)
+    return alltsrs  
   }
 
     
@@ -717,10 +742,9 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
       totalPerField.value = []
 
 
-      buildRowsCustomers()
-      buildRowsOverallPerformance()
+      
 
-
+      
       const mainCounts = {
           5: 0, 
           4: 0,
@@ -787,8 +811,7 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
         }
       }
       else if(beforeDate.value && afterDate.value){
-
-        let alltsrs = await getAllTsrsByYearMonth(beforeDate.value,afterDate.value)
+        await getAllTsrsByYearMonth(beforeDate.value,afterDate.value)
       }
       else{
         let tsrMonth
@@ -796,7 +819,7 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
         for(let i=0 ; i<12; i++){
           tsrMonth = await getTSRYearAndMonth(i,currentYear.value)
           answersOverall = await allOverAllRatingsFromApi(i,currentYear.value)
-          console.log("answersOverall",answersOverall)
+          // console.log("answersOverall",answersOverall)
           tsrMonth.forEach(element => {
             tsrs.value.push(element)
           });
@@ -808,6 +831,90 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
         // totalAnswerOverall.value = await allOverAllRatingsFromApi("","",currentYear.value)
         
       }
+      if(modeDashboard.value != "Date Range"){
+        buildRowsCustomers()
+        var result = _(tsrs.value)
+        .groupBy(v => moment(v.submittedAt).format('MMMM'))
+        .value();
+        // console.log("results", result)
+
+          for (var key in result) {
+              let totalRespondentsPerMonth = 0
+              if (result.hasOwnProperty(key)) {
+                let row = {}
+                let totalPerMonth = 0
+                row['month'] = key
+                // console.log("keys 777", key)
+                
+                
+                let temp = result[key]
+                // console.log("temp", temp)
+                divisionsAndSections.value.forEach(key2 => {
+                  
+                    let stringColField = key2.keyname
+                    // filter all data
+                    let sample = temp.filter((elementTSR) => {
+                    if(elementTSR.division === key2.division && elementTSR.service === key2.service){
+                      // console.log(key2 + ' - ', element )
+                      return elementTSR
+                    }
+                    
+                    })
+                    // console.log("rowsnumberOfCustomers",rowsnumberOfCustomers.value)
+                    let x = rowsnumberOfCustomers.value.find(x => x.month === key);
+                    x[stringColField] = sample.length
+                    totalPerMonth += sample.length
+                })
+                let rowMonth = rowsnumberOfCustomers.value.find(x => x.month === key);
+                // console.log("rowmonth error", rowMonth)
+                rowMonth['total'] = totalPerMonth
+                // console.log("totalpermonth", totalPerMonth)
+                
+
+                
+              }
+          }
+
+      }else{
+        var result = _(tsrs.value)
+        .groupBy(v => moment(v.submittedAt).format('MMMM-YYYY'))
+        .value();
+        let index = 1
+        for (var key in result) {
+            if (result.hasOwnProperty(key)) {
+              let row = {}
+              let totalPerMonth = 0
+              row['month'] = key
+              
+              let temp = result[key]
+              divisionsAndSections.value.forEach(element => {
+                let stringColField = element.keyname
+                  // filter all data
+                  let sample = temp.filter((elementTSR) => {
+                  if(elementTSR.tsrNo){
+                    if(elementTSR.division == element.division && elementTSR.service == element.service){
+                      // console.log("pasok oh loko" )
+                      return elementTSR
+                    }
+                  }
+                  
+                  })
+                  row[stringColField] = sample.length ? sample.length : 0
+                  totalPerMonth += sample.length
+              });
+                  
+              // total horizontal
+              row['total'] = Math.round(totalPerMonth)
+              row['id'] = index+=1
+              // totalPerMonth
+              
+              rowsnumberOfCustomers.value.push(row)
+            }
+        }
+
+      } 
+      
+      buildRowsOverallPerformance()
 
 
       totalAnswerOverall.value = totalAnswerOverall.value.filter(function (el) {
@@ -816,7 +923,7 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
       // total overall 
       // key is the division
       // element is the service
-         divisionsAndSections.value.forEach(key => {
+        divisionsAndSections.value.forEach(key => {
            
             let stringColField = key.keyname
             // filter all answer overall specific to tsr
@@ -830,108 +937,66 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
           })
           
           // count per service 
-          const counts = {
-            5: 0, 
-            4: 0,
-            3: 0, 
-            2: 0,
-            1: 0,
-            0: 0
-          };
-          console.log("sample", sample)
-          for (const element of sample) {
+            const counts = {
+              5: 0, 
+              4: 0,
+              3: 0, 
+              2: 0,
+              1: 0,
+              0: 0
+            };
+            // console.log("sample", sample)
+            for (const element of sample) {
+              
+              let num = element.value
+              if (num == 1){
+                counts[1] +=1
+                mainCounts[1] +=1
+              }else if ( num == 2){
+                counts[2] +=1
+                mainCounts[2] +=1
+              }else if(num ==3 ){
+                counts[3] +=1
+                mainCounts[3] +=1
+              }else if(num == 4){
+                counts[4] +=1
+                mainCounts[4] +=1
+              }else if(num == 5){
+                counts[5] +=1
+                mainCounts[5] +=1
+              }
+              else{
+                counts[0] += 1
+                mainCounts[0] +=1
+              }
+            };
+            // console.log("counts",counts)
             
-            let num = element.value
-            if (num == 1){
-              counts[1] +=1
-              mainCounts[1] +=1
-            }else if ( num == 2){
-              counts[2] +=1
-              mainCounts[2] +=1
-            }else if(num ==3 ){
-              counts[3] +=1
-              mainCounts[3] +=1
-            }else if(num == 4){
-              counts[4] +=1
-              mainCounts[4] +=1
-            }else if(num == 5){
-              counts[5] +=1
-              mainCounts[5] +=1
-            }
-            else{
-              counts[0] += 1
-              mainCounts[0] +=1
-            }
-          };
-          console.log("counts",counts)
-          
 
-          // average per overallperformance value
-          for(let [key2, value] of Object.entries(counts)){
-            // total vertical per service
-            rowsOverallPerformance.value.forEach(function (arrayItem) {
-              if(key2 == arrayItem.id){
-                value = parseFloat((value/ sample.length) * 100)
-                if(isNaN(value)){
-                  value = '0%'
-                }else{
-                  value = value.toFixed(2).toString() + '%'
+            // average per overallperformance value
+            for(let [key2, value] of Object.entries(counts)){
+              // total vertical per service
+              rowsOverallPerformance.value.forEach(function (arrayItem) {
+                if(key2 == arrayItem.id){
+                  value = parseFloat((value/ sample.length) * 100)
+                  if(isNaN(value)){
+                    value = '0%'
+                  }else{
+                    value = value.toFixed(2).toString() + '%'
+                  }
+                  
+                  arrayItem[stringColField] = value
                 }
                 
-                arrayItem[stringColField] = value
+                });
               }
-              
-              });
-            }
         })
 
          // Number of customers Row generation
         
         // group by months
         
-        var result = _(tsrs.value)
-        .groupBy(v => moment(v.submittedAt).format('MMMM'))
-        .value();
-        let index = 0
-        let resultLength = result.length
-        console.log("results", result)
-
-          for (var key in result) {
-              let totalRespondentsPerMonth = 0
-              if (result.hasOwnProperty(key)) {
-                let row = {}
-                let totalPerMonth = 0
-                row['month'] = key
-                console.log("keys 777", key)
-                
-                
-                let temp = result[key]
-                console.log("temp", temp)
-                divisionsAndSections.value.forEach(key2 => {
-                  
-                    let stringColField = key2.keyname
-                    // filter all data
-                    let sample = temp.filter((elementTSR) => {
-                    if(elementTSR.division === key2.division && elementTSR.service === key2.service){
-                      // console.log(key2 + ' - ', element )
-                      return elementTSR
-                    }
-                    
-                    })
-                    let x = rowsnumberOfCustomers.value.find(x => x.month === key);
-                    x[stringColField] = sample.length
-                    totalPerMonth += sample.length
-                })
-                let rowMonth = rowsnumberOfCustomers.value.find(x => x.month === key);
-                console.log("rowmonth error", rowMonth)
-                rowMonth['total'] = totalPerMonth
-                console.log("totalpermonth", totalPerMonth)
-                
-
-                
-              }
-          }
-
+        
         // total Respondents per month
           let totalRespondents = 0
           divisionsAndSections.value.forEach(key => {
@@ -943,7 +1008,7 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
               }
               return a[stringColField]
             })
-            console.log("res", resultTotal)
+            // console.log("res", resultTotal)
             let atotal = resultTotal.reduce((a, b) => a + b, 0)
             
             // totalActualRespondents.value[stringColField] = atotal
@@ -969,7 +1034,7 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
           totalPercentRow +=res
           // console.log("mainco", mainCounts[row.id])
           // console.log("rowid", row.id)
-          console.log("totalPercentRow", totalPercentRow)
+          // console.log("totalPercentRow", totalPercentRow)
           // chartDataModelData.push(mainCounts[row.id])
           row['countOverall'] = mainCounts[row.id]
           row['percentage'] = res.toFixed(2).toString() + '%'
@@ -980,7 +1045,7 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
         let tempObj = {}
         tempObj['value'] = totalPercentRow.toFixed(2).toString() + '%'
         totalPerField.value.push(tempObj)
-        console.log("totalPerField",totalPerField.value)
+        // console.log("totalPerField",totalPerField.value)
 
         divisionsAndSections.value.forEach(key => {
           
@@ -997,6 +1062,8 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
           timer = void 0
           $q.loading.hide()
 
+
+
           loadCharts()
           
 
@@ -1005,7 +1072,6 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
 
       function buildTable(){
         buildColumns()
-        buildRowsCustomers()
         buildRowsOverallPerformance()
         
         totalNoResponse.value = totalTsrs.value - totalAnswerOverall.value.length
@@ -1018,14 +1084,14 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
         rowsOverallPerformance.value.push({servicearea: "3 - Satisfactory", id: 3})
         rowsOverallPerformance.value.push({servicearea: "2 - Fair", id: 2})
         rowsOverallPerformance.value.push({servicearea: "1 - Poor", id: 1})
-        rowsOverallPerformance.value.push({servicearea: "No Response", id: 0})
+        // rowsOverallPerformance.value.push({servicearea: "No Response", id: 0})
         
   
       
         }
 
-        function buildRowsCustomers (){
-
+        async function buildRowsCustomers (){
+          // rowsnumberOfCustomers.value = await numberOfCustomersRowsData(divisionsAndSections.value,tsrlist)
         // performance row generation
           rowsnumberOfCustomers.value.push({month: "January" , id: 1, total: 0})
           rowsnumberOfCustomers.value.push({month: "February" ,  id: 2 ,total: 0})
@@ -1051,7 +1117,9 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
 
       // remove duplicate months
 
-      function buildColumns(){
+      async function buildColumns(){
+
+        // colsnumberOfCustomers.value = await numberOfCustomersColumnsData 
 
         // colsOverallPerformance tables
         colsOverallPerformance.value.push( {
@@ -1086,7 +1154,7 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
           
           
         
-        console.log("buhay", colsnumberOfCustomers.value, colsOverallPerformance.value)
+        // console.log("buhay", colsnumberOfCustomers.value, colsOverallPerformance.value)
 
         colsnumberOfCustomers.value.push({
           name: 'Total',
@@ -1096,7 +1164,7 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
           sortable: true
         })
 
-        console.log("colsnumberOfCustomers",colsnumberOfCustomers.value)
+        // console.log("colsnumberOfCustomers",colsnumberOfCustomers.value)
 
       }
 
@@ -1185,13 +1253,33 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
         }else{
           if(yearTsr.value){
             if (mode == 1) {
-            rows = await getNegativeFeedbackData(startRow,count,yearTsr.value)
-            cardTitle.value = "Negative Feedback " + yearTsr.value.toString()
+              // console.log("here")
+              rows = await getNegativeFeedbackData(startRow,count,yearTsr.value)
+              cardTitle.value = "Negative Feedback " + yearTsr.value.toString()
             }else{
               rows = await getPositiveFeedbackData(startRow,count,yearTsr.value)
               cardTitle.value = "Positive Feedback " + yearTsr.value.toString()
             }
-          }else{
+          }
+          else if(quarterTSR.value){
+            if (mode == 1) {
+              rows = await getNegativeFeedbackDataRange(startRow,count,beforeDate.value,afterDate.value)
+              cardTitle.value = "Negative Feedback Quarter:" + quarterTSR.value + " ," + beforeDate.value.getFullYear().toString()
+            }else{
+              rows = await getPositiveFeedbackDataRange(startRow,count,beforeDate.value,afterDate.value)
+              cardTitle.value = "Positive Feedback Quarter:" + quarterTSR.value + " ," + beforeDate.value.getFullYear().toString()
+            }
+          }
+          else if(beforeDate.value && afterDate.value){
+            if (mode == 1) {
+              rows = await getNegativeFeedbackDataRange(startRow,count,beforeDate.value,afterDate.value)
+              cardTitle.value = "Negative Feedback " + beforeDate.value + ' - ' + afterDate.value
+            }else{
+              rows = await getPositiveFeedbackDataRange(startRow,count,beforeDate.value,afterDate.value)
+              cardTitle.value = "Positive Feedback " + beforeDate.value + ' - ' + afterDate.value
+            }
+          }
+          else{
             let currYear = new Date().getFullYear()
             if (mode == 1) {
               
@@ -1246,14 +1334,14 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
       //  }
        
       // }
-      let year
       if (yearTsr.value){
-        year = yearTsr.value
-      }else{
-        year = new Date().getFullYear()
+        totalNegative.value = await countNegativeFeedback(yearTsr.value)
+        totalPositive.value = await countPositiveFeedback(yearTsr.value)
+      }else if(quarterTSR.value || beforeDate.value || afterDate.value ){
+        totalNegative.value = await countNegativeFeedbackByDateRange("","",beforeDate.value,afterDate.value)
+        totalPositive.value = await countPositiveFeedbackByDateRange("","",beforeDate.value,afterDate.value)
       }
-      totalNegative.value = await countNegativeFeedback(year)
-      totalPositive.value = await countPositiveFeedback(year)
+      
       let totalCount 
       if(mode == 1){
         totalCount = totalNegative.value
@@ -1280,9 +1368,9 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
           pagination.value.rowsNumber = x
           const fetchCount = rowsPerPage === 0 ? x : rowsPerPage
           const startRow = (page - 1) * rowsPerPage
-          console.log("eyfilter", startRow,fetchCount)
+          // console.log("eyfilter", startRow,fetchCount)
           const returnedData = await fetchFromServer(startRow, fetchCount, filter, sortBy, descending,mode) 
-          console.log("returnedData",returnedData)
+          // console.log("returnedData",returnedData)
           // fetch data from "server"
           
           // clear out existing data and add new
@@ -1307,9 +1395,9 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
           const startRow = (page - 1) * rowsPerPage
           pagination.value.rowsNumber = totalCount
           const fetchCount = rowsPerPage === 0 ? totalCount : rowsPerPage
-          console.log("eytotal", startRow,fetchCount)
+          // console.log("eytotal", startRow,fetchCount)
           const returnedData = await fetchFromServer(startRow, fetchCount, filter, sortBy, descending,mode) 
-          console.log("returnedData",returnedData)
+          // console.log("returnedData",returnedData)
           // fetch data from "server"
           
           // clear out existing data and add new
@@ -1345,20 +1433,15 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
       }
 
       async function submitDate(){
-        let alltsrs
         showLoading()
         
 
-
+        
         await updateTables()
         await LoadFeedbackCountsDateRange(beforeDate.value,afterDate.value)
         clearTimeout(timer)
         $q.loading.hide()
 
-
-
-        // updateTables()
-        // LoadFeedbackCounts(newValue)
       }
 
       
@@ -1378,6 +1461,7 @@ import { numberOfCustomersRowsData } from 'src/utils/dataRetrieveTables'
         await updateTables()
 
         // yearTsr.value = currentYear.value
+        console.log("last", rowsnumberOfCustomers.value)
       })
 
 

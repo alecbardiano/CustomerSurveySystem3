@@ -2,7 +2,6 @@
   <div class="q-pa-md">
   <q-toggle v-model="showFilter" label="Show Filters" />
   </div>
-
   <div class="q-pa-md" style="margin-left: 40px" v-if="showFilter" >
     <div class="row inline">
       <q-select v-model="division" @update:model-value="fillSectionList()" :options="divisions" label="Division" style="width: 200px; " />
@@ -55,9 +54,9 @@
             inline
             class="q-mb-md"
             :options="[
-              { label: 'All Negative Feedbacks (default)', value: 0 },
-              { label: 'With Resolutions', value: 1 },
-              { label: 'Without Resolutions', value: 2 },
+              { label: 'All Negative Feedbacks (default)', value: 'All Negative Feedbacks' },
+              { label: 'With Resolutions', value: 'With Resolutions' },
+              { label: 'Without Resolutions', value: 'Without Resolutions' },
             ]"
           /> 
     
@@ -67,7 +66,7 @@
     <q-table
     class="my-sticky-header-table"
     style="height: 450px"
-    title="All Negative Feedbacks"
+    :title="mode"
     :rows="modeRows"
     :columns="cols"
     v-model:pagination="pagination"
@@ -85,11 +84,11 @@
       
     </template> -->
     <template v-slot:top-right>
-      <!-- <q-input class="placeholderClass" borderless dense debounce="300" v-model="filter" placeholder="Search">
+      <q-input class="placeholderClass" borderless dense debounce="300" v-model="filter" placeholder="Search">
         <template v-slot:append>
           <q-icon class="searchClass" name="search" />
         </template>
-      </q-input> -->
+      </q-input>
     </template>
 
   </q-table>
@@ -144,7 +143,7 @@ export default defineComponent({
 
     })
 
-    const mode = ref(0)
+    const mode = ref('All Negative Feedbacks')
     // { label: 'All Negative Feedbacks (default)', value: 0 },
     //               { label: 'With Resolutions', value: 1 },
     //               { label: 'Without Resolutions', value: 2 },
@@ -197,13 +196,13 @@ export default defineComponent({
       console.log("a",a)
 
       switch (mode.value) {
-        case 0:
+        case "All Negative Feedbacks":
           
           break;
-        case 1:
+        case "With Resolutions":
           a =  a.filter(row => row.resolution != '' && row.resolution != null)
           break;
-        case 2:
+        case "Without Resolutions":
           a = a.filter(row => row.resolution == '' || row.resolution == null)
       
         default:
@@ -295,28 +294,37 @@ export default defineComponent({
        
         let rows = []
         let currYear = new Date().getFullYear()
-        currYear = '2022'
-        let div = division.value
-        let serv = service.value
+        let div = ""
+        let serv = ""
+        if(division.value || service.value){
+          div = division.value
+          serv = service.value  
+        }
+        
         if(showFilter.value){
           if (filter){
             rows = await getAnswerBySearch(filter,startRow,count)
           }else{
-            if(yearTsr.value){
-              rows = await getNegativeFeedbackDataResolution(startRow,count,div,serv,yearTsr.value).toString()
+            if(beforeDate.value && afterDate.value){
+              rows = await getNegativeFeedbackDataResolution(startRow,count,div,serv,beforeDate.value,afterDate.value)
               
             }else{
-              rows = await getNegativeFeedbackDataResolution(startRow,count,div,serv,currYear)
+              beforeDate.value = new Date("01/01/"+currYear)
+              afterDate.value = new Date("12/31/"+currYear)
+              rows = await getNegativeFeedbackDataResolution(startRow,count,div,serv,beforeDate.value,afterDate.value)
               
             }
           }
         }else{
-          if(yearTsr.value){
-            rows = await getNegativeFeedbackData(startRow,count,yearTsr.value).toString()
-          }else{
-            rows = await getNegativeFeedbackData(startRow,count,currYear)
-          }
-          
+          if(beforeDate.value && afterDate.value){
+              console.log
+              rows = await getNegativeFeedbackDataResolution(startRow,count,div,serv,beforeDate.value,afterDate.value)
+              
+            }else{
+              beforeDate.value = new Date("01/01/"+currYear)
+              afterDate.value = new Date("12/31/"+currYear)
+              rows = await getNegativeFeedbackDataResolution(startRow,count,div,serv,beforeDate.value,afterDate.value)
+            }
         }
         // }
         

@@ -221,7 +221,7 @@ function buildNumberOfCustomersRows (divisionsAndSections, tsrList){
       let totalRespondentsPerMonth = 0
       // group by months
       var result = _(tsrList)
-      .groupBy(v => moment(v.submittedAt).format('MMMM/YYYY'))
+      .groupBy(v => moment(v.submittedAt).format('MMMM-YYYY'))
       .value();
 
 

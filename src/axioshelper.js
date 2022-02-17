@@ -447,6 +447,7 @@ const getAnswersForOverall = function (division,service,questionID,beforeDate,af
     after = moment(afterDate).format('YYYY-MM-DD');
     if (service != ""){
       if(beforeDate && afterDate){
+        console.log("dito dapat")
         return api.get('/answers/?_limit=-1&tsr.division='+ division + '&tsr.service=' + service + '&question.id='+questionID+ '&tsr.submittedAt_gte='+before+'&tsr.submittedAt_lte='+after)
         .then(function( response ){
             // console.log("from axios tsr division", response.data)
@@ -461,13 +462,14 @@ const getAnswersForOverall = function (division,service,questionID,beforeDate,af
      }
     }else{
         if(beforeDate && afterDate){
-          return api.get('/answers/?_limit=-1&tsr.division='+ division + '&&question.id='+questionID+ '&tsr.submittedAt_gte='+before+'&tsr.submittedAt_lte='+after)
+          console.log("dito dapat")
+          return api.get('/answers/?_limit=-1&tsr.division='+ division + '&question.id='+questionID+ '&tsr.submittedAt_gte='+before+'&tsr.submittedAt_lte='+after)
           .then(function( response ){
               // console.log("from axios tsr division", response.data)
               return response.data;
         })
       }else{
-        return api.get('/answers/?_limit=-1&tsr.division='+ division + '&&question.id='+questionID+'&tsr.submittedAt_gte='+today+'-01-01'+'&tsr.submittedAt_lte='+today+'-12-31')
+        return api.get('/answers/?_limit=-1&tsr.division='+ division + '&question.id='+questionID+'&tsr.submittedAt_gte='+today+'-01-01'+'&tsr.submittedAt_lte='+today+'-12-31')
           .then(function( response ){
               // console.log("from axios tsr division", response.data)
               return response.data;
@@ -635,7 +637,7 @@ const sendEmailNegativeFeedback = async function(tsr) {
           "subject": tsrNo + ' - ' + 'Negative Feedback',
           "system": "Customer Survey Management System",
           "html": {
-              "firstName": "Pogi",
+              "firstName": "Sir/Ma'am",
               "message": "Customer Survey Management System is requesting you to review the tsrNo:" + tsrNo + " because it received a negative feedback, please provide a resolution on the provided link" ,
               "url": {
                 "text": "Access Resolution Form",
@@ -802,14 +804,26 @@ const positiveFeedbackCount = function (year)  {
       })
 }
 
-const positiveFeedbackCountByDateRange = function (beforeDate,afterDate)  {
+const positiveFeedbackCountByDateRange = function (start,limit,beforeDate,afterDate)  {
+  
   let before = moment(beforeDate).format('YYYY-MM-DD');
   let after = moment(afterDate).format('YYYY-MM-DD');
-  return api.get('/answers/count?value_gte=3&question.question_type=2&tsr.submittedAt_gte='+before+'&tsr.submittedAt_lte='+after,{
-      })
-      .then(function( response ){
-          return response.data;
-      })
+  
+  if(start && limit){
+    return api.get('/answers/count?_start='+start+'&_limit='+limit+'&value_gte=3&question.question_type=2&tsr.submittedAt_gte='+before+'&tsr.submittedAt_lte='+after,{
+    })
+    .then(function( response ){
+        return response.data;
+    })
+  }else{
+    return api.get('/answers/count?value_gte=3&question.question_type=2&tsr.submittedAt_gte='+before+'&tsr.submittedAt_lte='+after,{
+    })
+    .then(function( response ){
+        return response.data;
+    })
+  }
+  
+  
 }
 
 const positiveFeedbackCountData = function (start,limit,year)  {
@@ -821,16 +835,16 @@ const positiveFeedbackCountData = function (start,limit,year)  {
 }
 
 const negativeFeedbackCount = function (year)  {
-  return api.get('/answers/count?value_lte=2&value_gt=0&question.question_type=2&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
+  return api.get('/answers/count?value_lte=2&value_gt=0&value_gt=0&question.question_type=2&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
       })
       .then(function( response ){
           return response.data;
       })
 }
-const negativeFeedbackCountByDateRange = function (beforeDate,afterDate)  {
+const negativeFeedbackCountByDateRange = function (start,limit,beforeDate,afterDate)  {
   let before = moment(beforeDate).format('YYYY-MM-DD');
   let after = moment(afterDate).format('YYYY-MM-DD');
-  return api.get('/answers/count?value_lte=2&tsr.submittedAt_gte='+before+'&tsr.submittedAt_lte='+after,{
+  return api.get('/answers/count?value_lte=2&value_gt=0&tsr.submittedAt_gte='+before+'&tsr.submittedAt_lte='+after,{
       })
       .then(function( response ){
           return response.data;
@@ -845,8 +859,30 @@ const negativeFeedbackCountData = function (start,limit,year)  {
       })
 }
 
-const negativeFeedbackCountDataResolutions = function (start,limit,division,service,year)  {
-  return api.get('/answers/?_start='+start+'&_limit='+limit+'&tsr.division='+division+'&tsr.service='+service+'&value_lte=2&value_gt=0&question.question_type=2&tsr.submittedAt_gte='+year+'-01-01'+'&tsr.submittedAt_lte='+year+'-12-31',{
+const getNegativeFeedbackDataDaterange = function (start,limit,beforeDate,afterDate)  {
+  let before = moment(beforeDate).format('YYYY-MM-DD');
+  let after = moment(afterDate).format('YYYY-MM-DD');
+  return api.get('/answers/?_start='+start+'&_limit='+limit+'&value_lte=2&value_gt=0&value_gt=0&question.question_type=2&tsr.submittedAt_gte='+before+'&tsr.submittedAt_lte='+after,{
+      }) 
+      .then(function( response ){
+          return response.data;
+      })
+}
+
+const getPositiveFeedbackDataDaterange = function (start,limit,beforeDate,afterDate)  {
+  let before = moment(beforeDate).format('YYYY-MM-DD');
+  let after = moment(afterDate).format('YYYY-MM-DD');
+  return api.get('/answers/?_start='+start+'&_limit='+limit+'&value_gte=3&question.question_type=2&tsr.submittedAt_gte='+before+'&tsr.submittedAt_lte='+after,{
+      }) 
+      .then(function( response ){
+          return response.data;
+      })
+}
+
+const negativeFeedbackCountDataResolutions = function (start,limit,division,service,beforeDate,afterDate)  {
+  let before = moment(beforeDate).format('YYYY-MM-DD');
+  let after = moment(afterDate).format('YYYY-MM-DD');
+  return api.get('/answers/?_start='+start+'&_limit='+limit+'&tsr.division_contains='+division+'&tsr.service_contains='+service+'&value_lte=2&value_gt=0&question.question_type=2&tsr.submittedAt_gte='+before+'&tsr.submittedAt_lte='+after,{
       }) 
       .then(function( response ){
           return response.data;
@@ -1027,6 +1063,14 @@ const loginToSSO = function (username,password) {
 //     items.splice(0, items.length, ...result.data);
 //     return items
 // };
+
+export const getPositiveFeedbackDataRange = (start,limit,before,after) => {
+  return getPositiveFeedbackDataDaterange(start,limit,before,after)
+}
+export const getNegativeFeedbackDataRange = (start,limit,before,after) => {
+  return getNegativeFeedbackDataDaterange(start,limit,before,after)
+}
+
 export const countPositiveFeedback = (year) => {
   return positiveFeedbackCount(year)
 }
@@ -1035,12 +1079,12 @@ export const getPositiveFeedbackData = (start,limit,year) => {
   return positiveFeedbackCountData(start,limit,year)
 }
 
-export const countPositiveFeedbackByDateRange = (before,after) => {
-  return positiveFeedbackCountByDateRange(before,after)
+export const countPositiveFeedbackByDateRange = (start,limit,before,after) => {
+  return positiveFeedbackCountByDateRange(start,limit,before,after)
 }
 
-export const countNegativeFeedbackByDateRange = (before,after) => {
-  return negativeFeedbackCountByDateRange(before,after)
+export const countNegativeFeedbackByDateRange = (start,limit,before,after) => {
+  return negativeFeedbackCountByDateRange(start,limit,before,after)
 }
 
 export const countNegativeFeedback = (year) => {
@@ -1050,8 +1094,8 @@ export const getNegativeFeedbackData= (start,limit,year) => {
   return negativeFeedbackCountData(start,limit,year)
 }
 
-export const getNegativeFeedbackDataResolution = (start,limit,division,service,year) => {
-  return negativeFeedbackCountDataResolutions(start,limit,division,service,year)
+export const getNegativeFeedbackDataResolution = (start,limit,division,service,before,after) => {
+  return negativeFeedbackCountDataResolutions(start,limit,division,service,before,after)
 }
 
 export const countNoFeedback = (year) => { 

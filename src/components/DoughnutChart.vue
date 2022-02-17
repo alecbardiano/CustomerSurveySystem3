@@ -75,7 +75,7 @@ export default defineComponent({
     ))
 
     const isDataLoaded = computed(() => {    
-        console.log("props.chartData",props.chartData)
+        // console.log("props.chartData",props.chartData)
         return props.chartData && props.chartData.length !== 0
     })
 
@@ -132,7 +132,7 @@ export default defineComponent({
     }
 
     function removeData(chart) {
-        console.log("chart", chart)
+        // console.log("chart", chart)
         chart.chartData.labels.pop();
         chart.chartData.datasets.forEach((dataset) => {
             dataset.data.pop();
@@ -146,7 +146,7 @@ export default defineComponent({
     }
     onMounted( async ()  => {
 
-        console.log("mounte", doughnutRef.value)
+        // console.log("mounte", doughnutRef.value)
     //    await axios.request(options2).then(function (response) {
     //     console.log(response.data);
     //     testData.value.datasets.data = response.data.football
