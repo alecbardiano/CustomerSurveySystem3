@@ -12,9 +12,45 @@
           Customer Survey Management System
         </q-toolbar-title>
         <q-space />
-           <div v-if="loginStatus != 'failed' && userLoggedin.email != ''  " class="fontSize">
+        <q-btn-dropdown
+            flat
+            color="white"
+            icon="person_outline"
+            :label="userLoggedin.displayName"
+          >
+            <q-list>
+              <q-item clickable v-close-popup>
+                <q-item-section>
+                  <q-item-label><div class="row text-h6 q-mb-md">Settings</div></q-item-label>
+                  <q-item-label caption>Emloyee ID:  {{userLoggedin.username}}
+                    <!-- <pre>
+                      {{user}}
+                    </pre> -->
+                  </q-item-label>
+                </q-item-section>
+              </q-item>
+
+              <q-item clickable v-close-popup>
+                <q-item-section avatar>
+                  <q-icon name="launch" color="secondary" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label>Manage Account</q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup v-ripple to="/" @click="logout">
+                <q-item-section avatar>
+                  <q-icon name="logout" color="secondary" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label>Logout</q-item-label>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
+           <!-- <div v-if="loginStatus != 'failed' && userLoggedin.email != ''  " class="fontSize">
             Logged in: {{userLoggedin.displayName}}
-           </div>
+           </div> -->
       </q-toolbar>
     </q-header>
    
@@ -74,13 +110,13 @@
               </q-item-section>
           </q-item>
           </q-expansion-item>
-
           <q-expansion-item
+            v-show="userLoggedin.role.name == 'PMD'"
             expand-separator
             icon="library_books"
             label="Libraries"
           >
-          <q-item :content-inset-level="1" clickable class="text-black"  align="center" to="/Question" label="Questions" >
+          <q-item  :content-inset-level="1" clickable class="text-black"  align="center" to="/Question" label="Questions" >
             <q-item-section avatar>
               <q-icon name="question_answer" />
               </q-item-section>
@@ -101,14 +137,14 @@
           
             
 
-          <q-item clickable v-ripple to="/" @click="logout" class="text-black" label="Logout">
+          <!-- <q-item clickable v-ripple to="/" @click="logout" class="text-black" label="Logout">
             <q-item-section avatar>
               <q-icon name="logout" />
             </q-item-section>
             <q-item-section>
               Logout
             </q-item-section>
-          </q-item>
+          </q-item> -->
 
           
         </q-list>

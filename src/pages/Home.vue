@@ -1,5 +1,37 @@
 <template>
-    <div class="q-pa-md">
+<div class="q-pa-md bg-white text-justify" style="margin-top: -30px">
+      <h2 class="q-display-2 text-weight-bold q-mr-xl text-center"><q-icon color="primary" name="question_answer" />
+        Welcome to CSMS
+      </h2>
+      <hr class="q-hr q-my-lg">
+      <div class="q-body-1 q-mb-xl">
+        <dl>
+          <dt><big> <b> I. Background </b></big></dt>
+          <dd class="q-mt-md">
+            &emsp; {{background}}
+          </dd>
+
+        
+          
+<!-- 
+          <dd class="q-mt-md">
+            &emsp; OneShop is administered by the Technical Solution Services Section (TSSS) and is used in and processing requests for the Center’s services.  Information on the status of requested services can be tracked through the  customer portal at the MIRDC website.
+          </dd> -->
+        </dl>
+      <dl>
+        <dt><big> <b> II. The CSMS </b></big></dt>
+        <dd class="q-mt-md">
+          &emsp; {{csms}}
+        </dd>
+      </dl>
+      </div>
+      <center>
+        <q-btn no-caps @click="$router.push('/')" color="primary" icon="touch_app" class="q-py-sm q-px-xl q-mr-sm no-shadow" label="Get Started" />
+        <q-btn no-caps  color="primary" outline icon="import_contacts" class="q-py-sm q-mr-sm q-px-xl" label="User Manual" />
+        <q-btn no-caps color="primary" outline icon="assignment_turned_in" class="q-py-sm q-px-xl" label="Policy Manual" />
+      </center>
+    </div>
+    <!-- <div class="q-pa-md">
         <q-carousel
       v-model="slide"
       swipeable
@@ -38,7 +70,7 @@
             <q-btn v-else size="sm" :icon="btnProps.icon" color="white" flat round dense @click="onClick" />
       </template>
     </q-carousel>
-    </div>
+    </div> -->
 </template>
 
 <script>

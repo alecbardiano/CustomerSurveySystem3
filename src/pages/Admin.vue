@@ -46,7 +46,7 @@
     
                 </q-form>
 
-        <div class="q-pa-md">
+        <div class="q-pa-md" v-show="userLoggedin.role.name == 'PMD' || userLoggedin.role.name == 'Management' ">
           <q-toggle v-model="showFunctions" label="Show Functions" />
         </div>
   
@@ -291,6 +291,7 @@ import { exportFile, useQuasar} from 'quasar'
 import { xlsx, pdfMake } from 'boot/axios'
 import moment from 'moment';
 import orderBy from 'lodash.orderby'
+import {  useStore } from "vuex";
 
 
 //components
@@ -303,6 +304,7 @@ export default defineComponent({
   
   setup () {
   let timer
+  const store = useStore();
 
   const visibleColumns = ref([ "tsrNo", "division", "service", "industry", "Overall Rating","publishedDate"])
   const divisioAndSectionList = ref([])
@@ -424,6 +426,8 @@ export default defineComponent({
 
   const showFilter = ref(false)
   const showFunctions = ref(false)
+
+  const userLoggedin = computed(() => store.getters["auth/getUserProfile"]);
 
   
 
@@ -2045,7 +2049,8 @@ export default defineComponent({
         });
         return finalAverageDataRow.value.filter(a => a.visible)
       }),
-      toggles
+      toggles,
+      userLoggedin
     }
   }
   
