@@ -65,12 +65,12 @@
           </q-item>
           <q-item :content-inset-level="2" clickable  class="text-black" align="center" to="/AdminDivision" label="Per Division"  >
               <q-item-section>
-                Per Division Admin
+                Summary Per Division
             </q-item-section>
             </q-item>
              <q-item :content-inset-level="1" clickable class="text-black"  align="center" to="/Resolutions" label="Resolutions" >
             <q-item-section>
-                 Resolutions
+                 Action Plans to Negative Feedbacks
               </q-item-section>
           </q-item>
           </q-expansion-item>

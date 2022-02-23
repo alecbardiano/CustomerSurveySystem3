@@ -2,7 +2,7 @@
     <q-layout view="hHh lpR fFf" class="shadow-2 rounded-borders">
       <q-header reveal class="bg-primary">
         <q-toolbar>
-          <q-toolbar-title>Resolution for {{tsrNumberView}} </q-toolbar-title>
+          <q-toolbar-title>Action Plan for {{tsrNumberView}} </q-toolbar-title>
         </q-toolbar>
       </q-header>
 
@@ -17,7 +17,7 @@
                     @submit="onSubmit"  
                     class="q-gutter-md"
                     ref="feedbackRefForm">
-                    <h5>Please provide a resolution for the negative feedback given by the Client</h5>
+                    <h5>Please provide a action plan for the negative feedback given by the Client</h5>
                         
                             <div style="max-height: 500px; overflow: auto" class="col">
                                 <div :visible="false" class="fit column">
@@ -64,11 +64,11 @@
                              <q-dialog v-model="confirm" persistent>
                               <q-card>
                                 <q-card-section class="bg-primary text-white">
-                                  <div class="text-h6">Confirm Resolutions</div>
+                                  <div class="text-h6">Confirm Action Plan</div>
                                 </q-card-section>
                                 <q-card-section class="row items-center">
                                   <q-avatar icon="check_circle" color="primary" text-color="white" />
-                                  <span class="q-ml-sm">Are you sure you want to continue with the resolution/s you provided?</span>
+                                  <span class="q-ml-sm">Are you sure you want to continue with the action plan/s you provided?</span>
                                 </q-card-section>
 
                                 <q-card-actions align="right">

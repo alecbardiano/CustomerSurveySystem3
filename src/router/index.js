@@ -70,7 +70,7 @@ export default route(function ({ store }/* { store, ssrContext } */) {
 
         
         
-        if (userProfile.id && userProfile.confirmed) {
+        if (userProfile.id) {
           // localStorage.setItem("user",JSON.stringify(response.data.user)
           localStorage.setItem("user",JSON.stringify(userProfile))
           next() // go to wherever I'm going

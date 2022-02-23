@@ -55,8 +55,8 @@
             class="q-mb-md"
             :options="[
               { label: 'All Negative Feedbacks (default)', value: 'All Negative Feedbacks' },
-              { label: 'With Resolutions', value: 'With Resolutions' },
-              { label: 'Without Resolutions', value: 'Without Resolutions' },
+              { label: 'With Action Plan', value: 'With Action Plan' },
+              { label: 'Without Action Plan', value: 'Without Action Plan' },
             ]"
           /> 
     
@@ -199,10 +199,10 @@ export default defineComponent({
         case "All Negative Feedbacks":
           
           break;
-        case "With Resolutions":
+        case "With Action Plan":
           a =  a.filter(row => row.resolution != '' && row.resolution != null)
           break;
-        case "Without Resolutions":
+        case "Without Action Plan":
           a = a.filter(row => row.resolution == '' || row.resolution == null)
       
         default:
@@ -264,7 +264,7 @@ export default defineComponent({
           cols.value.push( {
             name: 'resolution',
             align: 'left',
-            label: 'Resolution',
+            label: 'Action Plan',
             field: 'resolution'
             })
           }

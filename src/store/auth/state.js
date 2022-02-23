@@ -8,7 +8,7 @@ export default function () {
       username: "",
       role: "",
       email: "",
-      confirmed: false,
+      confirmed: true,
       blocked: false,
       displayName: "",
       
