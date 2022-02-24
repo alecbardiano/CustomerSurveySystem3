@@ -1,5 +1,5 @@
 <template>
-  <q-layout class="bg-grey-2">
+  <q-layout class="bg-grey-2"  view="hHh lpR fFf">
     <q-footer bordered>
       <q-toolbar class="toolbar">
         <q-toolbar-title class="text-body1 text-center">
@@ -51,10 +51,10 @@
              
           </q-card-section>
 
-          <q-card-actions class="justify">
+          <q-card-section align="right">
             <!-- <q-btn color="primary" @click="manageAccount" no-caps flat>Manage Account</q-btn> -->
-            <q-btn @click="onSubmit" color="primary">Login</q-btn>
-          </q-card-actions>
+            <q-btn  :loading="isLoading" @click="onSubmit" color="primary" >Login</q-btn>
+          </q-card-section>
         </q-form>
         </q-card>
       </q-page>
@@ -77,7 +77,7 @@ export default defineComponent({
     const dataValues = ref([30, 40, 60, 70, 5]);
     const usernameModel =  ref("")
     const passwordModel =  ref("")
-    const isLoading = ref(true)
+    const isLoading = ref(false)
     const isPwd =  ref(true)
     const loginRefForm = ref(null)
     
@@ -100,14 +100,16 @@ export default defineComponent({
 
 
     function onSubmit(){
-        loginRefForm.value.validate().then(success => {
+        isLoading.value = true
+        loginRefForm.value.validate().then(async success => {
             if(success){
-                loginToSSOClient()
+                await loginToSSOClient()
             }
+            isLoading.value = false
         })
     }
     async function loginToSSOClient () {
-      isLoading.value = true
+      
       
       const payload = {
           identifier: usernameModel.value,
@@ -134,6 +136,17 @@ export default defineComponent({
           message: 'username and password does not match'
         })
       }
+    }
+
+    function simulateProgress (number) {
+      // we set loading state
+      loading.value[ number ] = true
+
+      // simulate a delay
+      setTimeout(() => {
+        // we're done, we reset loading state
+        loading.value[ number ] = false
+      }, 3000)
     }
 
     
