@@ -64,7 +64,7 @@
 
   <div class="q-pa-md">
     
-    <div class="layout-padding ">
+      <div class="layout-padding ">
       <div class="flex wrap gutter">
         <div class="width-1of3 sm-auto">
           <card-dashboard-feedback-count
@@ -96,8 +96,7 @@
           </card-dashboard-feedback-count>
         </div> -->
       </div>
-    </div>
-  
+      </div>  
   </div>
   <div class="q-pa-md">
     <div class="layout-padding ">
@@ -383,7 +382,7 @@
   import { defineComponent, ref, reactive, computed, onMounted, watch, onBeforeUnmount } from 'vue'
   import { getNegativeFeedbackDataRange,getPositiveFeedbackDataRange,countNegativeFeedbackByDateRange,countPositiveFeedbackByDateRange,getDivList, countPositiveFeedback, countNegativeFeedback, totalTsrsCount , totalTsrsCountByYear,getTsrYear, allOverAllRatingsFromApi, getNegativeFeedbackData,getPositiveFeedbackData,countNoFeedback, getNoAnswerFeedbackData,getTSRYearAndMonth,getAnswerBySearch,countAnswerBySearch,getCountServicePerDivision } from 'src/axioshelper.js'
   import CardDashboardFeedbackCount from '../components/CardDashboardFeedbackCount.vue'
-  import { numberOfCustomersRowsData, numberOfCustomersColumnsData} from 'src/utils/dataRetrieveTables.js'
+  import { overAllColumns, overAllRows} from 'src/utils/dataRetrieveTables.js'
   import { Chart, registerables } from 'chart.js'
   import groupBy from 'lodash'
   import moment from 'moment';
@@ -702,11 +701,11 @@
       let beforeMom = moment(before).month()
       let currYear = moment(before).year()
       let diffMonths = Math.floor(moment(after).diff(moment(before), 'months', true))
-      // console.log("diffmonths", diffMonths)
+      console.log("diffmonths", diffMonths)
       
       for(let i=0 ; i<=diffMonths; i++){
         tsrMonth = await getTSRYearAndMonth(beforeMom,currYear)
-        answerOverall = await allOverAllRatingsFromApi(i,currYear)
+        answerOverall = await allOverAllRatingsFromApi(beforeMom,currYear)
         // console.log("curryear", currYear)
         // console.log("beforeMom", beforeMom)
         tsrMonth.forEach(element => {
@@ -811,7 +810,9 @@
         }
       }
       else if(beforeDate.value && afterDate.value){
+        console.log("here oh wtf")
         await getAllTsrsByYearMonth(beforeDate.value,afterDate.value)
+        console.log("totalAnswerOverall.value.length(",totalAnswerOverall.value.length)
       }
       else{
         let tsrMonth
@@ -916,6 +917,7 @@
       
       buildRowsOverallPerformance()
 
+      console.log("totalAnswerOverall",totalAnswerOverall.value)
 
       totalAnswerOverall.value = totalAnswerOverall.value.filter(function (el) {
           return el.tsr != null;
@@ -945,7 +947,6 @@
               1: 0,
               0: 0
             };
-            // console.log("sample", sample)
             for (const element of sample) {
               
               let num = element.value

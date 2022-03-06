@@ -56,8 +56,8 @@
    
 
   
-    <q-drawer  class="bg-whitetext-black" show-if-above v-model="leftDrawerOpen" side="left" :width="200" :breakpoint="1080" bordered v-if="loginStatus != 'failed' && userLoggedin.email != ''  ">
-       <q-scroll-area class="fit">
+    <q-drawer  class="bg-whitetext-black" show-if-above v-model="leftDrawerOpen" side="left" :width="200" :breakpoint="500" bordered v-if="loginStatus != 'failed' && userLoggedin.email != ''  ">
+       
         <q-list padding>
           <q-item clickable exact to="/Home" class="text-black" label="Home">
             <q-item-section avatar>
@@ -148,10 +148,9 @@
 
           
         </q-list>
-       </q-scroll-area>
     </q-drawer>
     <q-drawer class="bg-whitetext-black" show-if-above v-model="leftDrawerOpen" side="left" :width="200" :breakpoint="500" bordered v-else>
-      <q-scroll-area class="fit">
+    
         <q-list padding>
           <q-item clickable v-ripple to="/Survey" class="text-black" label="Dashboard">
             <q-item-section avatar>
@@ -163,8 +162,6 @@
             </q-item-section>
           </q-item>
         </q-list>
-        
-      </q-scroll-area>
     </q-drawer>
 
     <q-page-container>

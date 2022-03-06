@@ -1260,6 +1260,23 @@ export const getQuestionByID = (id) => {
       })
 }
 
+export const validateCustomerAPI = (email,tsrNo) => {
+
+  return api.get('/tsrs/validateSurvey/' + email +'/' + tsrNo)
+      .then(function( response ){
+          return response.data;
+      })
+}
+
+export const countMaxDiv = (division) => {
+  // http://10.10.120.19:1337/tsrs/countMaxDiv/ATD
+  return api.get('/tsrs/countMaxDiv/' + division)
+      .then(function( response ){
+          return response.data;
+      })
+}
+
+
 
 export const updateAnswerResolution = (answers) => {
   return postResFromApi(answers)

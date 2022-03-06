@@ -128,7 +128,11 @@
     <template v-slot:top="props">
         <div class="col-4 q-table__title">Customer Satisfaction Measurement
           
-          
+          <q-input class="placeholderClass" borderless dense debounce="300" v-model="filter" placeholder="Search">
+            <template v-slot:append>
+              <q-icon class="searchClass" name="search" />
+            </template>
+          </q-input>
         </div>
         <div class="col absolute-right">
           <q-btn
@@ -137,6 +141,7 @@
             @click="props.toggleFullscreen"
             class="q-ml-md"
           />
+          
         </div>
 
           <q-space />
@@ -164,13 +169,6 @@
           
       </template>
    
-    <template v-slot:top-right>
-      <q-input class="placeholderClass" borderless dense debounce="300" v-model="filter" placeholder="Search">
-        <template v-slot:append>
-          <q-icon class="searchClass" name="search" />
-        </template>
-      </q-input>
-    </template>
 
     <!-- <template v-slot:body="props">
         <q-tr :props="props" :key="`m_${props.row.index}`">

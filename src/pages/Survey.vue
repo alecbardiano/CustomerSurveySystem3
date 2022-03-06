@@ -6,15 +6,26 @@
         class="q-gutter-md"
         ref="surveyRefForm"
       >
-      
       <div class="row">
-         
-        <q-input 
+         <q-input 
         ref="inputRef"
         filled
         lazy-rules
         :rules="[val => !!val || 'Field is required', val => /^[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}$/.test(val) || 'Field should be a valid tsr number ex. XXX-XXX-XXX-XXX']"
         outlined  v-model="TsrNo" label="TSR Number" style="width: 250px" stack-label 
+        
+        />
+      </div>
+      
+      
+      <div class="row">
+         
+        <q-input 
+        ref="emailRef"
+        filled
+        lazy-rules
+        :rules="[val => !!val || 'Field is required', val => /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(val) || 'Field should be a valid email ex. xxxx@mail.com']"
+        outlined  v-model="emailCustomer" label="Email" style="width: 250px" stack-label 
         
         />
         <!-- <q-input 
@@ -24,6 +35,7 @@
         
         /> -->
       </div>
+      
         <!-- v-model na kumukuha nung array, array of answers instantiate -->
         
         <!-- <div>
@@ -147,7 +159,7 @@
 import { useQuasar } from 'quasar'
 import { defineComponent, computed, ref, reactive, onMounted, onBeforeMount,watch } from 'vue';
 import CustomSurveyField from '../components/CustomSurveyField.vue'
-import { getQuestions, getQuestionsWithoutAns, postAnswers, checkTSRsOtherAPI, checkTSRsUlimsAPI, checkTSRIfExists } from 'src/axioshelper.js'
+import { countMaxDiv,getQuestions, getQuestionsWithoutAns, postAnswers, checkTSRsOtherAPI, checkTSRsUlimsAPI, checkTSRIfExists,validateCustomerAPI } from 'src/axioshelper.js'
 
 import viewsurveyanswer from '../components/modals/ViewSurveyAnswer.vue'
 
@@ -165,6 +177,7 @@ export default defineComponent({
     const lengthQuestions = ref(0);
 
     // TSR data for post Add TSR
+    const emailCustomer = ref(null)
     const TsrNo = ref(null)
     const serviceData = ref(null)
     const industryData = ref(null)
@@ -234,9 +247,6 @@ export default defineComponent({
           
           divData.value = "ATD"
         }
-
-        
-        
     }
 
     const getAllQuestionsFromApi = async () => {
@@ -245,7 +255,6 @@ export default defineComponent({
       try {
         // questionsNotManipulated.value = await getData(url)
         questions.value = await getQuestionsWithoutAns()
-        console.log("displayQuestions.value",questions.value)
         displayQuestions.value = questions.value.filter(Question =>{
           Question.children = questions.value.filter(child => {
             // console.log("Question",Question)
@@ -255,8 +264,6 @@ export default defineComponent({
         })
         // column
         // column in survey result
-        console.log("displayQuestions.value",displayQuestions.value)
-        console.log("questions.value",questions.value)
         cols.value = [...new Set(questions.value.map(({ id, description, value }) => ({id, description, value})))];
         
         
@@ -323,34 +330,65 @@ export default defineComponent({
 
     async function submitSurvey(){
       
-      
-      if(!(industryData.value)){
-        industryData.value = ""
-      }
       if(!(sectionData.value)){
         sectionData.value = ""
       }
-      // post answers and children/subheader answers
-      let a = await postAnswers(surveyAnswer.answers,subHeaderSurveyAnswer.answers,TsrNo.value,industryData.value,serviceData.value,divData.value,"")
-      console.log("surveyAnswer.answers","subHeaderSurveyAnswer",subHeaderSurveyAnswer.answers)
-      console.log("surveyAnswer.answers","surveyAnswer",surveyAnswer.answers)
-      // if survey form is accepted notify
-      if (a == '200'){
+      let checkedDivisionsMax = ['ATD']
+      let proceedCheckDivMax
+      checkedDivisionsMax.forEach(async element => {
+        console.log("element",element,tsrDataFromApi.value.divData)
+        if (element == divData.value){
+          console.log("pasok ba dito sa kupido")
+          proceedCheckDivMax = await countMaxDiv(divData.value)
+        }
+        
+      });
+
+      
+      
+      let proceed = await validateCustomerAPI(emailCustomer.value,TsrNo.value)
+
+      console.log("proceedCheckDivMax",proceedCheckDivMax,proceed)
+      if (proceed && proceedCheckDivMax){
+        if(!(industryData.value) || industryData.value == ''){
         $q.notify({
-            color: 'green-4',
+          color: 'red-5',
             textColor: 'white',
-            icon: 'cloud_done',
-            message: 'Submitted'
+            icon: 'warning',
+            message: 'Industry is empty'
           })
+        }else{
+          let a = await postAnswers(surveyAnswer.answers,subHeaderSurveyAnswer.answers,TsrNo.value,industryData.value,serviceData.value,divData.value,"")
+      
+          // if survey form is accepted notify
+          if (a == '200'){
+            $q.notify({
+                color: 'green-4',
+                textColor: 'white',
+                icon: 'cloud_done',
+                message: 'Submitted'
+              })
+          }else{
+            $q.notify({
+              color: 'red-5',
+                textColor: 'white',
+                icon: 'warning',
+                message: 'TSR already answered'
+              })
+            
+          }
+        }
       }else{
         $q.notify({
           color: 'red-5',
             textColor: 'white',
             icon: 'warning',
-            message: 'TSR already answered'
+            message: 'Feedback invalid '
           })
-        
       }
+      
+      // post answers and children/subheader answers
+      
     }
 
     
@@ -382,7 +420,7 @@ export default defineComponent({
     async function onSubmit () {
       surveyRefForm.value.validate().then(success => {
         // check null values from api
-        if ( divData.value != "" && serviceData.value != ""){
+        if (Object.keys(tsrDataFromApi.value).length){
  
           if (success){
             let overallAns = subHeaderSurveyAnswer.answers.find(element => element.question == 12);
@@ -428,6 +466,7 @@ export default defineComponent({
       industry: ref(null),
       comments: ref(null),
       TsrNo,
+      emailCustomer,
       CustomSurveyField,
       getAllQuestionsFromApi,
       submitSurvey,
