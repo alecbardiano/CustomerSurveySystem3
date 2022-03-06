@@ -32,7 +32,7 @@ export async function loginApi ( { commit }, payload) {
       });
  
     if (response && response.data && response.data.user) {
-      if(response.data.user.confirmed && response.data.user.blocked == false){
+      if(response.data.user.blocked == false){
         commit("setLoginApiStatus", "success");
         localStorage.setItem("isAuthenticated", "true");
         localStorage.setItem("isLoggedIn", "success");

@@ -6,15 +6,26 @@
         class="q-gutter-md"
         ref="surveyRefForm"
       >
-      
       <div class="row">
-         
-        <q-input 
+         <q-input 
         ref="inputRef"
         filled
         lazy-rules
         :rules="[val => !!val || 'Field is required', val => /^[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}$/.test(val) || 'Field should be a valid tsr number ex. XXX-XXX-XXX-XXX']"
         outlined  v-model="TsrNo" label="TSR Number" style="width: 250px" stack-label 
+        
+        />
+      </div>
+      
+      
+      <div class="row">
+         
+        <q-input 
+        ref="emailRef"
+        filled
+        lazy-rules
+        :rules="[val => !!val || 'Field is required', val => /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(val) || 'Field should be a valid email ex. xxxx@mail.com']"
+        outlined  v-model="emailCustomer" label="Email" style="width: 250px" stack-label 
         
         />
         <!-- <q-input 
@@ -24,6 +35,7 @@
         
         /> -->
       </div>
+      
         <!-- v-model na kumukuha nung array, array of answers instantiate -->
         
         <!-- <div>
@@ -48,8 +60,9 @@
             </div>
               <div class="row inline">
                 <div class="inputs">
-                  <CustomSurveyField v-if="question.id == 3" v-model="surveyAnswer.answers[parent_node_index]" :questionId="question.id" :question_type="question.question_type.id" :optionval="serviceOptions" :labelval="question.label" />
-                  <CustomSurveyField v-else v-model="surveyAnswer.answers[parent_node_index]" :questionId="question.id" :question_type="question.question_type.id" :optionval="industryOptions" :labelval="question.label" />
+                    <!-- {{question}} -->
+                  <CustomSurveyField v-if="question.id == 3" v-model="surveyAnswer.answers[parent_node_index]" :questionId="question.id" :question_type="question.question_type"  :labelval="question.label" />
+                  <CustomSurveyField v-else v-model="surveyAnswer.answers[parent_node_index]" :questionId="question.id" :question_type="question.question_type"  :labelval="question.label" />
                 </div>
               </div>
           </div>
@@ -57,8 +70,11 @@
             <p class="questions"> {{question.description}}</p>
             <div class="surveyquestions">
               <h5>Survey Questions</h5>
+               
                   <div v-for="(questionSubhead,index) in  (orderByNestedSurveyQuestions(question.children))" v-bind:key="questionSubhead.id">
                     <!-- {{ updateCnt(parent_node_index) }} -->
+                     <!-- {{questionSubhead}} -->
+                    <!-- {{questionSubhead}} -->
                     <!-- {{questionSubhead}} -->
                     <!-- {{ orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.subheader.length, 0)+ index }} -->
                     <div class="row">
@@ -67,13 +83,13 @@
                       </div>
                     <div class="row inline">
                       <div class="inputs">
-                        <div v-if="question.id == 12">
-                          {{question}}
-                          <CustomSurveyField v-model="subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index]" :questionId="questionSubhead.id" lazy-rules :rules="[val => val == '' || 'Field is required']"  :question_type="questionSubhead.question_type.id" :optionval="industryOptions" :labelval="questionSubhead.label" />
-                        </div>
+                        <!-- <div v-if="questionSubhead.id == 12">
+                          <CustomSurveyField v-model="subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index]" :questionId="questionSubhead.id" lazy-rules :rules="[val => val == '' || 'Field is required']"  :question_type="questionSubhead.question_type.id"  :labelval="questionSubhead.label" />
+                        </div> -->
                         <!-- indexing in nested v-model of surveyanswer -->
                         <!-- {{orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index}} -->
-                        <CustomSurveyField v-model="subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index]" :questionId="questionSubhead.id"  :question_type="questionSubhead.question_type.id" :optionval="industryOptions" :labelval="questionSubhead.label" />
+                        <!-- {{subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index]}} -->
+                        <CustomSurveyField v-model="subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index]" :questionId="questionSubhead.id"  :question_type="questionSubhead.question_type" :labelval="questionSubhead.label" />
                       </div>
                       <div>
                         <!-- {{subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index]}} -->
@@ -143,7 +159,7 @@
 import { useQuasar } from 'quasar'
 import { defineComponent, computed, ref, reactive, onMounted, onBeforeMount,watch } from 'vue';
 import CustomSurveyField from '../components/CustomSurveyField.vue'
-import { getQuestions, getQuestionsWithoutAns, postAnswers, checkTSRsOtherAPI, checkTSRsUlimsAPI, checkTSRIfExists } from 'src/axioshelper.js'
+import { countMaxDiv,getQuestions, getQuestionsWithoutAns, postAnswers, checkTSRsOtherAPI, checkTSRsUlimsAPI, checkTSRIfExists,validateCustomerAPI } from 'src/axioshelper.js'
 
 import viewsurveyanswer from '../components/modals/ViewSurveyAnswer.vue'
 
@@ -161,6 +177,7 @@ export default defineComponent({
     const lengthQuestions = ref(0);
 
     // TSR data for post Add TSR
+    const emailCustomer = ref(null)
     const TsrNo = ref(null)
     const serviceData = ref(null)
     const industryData = ref(null)
@@ -230,9 +247,6 @@ export default defineComponent({
           
           divData.value = "ATD"
         }
-
-        
-        
     }
 
     const getAllQuestionsFromApi = async () => {
@@ -240,9 +254,12 @@ export default defineComponent({
 
       try {
         // questionsNotManipulated.value = await getData(url)
-        questions.value = await getQuestions()
+        questions.value = await getQuestionsWithoutAns()
         displayQuestions.value = questions.value.filter(Question =>{
-          Question.children = questions.value.filter(child => child.parent?.id === Question.id )
+          Question.children = questions.value.filter(child => {
+            // console.log("Question",Question)
+            return child.parent === Question.id 
+          })
           return Question.parent === null
         })
         // column
@@ -263,6 +280,7 @@ export default defineComponent({
           })
         })
 
+        // total questions length subtract questions subheader
         lengthQuestions.value = questions.value.length
         buildArrayOfAnswers()
         
@@ -312,32 +330,65 @@ export default defineComponent({
 
     async function submitSurvey(){
       
-      
-      if(!(industryData.value)){
-        industryData.value = ""
-      }
       if(!(sectionData.value)){
         sectionData.value = ""
       }
-      // post answers and children/subheader answers
-      let a = await postAnswers(surveyAnswer.answers,subHeaderSurveyAnswer.answers,TsrNo.value,industryData.value,serviceData.value,divData.value,"")
-      // if survey form is accepted notify
-      if (a == '200'){
+      let checkedDivisionsMax = ['ATD']
+      let proceedCheckDivMax
+      checkedDivisionsMax.forEach(async element => {
+        console.log("element",element,tsrDataFromApi.value.divData)
+        if (element == divData.value){
+          console.log("pasok ba dito sa kupido")
+          proceedCheckDivMax = await countMaxDiv(divData.value)
+        }
+        
+      });
+
+      
+      
+      let proceed = await validateCustomerAPI(emailCustomer.value,TsrNo.value)
+
+      console.log("proceedCheckDivMax",proceedCheckDivMax,proceed)
+      if (proceed && proceedCheckDivMax){
+        if(!(industryData.value) || industryData.value == ''){
         $q.notify({
-            color: 'green-4',
+          color: 'red-5',
             textColor: 'white',
-            icon: 'cloud_done',
-            message: 'Submitted'
+            icon: 'warning',
+            message: 'Industry is empty'
           })
+        }else{
+          let a = await postAnswers(surveyAnswer.answers,subHeaderSurveyAnswer.answers,TsrNo.value,industryData.value,serviceData.value,divData.value,"")
+      
+          // if survey form is accepted notify
+          if (a == '200'){
+            $q.notify({
+                color: 'green-4',
+                textColor: 'white',
+                icon: 'cloud_done',
+                message: 'Submitted'
+              })
+          }else{
+            $q.notify({
+              color: 'red-5',
+                textColor: 'white',
+                icon: 'warning',
+                message: 'TSR already answered'
+              })
+            
+          }
+        }
       }else{
         $q.notify({
           color: 'red-5',
             textColor: 'white',
             icon: 'warning',
-            message: 'TSR already answered'
+            message: 'Feedback invalid '
           })
-        
       }
+      
+      // post answers and children/subheader answers
+      
     }
 
     
@@ -369,10 +420,21 @@ export default defineComponent({
     async function onSubmit () {
       surveyRefForm.value.validate().then(success => {
         // check null values from api
-        if ( divData.value != "" && serviceData.value != ""){
+        if (Object.keys(tsrDataFromApi.value).length){
  
           if (success){
-            submitSurvey()
+            let overallAns = subHeaderSurveyAnswer.answers.find(element => element.question == 12);
+            if(overallAns.value || overallAns.value != ''){
+              submitSurvey()
+            }else{
+              $q.notify({
+              color: 'red-5',
+              textColor: 'white',
+              icon: 'warning',
+              message: 'Please answer Overall Rating Question'
+              })
+            }
+            
           }
           else{
             // required field is not satisfied
@@ -404,6 +466,7 @@ export default defineComponent({
       industry: ref(null),
       comments: ref(null),
       TsrNo,
+      emailCustomer,
       CustomSurveyField,
       getAllQuestionsFromApi,
       submitSurvey,

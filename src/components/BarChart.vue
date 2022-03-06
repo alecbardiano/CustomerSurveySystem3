@@ -50,7 +50,7 @@ export default defineComponent({
         const options = ref({
              plugins: {
                 datalabels: {
-                    color: 'white',
+                    color: 'black',
                 }, 
                 legend: {
                     position: "bottom",

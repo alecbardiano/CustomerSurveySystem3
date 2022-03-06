@@ -18,10 +18,13 @@ let pdfFonts
 
 
 
-
+const csmsURL = 'http://10.10.120.19:1337/'
+      // headers: {
+      //   Authorization: `Bearer ${Auth.state.token}`
+      // }
 const api = axios.create(
   { 
-    baseURL: 'http://10.10.120.19:1337'
+    baseURL: 'http://10.10.120.19:1337/'
     // headers: {
     //   Authorization: `Bearer ${Auth.state.token}`
     // }
@@ -67,6 +70,7 @@ export default boot(({ app, router, store, }) => {
 
   app.config.globalProperties.$api = api
   app.config.globalProperties.$mailapi = mailapi
+  app.config.globalProperties.$csmsURL = csmsURL
 
   // api.interceptors.response.use( (response) => {
   //   // Return a successful response back to the calling service
@@ -148,4 +152,4 @@ export default boot(({ app, router, store, }) => {
   //       so you can easily perform requests against your app's API
 })
 
-export { api,oneshopapi,mailapi, ulimsTSRapi, xlsx, pdfMake,pdfFonts }
+export { api,oneshopapi,mailapi, ulimsTSRapi, xlsx, pdfMake,pdfFonts,csmsURL }

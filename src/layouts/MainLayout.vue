@@ -12,16 +12,52 @@
           Customer Survey Management System
         </q-toolbar-title>
         <q-space />
-           <div class="fontSize">
+        <q-btn-dropdown
+            flat
+            color="white"
+            icon="person_outline"
+            :label="userLoggedin.displayName"
+          >
+            <q-list>
+              <q-item clickable v-close-popup>
+                <q-item-section>
+                  <q-item-label><div class="row text-h6 q-mb-md">Settings</div></q-item-label>
+                  <q-item-label caption>Emloyee ID:  {{userLoggedin.username}}
+                    <!-- <pre>
+                      {{user}}
+                    </pre> -->
+                  </q-item-label>
+                </q-item-section>
+              </q-item>
+
+              <q-item clickable v-close-popup>
+                <q-item-section avatar>
+                  <q-icon name="launch" color="secondary" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label>Manage Account</q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup v-ripple to="/" @click="logout">
+                <q-item-section avatar>
+                  <q-icon name="logout" color="secondary" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label>Logout</q-item-label>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
+           <!-- <div v-if="loginStatus != 'failed' && userLoggedin.email != ''  " class="fontSize">
             Logged in: {{userLoggedin.displayName}}
-           </div>
+           </div> -->
       </q-toolbar>
     </q-header>
    
 
   
     <q-drawer  class="bg-whitetext-black" show-if-above v-model="leftDrawerOpen" side="left" :width="200" :breakpoint="500" bordered v-if="loginStatus != 'failed' && userLoggedin.email != ''  ">
-       <q-scroll-area class="fit">
+       
         <q-list padding>
           <q-item clickable exact to="/Home" class="text-black" label="Home">
             <q-item-section avatar>
@@ -53,15 +89,6 @@
             </q-item-section>
           </q-item>
 
-          <q-item clickable v-ripple to="/Question" class="text-black" label="Dashboard">
-            <q-item-section avatar>
-              <q-icon name="question_answer" />
-            </q-item-section>
-            <q-item-section>
-              Questions
-            </q-item-section>
-          </q-item>
-
           <q-expansion-item
             expand-separator
             icon="admin_panel_settings"
@@ -74,27 +101,56 @@
           </q-item>
           <q-item :content-inset-level="2" clickable  class="text-black" align="center" to="/AdminDivision" label="Per Division"  >
               <q-item-section>
-                Per Division Admin
+                Summary Per Division
             </q-item-section>
             </q-item>
+             <q-item :content-inset-level="1" clickable class="text-black"  align="center" to="/Resolutions" label="Resolutions" >
+            <q-item-section>
+                 Action Plans to Negative Feedbacks
+              </q-item-section>
+          </q-item>
           </q-expansion-item>
+          <q-expansion-item
+            v-show="userLoggedin.role.name == 'PMD'"
+            expand-separator
+            icon="library_books"
+            label="Libraries"
+          >
+          <q-item  :content-inset-level="1" clickable class="text-black"  align="center" to="/Question" label="Questions" >
+            <q-item-section avatar>
+              <q-icon name="question_answer" />
+              </q-item-section>
+            <q-item-section>
+              Questions
+            </q-item-section>
+          </q-item>
+          <q-item :content-inset-level="2" clickable  class="text-black" align="center" to="/Divisions" label="Division"  >
+          <q-item-section avatar>
+              <q-icon name="group" />
+              </q-item-section>
+              <q-item-section>
+                Divisions
+            </q-item-section>
+          </q-item>
+          </q-expansion-item>
+
+          
             
 
-          <q-item clickable v-ripple to="/" @click="logout" class="text-black" label="Logout">
+          <!-- <q-item clickable v-ripple to="/" @click="logout" class="text-black" label="Logout">
             <q-item-section avatar>
               <q-icon name="logout" />
             </q-item-section>
             <q-item-section>
               Logout
             </q-item-section>
-          </q-item>
+          </q-item> -->
 
           
         </q-list>
-       </q-scroll-area>
     </q-drawer>
     <q-drawer class="bg-whitetext-black" show-if-above v-model="leftDrawerOpen" side="left" :width="200" :breakpoint="500" bordered v-else>
-      <q-scroll-area class="fit">
+    
         <q-list padding>
           <q-item clickable v-ripple to="/Survey" class="text-black" label="Dashboard">
             <q-item-section avatar>
@@ -106,8 +162,6 @@
             </q-item-section>
           </q-item>
         </q-list>
-        
-      </q-scroll-area>
     </q-drawer>
 
     <q-page-container>

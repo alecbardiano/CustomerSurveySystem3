@@ -1,8 +1,13 @@
 <template>
       <div class="q-pa-lg" >
-                {{beforeDate}}
-                {{afterDate}}
-                <q-form ref="dateform" @submit="dataUpdateWithDate()">
+        <div class="q-pa-md">
+          <q-toggle v-model="showFilter" label="Show Filters" />
+        </div>
+                <q-form ref="dateform" @submit="dataUpdateWithDate()" v-if="showFilter">
+                    <div class="row" style="padding-bottom: 20px">
+                      <q-select v-model="division" @update:model-value="fillSectionList()" :options="divisionsWithServ" label="Division" style="width: 200px; " />
+                      <q-select v-model="service" :options="services" label="Service" style="width: 200px;  margin-left: 40px" />
+                    </div>
                   <div class="row inline">
                   <q-input outlined filled mask="date" v-model="beforeDate" lazy-rules :rules="[val => val <= afterDate || 'Field should be earlier than after date']" placeholder="mm/dd/yy" hint="Start Date" >
                     <template v-slot:append>
@@ -40,8 +45,12 @@
                 </div>
     
                 </q-form>
+
+        <div class="q-pa-md" v-show="userLoggedin.role.name == 'PMD' || userLoggedin.role.name == 'Management' ">
+          <q-toggle v-model="showFunctions" label="Show Functions" />
+        </div>
   
-        <div class="row">
+        <div class="row" v-if="showFunctions">
           <div class="col-md-4">
             <div class="row inline">
             <q-file  v-model="importFile" ref="uploadRefButton" label="Import Data "
@@ -103,7 +112,6 @@
     <q-table
       class="overallAverage"
       v-if="rows"
-      title="Customer Satisfaction Measurement"
       :rows="rows"
       :columns="cols"
       row-key="name"
@@ -111,18 +119,56 @@
       :loading="loading"
       :filter="filter"
       v-model:pagination="pagination"
+      :visible-columns="visibleColumns"
       @request="onRequest"
       binary-state-sort
       separator="cell"
     >
+
+    <template v-slot:top="props">
+        <div class="col-4 q-table__title">Customer Satisfaction Measurement
+          
+          <q-input class="placeholderClass" borderless dense debounce="300" v-model="filter" placeholder="Search">
+            <template v-slot:append>
+              <q-icon class="searchClass" name="search" />
+            </template>
+          </q-input>
+        </div>
+        <div class="col absolute-right">
+          <q-btn
+            flat round dense
+            :icon="props.inFullscreen ? 'fullscreen_exit' : 'fullscreen'"
+            @click="props.toggleFullscreen"
+            class="q-ml-md"
+          />
+          
+        </div>
+
+          <q-space />
+
+          <div v-if="$q.screen.gt.xs" class="row">
+            <div v-bind:key="tog.val" v-for="tog in toggles">
+            <q-toggle v-model="visibleColumns" :val="tog.val" color="yellow" :label="tog.label" />
+            </div>
+          </div>
+          <q-select
+            v-else
+            v-model="visibleColumns"
+            multiple
+            borderless
+            dense
+            options-dense
+            :display-value="$q.lang.table.columns"
+            emit-value
+            map-options
+            :options="cols"
+            option-value="name"
+            style="min-width: 150px"
+          />
+
+          
+      </template>
    
-    <template v-slot:top-right>
-      <q-input class="placeholderClass" borderless dense debounce="300" v-model="filter" placeholder="Search">
-        <template v-slot:append>
-          <q-icon class="searchClass" name="search" />
-        </template>
-      </q-input>
-    </template>
 
     <!-- <template v-slot:body="props">
         <q-tr :props="props" :key="`m_${props.row.index}`">
@@ -168,11 +214,13 @@
       
       <template v-slot:bottom-row>
         <q-tr>
-          <q-td v-bind:key="column.key" v-for="column in finalAverageDataRow">  
+          
+          <q-td v-bind:key="column.id" v-for="column in visibleColumnsAverage">  
+              <!-- {{column}} -->
               <p v-if="column.tsrNo">Average: </p>
               <!-- nan values remove -->
               
-              <p v-else-if="column.value != 0 && !(isNaN(column.value))">{{ column.value }}</p>
+              <p v-else-if="column.value != 0 && !(isNaN(column.value)) && column.visible">{{column.value}}</p>
             </q-td>
         </q-tr>
       </template>
@@ -184,7 +232,7 @@
     <!-- Overall Agency Citizen/ Client Satisfaction Score -->
     <q-table
         
-        title="Overall Agency Citizen/ Client Satisfaction Score"
+        :title="titleOverall"
         :rows="rowsOverall"
         :columns="colsOverall"
         :loading="overallLoading"
@@ -235,12 +283,13 @@
 <script>
 // import packages
 import { reactive, defineComponent, ref, onMounted, computed , watch,onBeforeUnmount} from 'vue'
-import { getQuestions, getTSRs,postAnswers , getOverall,deleteAll,totalTsrsCount, getDivList, totalTsrsCountByYear,getTSRYearAndMonth,getCountServicePerDivision} from 'src/axioshelper.js'
+import { getQuestions,getQuestionsWithoutAns, getTSRs,postAnswers , getOverall,deleteAll,totalTsrsCount, getDivList, totalTsrsCountByYear,getTSRYearAndMonth,getCountServicePerDivision,totalTsrsCountWithDivisions,totalTsrsCountWithDivisionsByYear} from 'src/axioshelper.js'
 import { overAllColumns, overAllRows,numberOfCustomersColumnsData,numberOfCustomersRowsData, summaryPerDivisionRows, summaryPerDivisionColumns  } from 'src/utils/dataRetrieveTables.js'
 import { exportFile, useQuasar} from 'quasar'
 import { xlsx, pdfMake } from 'boot/axios'
 import moment from 'moment';
 import orderBy from 'lodash.orderby'
+import {  useStore } from "vuex";
 
 
 //components
@@ -253,7 +302,9 @@ export default defineComponent({
   
   setup () {
   let timer
+  const store = useStore();
 
+  const visibleColumns = ref([ "tsrNo", "division", "service", "industry", "Overall Rating","publishedDate"])
   const divisioAndSectionList = ref([])
   const divisions = ref([])
 
@@ -303,7 +354,14 @@ export default defineComponent({
     rowsPerPage: 10,
     rowsNumber: 5
   })
+
+  const toggles = ref([])
   // pdf
+
+  const division = ref(null)
+  const divisionsWithServ = ref([])
+  const services = ref([])
+  const service = ref(null)
   
 
   watch(afterDate, (newValue, oldValue) => {
@@ -321,6 +379,20 @@ export default defineComponent({
     
   })
 
+  // watch(division, (newValue, oldValue) => {
+
+    
+  //   pagination.value.page = 1
+  // })
+
+  // watch(service, (newValue, oldValue) => {
+
+    
+  //   pagination.value.page = 1
+     
+    
+  // })
+
   
   
   
@@ -335,6 +407,7 @@ export default defineComponent({
   const colsOverall = ref([])
   const rowsOverall = ref([])
   const overallLoading = ref(true)
+  const titleOverall = ref("Overall Agency Citizen/ Client Satisfaction Score YTD " + new Date().getFullYear())
 
   // overall Perf for PDF
   const rowsOverallPerformance = ref([])
@@ -347,6 +420,18 @@ export default defineComponent({
    // Summary of Citizen/Client Satisfaction Survey CCSS Rating PDF
   const summaryQuestionPerDivisionRows = ref([])
   const summaryQuestionPerDivisionCols = ref([])
+  
+
+  const showFilter = ref(false)
+  const showFunctions = ref(false)
+
+  const userLoggedin = computed(() => store.getters["auth/getUserProfile"]);
+
+  
+
+  function fillSectionList(){
+    services.value = divisioAndSectionList.value.filter(div => div.division == division.value).map(div => div.service)
+  }
 
 
   // const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,mode,filter) {
@@ -359,20 +444,16 @@ export default defineComponent({
         if(beforeDate && afterDate){
           
           if(filter){
-            console.log("here?")
-            return await getTSRs(start,limit,"","",beforeDate,afterDate,mode,filter)
+            return await getTSRs(start,limit,division,service,beforeDate,afterDate,mode,filter)
           }else{
-            console.log("here??")
-            return await getTSRs(start,limit,"","",beforeDate,afterDate,mode,"")
+            return await getTSRs(start,limit,division,service,beforeDate,afterDate,mode,"")
           }
           
         }else{
           if(filter){
-            console.log("here???")
-            return await getTSRs(start,limit,"","","","",mode,filter)
+            return await getTSRs(start,limit,division,service,"","",mode,filter)
           }else{
-            console.log("here????")
-            return await getTSRs(start,limit,"","","","",mode,"")
+            return await getTSRs(start,limit,division,service,"","",mode,"")
             
           }
           
@@ -428,10 +509,9 @@ export default defineComponent({
       cols.value.push({ name: 'service', align: 'left ', label: 'Service', field: 'service'})
       cols.value.push({ name: 'industry', align: 'left', label: 'Industry', field: 'industry' })
       
-  
       for (let j =0; j < orderByPositionQuestions.value.length ; j++){
         // remove subheaders in columns filter
-        if(orderByPositionQuestions.value[j].question_type.id != 5){
+        if(orderByPositionQuestions.value[j].question_type != 5){
         let column = {
           name: '',
           align: 'left',
@@ -445,6 +525,12 @@ export default defineComponent({
         column.name = orderByPositionQuestions.value[j].description
         column.label = orderByPositionQuestions.value[j].description
         column.field = orderByPositionQuestions.value[j].id
+        let tog = {
+          val: orderByPositionQuestions.value[j].description,
+          label: column.label
+        }
+        toggles.value.push(tog)
+        
         cols.value.push(column)
         
         }
@@ -496,9 +582,15 @@ export default defineComponent({
   async function loadDivisionDataOverall(divlist){
     // console.log("divlist", divlist)
     overallLoading.value = true
+    
     if(colsOverall.value.length > 0){
       colsOverall.value = []
     }
+
+    if(beforeDate.value && afterDate.value){
+      titleOverall.value = "Overall Agency Citizen/ Client Satisfaction Score-" + moment(beforeDate.value).format('MMMM-YYYY') + " to " + moment(afterDate.value).format('MMMM-YYYY')
+    }
+
     colsOverall.value.push({ name: 'Dimension' ,align: 'left', label: 'Dimension', field: 'dimension' , style:"width: 300px" })
   
     let dataDivision = []
@@ -583,7 +675,6 @@ export default defineComponent({
   }
 
   function dateTimeToApi(value) {
-    console.log("natatawag ba to from watch")
     return moment(value).format('YYYY-MM-DD');
   }
 
@@ -605,11 +696,9 @@ export default defineComponent({
       // console.log("Filelele", file.name)
       // filename should be csms-year.xlsx any format as long as the space will be '-' and the last word will be the year in numbers 'example xxx-xx-xxx-x-2021.xlsx or any' 
       let x = file.name.split('-')
-      console.log("x",x)
       if(x){
         // .xlsx
         let dot = x[x.length-1].split('.')
-        console.log("dot",dot)
         // console.log("dot", dot)
         if(dot){
           // test same tsr number and tsr number on database and import
@@ -700,7 +789,7 @@ export default defineComponent({
           // the column names taken from label 
           body.push(mainArrayColumn);
           let copyData = data.map((rest ) => rest)
-          console.log("copy", copyData)
+          // console.log("copy", copyData)
             
             
           copyData.forEach(function(row) {
@@ -805,13 +894,7 @@ export default defineComponent({
         let copyColumns = columns.map(a => a);
         let mainArrayColumn = columns.map((a => a.label));
         body.push(mainArrayColumn);
-        const mainCounts = {
-          5: 0, 
-          4: 0,
-          3: 0, 
-          2: 0,
-          1: 0,
-        };
+        
         let copyData = data.map((rest ) => rest)
         
         let index = 0
@@ -828,7 +911,7 @@ export default defineComponent({
         let numberPrevPoor = 0
         copyData.forEach(function(row) {
             // 11 rows before new division
-            if(index % 11 == 0 ){
+            if(index % 12 == 0 ){
               body.push(
                 	["Division: ",row.division,"","","","","","","",""]
                 )
@@ -881,7 +964,7 @@ export default defineComponent({
             body.push(dataRow);
             
             index +=1
-            if (((index +4) % 11 == 0 ) || index == 7){
+            if (((index +4) % 12 == 0 ) || index == 8){
               // off set rows for other fields in the rows (no of respondents, etc)
               // every reset of every new division and service
               prevRespond = row.countsDivision
@@ -918,7 +1001,7 @@ export default defineComponent({
           body.push(mainArrayColumn);
 
           let copyData = data.map((rest ) => rest)
-          console.log("copys", copyData)
+          // console.log("copys", copyData)
             
             let prevDivision = ''
             let prevService = ''
@@ -1179,7 +1262,7 @@ export default defineComponent({
 
     
   async function generatePDF(){
-    let alltsrs
+    let alltsrs = []
     // get all tsrs
     
     if (beforeDate.value && afterDate.value){
@@ -1192,10 +1275,16 @@ export default defineComponent({
       let afterDate = new Date()
       alltsrs = await getAllTsrsByYearMonth(startDate,afterDate)
     }
-    console.log("all tsrs", alltsrs)
+    // console.log("all tsrs", alltsrs)
     buildOverall(alltsrs)
-
-    // sort by Division
+    if (alltsrs.length == 0  ){
+      $q.notify({
+        message: 'No data found, PDF Creation Failed',
+        color: 'negative',
+        position: 'top'
+      })
+    }else{
+      // sort by Division
     alltsrs = alltsrs.sort( compare );
     // sort by Service
     alltsrs = alltsrs.sort( compare2 );
@@ -1366,6 +1455,9 @@ export default defineComponent({
       var pdf = pdfMake.createPdf(dd);
       // pdf.download('Customer Survey Management System Report.pdf');
       pdf.open();
+    }
+
+    
    }
 
   async function getAllTsrsByYearMonth (before,after){
@@ -1374,12 +1466,12 @@ export default defineComponent({
     let beforeMom = moment(before).month()
     let currYear = moment(before).year()
     let diffMonths = Math.floor(moment(after).diff(moment(before), 'months', true))
-    console.log("diffmonths", diffMonths)
+    // console.log("diffmonths", diffMonths)
     
     for(let i=0 ; i<=diffMonths; i++){
       tsrMonth = await getTSRYearAndMonth(beforeMom,currYear)
-      console.log("curryear", currYear)
-      console.log("beforeMom", beforeMom)
+      // console.log("curryear", currYear)
+      // console.log("beforeMom", beforeMom)
       tsrMonth.forEach(element => {
         alltsrs.push(element)
       });
@@ -1392,12 +1484,12 @@ export default defineComponent({
       
       
     }
-    console.log("give all the love" , alltsrs)
+    // console.log("give all the love" , alltsrs)
     return alltsrs
   }
   
   async function generateExcel () {
-        let alltsrs
+        let alltsrs = []
         let dateFirstRow
         // get all tsrs needed for generate data
         if (beforeDate.value && afterDate.value){
@@ -1413,8 +1505,20 @@ export default defineComponent({
            dateFirstRow = 'January ' + currYear + ' - ' + moment(Date.now()).format('MMMM-YYYY')
         }
 
-        buildOverall(alltsrs)
-        let rowalltsrs = buildRow(alltsrs)
+        if(alltsrs.length == 0){
+          $q.notify({
+            message: 'No data found,  Excel Creation Failed',
+            color: 'negative',
+            position: 'top'
+          })
+        }else{
+          buildOverall(alltsrs)
+          alltsrs = alltsrs.sort( compare );
+    // sort by Service
+          alltsrs = alltsrs.sort( compare2 );
+          
+          []
+          let rowalltsrs = buildRow(alltsrs)
     // for overall column table Overall Agency Citizen/ Client Satisfaction Score' deconstruct to get only field and label
         let overallCol = colsOverall.value.map(({ field, label }) => ({field, label}));
         // all survey  Customer Satisfaction Measurement
@@ -1498,6 +1602,9 @@ export default defineComponent({
 
         /* generate an XLSX file */
         xlsx.writeFile(Workbook, dateFirstRow.toString() +" CSMS Raw Data .xlsx");
+        }
+
+        
         
       }
     
@@ -1508,13 +1615,23 @@ export default defineComponent({
     // first to be called
     try {
         
-        questions.value = await getQuestions() // check
-    }catch{
-      
+        questions.value = await  getQuestionsWithoutAns() // check
+        // questions.value = await  getQuestions() // check
+        
+    }catch (err){
+      console.log("error", error)
     }
     
+    // filters
     divisioAndSectionList.value = await getDivList()
+    divisionsWithServ.value = [...new Set(divisioAndSectionList.value.map(a => a.division))]
+
+    // count of services per division
     divisions.value = await getCountServicePerDivision()
+    let a = await getQuestionsWithoutAns()
+
+    // console.log("A",a )
+    // console.log("questions.value",questions.value)
     // divisions.value = divisions.value.map( item => item.division)
 
    
@@ -1535,6 +1652,7 @@ export default defineComponent({
 
   async function dataUpdateWithDate(){
     showLoadingData()
+    pagination.value.page = 1
     let suc = await dateform.value.validate()
     if(suc){
       await onRequest({
@@ -1585,8 +1703,8 @@ export default defineComponent({
       migrationData.forEach(r => {
       
           // Object { foo: "bar", x: 42 }
-        console.log("r", r, " year", year)
-        console.log("rmonth", r.Month, " year", year)
+        // console.log("r", r, " year", year)
+        // console.log("rmonth", r.Month, " year", year)
         let dateyear = r.Month.toString() + ' ' + year.toString()
         
         let datesubmit = new Date(dateyear)
@@ -1622,14 +1740,14 @@ export default defineComponent({
       const uniqueValues = new Set(finalArrObj.map(v => v.tsrNo));
       const nounique = (finalArrObj.map(v => v.tsrNo));
       const uniqarr = Array.from(uniqueValues);
-      console.log("finalArrObj.length",finalArrObj.length)
-      console.log("uniqueValues.length",uniqueValues.length)
-      console.log("finalArrObj.length",finalArrObj)
-      console.log("uniqueValues.length",uniqueValues)
+      // console.log("finalArrObj.length",finalArrObj.length)
+      // console.log("uniqueValues.length",uniqueValues.length)
+      // console.log("finalArrObj.length",finalArrObj)
+      // console.log("uniqueValues.length",uniqueValues)
       let difference = uniqarr
                  .filter(x => !nounique.includes(x))
                  .concat(nounique.filter(x => !uniqarr.includes(x)));
-      console.log("intersection", difference)
+      // console.log("intersection", difference)
 
       if (uniqueValues.size < finalArrObj.length) {
         // duplicates found true if 1; 0 if none
@@ -1637,7 +1755,7 @@ export default defineComponent({
       }else{
         for (const arrayItem of finalArrObj) {
           let answers = []
-          console.log("arrayitem", arrayItem)
+          // console.log("arrayitem", arrayItem)
           let resCode = await postAnswers(answers,arrayItem.answers,arrayItem.tsrNo,arrayItem.industry,arrayItem.service,arrayItem.division,arrayItem.submittedAt)
           if (resCode != '200'){
             
@@ -1660,21 +1778,33 @@ export default defineComponent({
 
   async function fetchFromServer (startRow, count, filter, sortBy, descending) {
         // console.log("startrow fetch", startRow,count)
-        console.log("beforeDate.value && afterDate.value fetch",beforeDate.value ,afterDate.value)
+        // console.log("beforeDate.value && afterDate.value fetch",beforeDate.value ,afterDate.value)
+        let mode
+        if(division.value || service.value ){
+          mode = 4
+        }else{
+          mode = 1
+        }
         if (beforeDate.value && afterDate.value){
+          // console.log("if")
+          // console.log("division.value",division.value)
+          // console.log("service.value",service.value)
           if(filter){
-            tsrList.value= await getTSRsFromApi(startRow,count,"","",beforeDate.value,afterDate.value,1,filter)
+            tsrList.value= await getTSRsFromApi(startRow,count,division.value,service.value,beforeDate.value,afterDate.value,mode,filter)
           }else{
-            tsrList.value= await getTSRsFromApi(startRow,count,"","",beforeDate.value,afterDate.value,1,"")
+            tsrList.value= await getTSRsFromApi(startRow,count,division.value,service.value,beforeDate.value,afterDate.value,mode,"")
           }
           
           // console.log("tsrList.value before true and after true ", tsrList.value )
         }
         else{
+          // console.log("else")
+          // console.log("division.value",division.value)
+          // console.log("service.value",service.value)
           if(filter){
-            tsrList.value = await getTSRsFromApi(startRow,count,"","",today+'-01-01',today+'-12-31',1,filter)
+            tsrList.value = await getTSRsFromApi(startRow,count,division.value,service.value,today+'-01-01',today+'-12-31',mode,filter)
           }else{
-            tsrList.value = await getTSRsFromApi(startRow,count,"","",today+'-01-01',today+'-12-31',1,"")
+            tsrList.value = await getTSRsFromApi(startRow,count,division.value,service.value,today+'-01-01',today+'-12-31',mode,"")
           }
           
           // console.log("tsrList.value after ", tsrList.value )
@@ -1710,8 +1840,13 @@ export default defineComponent({
       return rowsTable.value
       
     }
-    async function averageLastTable (cols,rows){
-      let x = cols.map(a => a.field);
+    function averageLastTable (cols,rows){
+      let x = cols.map(a => {
+        return {
+          field: a.field,
+          label: a.name
+        }
+        });
       
       // const unique = [...new Set(cols.map(item => item.group))]; // [ 'A', 'B']
       // name of all columns
@@ -1720,12 +1855,13 @@ export default defineComponent({
       for(let i =0; i< x.length; i++){
         let avgObv = {}
         // build last row data object with key being the questionID
-        avgObv[x[i]] = []
+        avgObv[x[i].field] = []
+        avgObv['id'] = x[i].label
         //  push array of answers per question
         
         // map all keys with value and return in to the array
         let xy = rows.map(function(item){ 
-          return item[x[i]]; 
+          return item[x[i].field]; 
           });
         // console.log("xy", xy)
 
@@ -1747,7 +1883,7 @@ export default defineComponent({
         }else{
           avgObv['value'] = val
         }
-        
+        avgObv['visible'] = false
         avgArrayWithKeys.push(avgObv)
         
       }
@@ -1766,13 +1902,23 @@ export default defineComponent({
 
       // check whether there is a given date
       if(beforeDate.value && afterDate.value){
-        // beforeDate.value =  dateTime(beforeDate.value)
-        // afterDate.value =  dateTime(afterDate.value)
-        totalTsrsCount.value = await totalTsrsCount(beforeDate.value, afterDate.value,filter)
+        beforeDate.value =  dateTime(beforeDate.value)
+        afterDate.value =  dateTime(afterDate.value)
+        if(division.value || service.value){
+          totalTsrsCount.value = await totalTsrsCountWithDivisions(division.value,service.value,beforeDate.value, afterDate.value,filter)
+        }else{
+          totalTsrsCount.value = await totalTsrsCount(beforeDate.value, afterDate.value,filter)
+        }
+        // console.log("totalTsrsCount.value ",totalTsrsCount.value )
         
       }else{
         let currYear = new Date().getFullYear()
-        totalTsrsCount.value  = await totalTsrsCountByYear(currYear,filter)
+        if(division.value || service.value){
+          totalTsrsCount.value = await totalTsrsCountWithDivisionsByYear(division.value,service.value,currYear,filter)
+        }else{
+          totalTsrsCount.value  = await totalTsrsCountByYear(currYear,filter)
+        }
+        
       }
 
       //
@@ -1783,7 +1929,7 @@ export default defineComponent({
           dimension: orderByPositionQuestions.value[i].description,
           id: orderByPositionQuestions.value[i].id
         }
-          if(orderByPositionQuestions.value[i].question_type.id == 2){
+          if(orderByPositionQuestions.value[i].question_type == 2){
             rowsOverall.value.push(row)
           }
         
@@ -1798,44 +1944,43 @@ export default defineComponent({
       loading.value = true
 
       // emulate server
-      setTimeout(async () => {
+
        
 
-       // pagination count
-        pagination.value.rowsNumber = totalTsrsCount.value
-        // get all rows if "All" (0) is selected
-        
-        
+      // pagination count
+      pagination.value.rowsNumber = totalTsrsCount.value
+      // get all rows if "All" (0) is selected
+      
+      
 
-        // calculate starting row of data
-        const startRow = (page - 1) * rowsPerPage
+      // calculate starting row of data
+      const startRow = (page - 1) * rowsPerPage
 
-        const fetchCount = rowsPerPage === 0 ? totalTsrsCount.value : rowsPerPage
-        
-        
-        const returnedData = await fetchFromServer(startRow, fetchCount, filter, sortBy, descending) 
-        console.log("returnedData",returnedData)
-        // fetch data from "server"
-        
-        divisionList.value = [...new Set(tsrList.value.map(item => item.division))].filter(function(val) { return val !== null; });
-       
+      const fetchCount = rowsPerPage === 0 ? totalTsrsCount.value : rowsPerPage
+      
+      
+      const returnedData = await fetchFromServer(startRow, fetchCount, filter, sortBy, descending) 
+      // console.log("returnedData",returnedData)
+      // fetch data from "server"
+      
+      divisionList.value = [...new Set(tsrList.value.map(item => item.division))].filter(function(val) { return val !== null; });
+      
 
-        // clear out existing data and add new
-        rows.value.splice(0, rows.value.length, ...returnedData)
+      // clear out existing data and add new
+      rows.value.splice(0, rows.value.length, ...returnedData)
 
-        // dynamic average per column
-        finalAverageDataRow.value  = await averageLastTable(cols.value,rows.value)
+      // dynamic average per column
+      finalAverageDataRow.value  = averageLastTable(cols.value,rows.value)
 
-        // don't forget to update local pagination object
-        pagination.value.page = page
-        pagination.value.rowsPerPage = rowsPerPage
-        pagination.value.sortBy = sortBy
-        pagination.value.descending = descending
+      // don't forget to update local pagination object
+      pagination.value.page = page
+      pagination.value.rowsPerPage = rowsPerPage
+      pagination.value.sortBy = sortBy
+      pagination.value.descending = descending
 
-        // ...and turn of loading indicator
-        loading.value = false
-        overallLoading.value = false
-      }, 500)
+      // ...and turn of loading indicator
+      loading.value = false
+      overallLoading.value = false
 
       
   }
@@ -1872,13 +2017,38 @@ export default defineComponent({
       colsOverall,
       overallLoading,
       overAllAverage,
+      titleOverall,
       //file upload
       importFile,
       fileUpload,
       //delete
       // deleteAnswers,
       showLoading,
-      dataUpdateWithDate
+      dataUpdateWithDate,
+      // filter divisions
+      division,
+      service,
+      services,
+      divisions,
+      fillSectionList,
+      divisionsWithServ,
+      showFilter,
+      showFunctions,
+      visibleColumns,
+      visibleColumnsAverage:  computed(() => {
+        finalAverageDataRow.value.forEach(element => {
+          let arr = Object.values(visibleColumns.value)
+          if (arr.includes(element.id) ){
+            element.visible = true
+          }else{
+            element.visible = false
+          }
+          
+        });
+        return finalAverageDataRow.value.filter(a => a.visible)
+      }),
+      toggles,
+      userLoggedin
     }
   }
   
