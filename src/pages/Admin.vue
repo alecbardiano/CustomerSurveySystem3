@@ -1756,7 +1756,7 @@ export default defineComponent({
         for (const arrayItem of finalArrObj) {
           let answers = []
           // console.log("arrayitem", arrayItem)
-          let resCode = await postAnswers(answers,arrayItem.answers,arrayItem.tsrNo,arrayItem.industry,arrayItem.service,arrayItem.division,arrayItem.submittedAt)
+          let resCode = await postAnswers(answers,arrayItem.answers,arrayItem.tsrNo,arrayItem.industry,arrayItem.service,arrayItem.division,arrayItem.submittedAt,"")
           if (resCode != '200'){
             
             return 1

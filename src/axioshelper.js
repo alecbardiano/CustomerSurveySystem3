@@ -8,6 +8,13 @@ let today = moment().year()
 let datetime = todayDate
 
 
+export const getDataFromTsrSys = async (tsrNumber) => {
+  return await api.get('tsrs/getTsrSystems/'+tsrNumber)
+    .then(function( response ){
+        return response.data
+    })
+}
+
 const getTSRNoFromULIMSrSystems = async function (tsrNumber) {
      // check tsr from ULIMS
      return await ulimsTSRapi.get('/gettsr?tsr='+tsrNumber)
@@ -480,7 +487,7 @@ const getAnswersForOverall = function (division,service,questionID,beforeDate,af
 
 }
  
-const postAnswersToBackend = async function(answers,subheaderans,tsrNo,industry,service,division,dateImport) {
+const postAnswersToBackend = async function(answers,subheaderans,tsrNo,industry,service,division,dateImport,email) {
   
   let errorMessage = ""
   let submitDate
@@ -572,7 +579,7 @@ try {
 
   }
   if (flagNegative == 1){
-    await sendEmailNegativeFeedback(resultTsr)
+    await sendEmailNegativeFeedback(resultTsr,email)
   }
   // all good, all post requests are successful
   return resStatus
@@ -583,7 +590,7 @@ try {
 
 }
 
-const sendEmailNegativeFeedback = async function(tsr) {
+const sendEmailNegativeFeedback = async function(tsr,email) {
       let tsrNo = tsr.tsrNo
       let uid = tsr.uuid
       // console.log("data",data)
@@ -882,7 +889,7 @@ const getPositiveFeedbackDataDaterange = function (start,limit,beforeDate,afterD
 const negativeFeedbackCountDataResolutions = function (start,limit,division,service,beforeDate,afterDate)  {
   let before = moment(beforeDate).format('YYYY-MM-DD');
   let after = moment(afterDate).format('YYYY-MM-DD');
-  return api.get('/answers/?_start='+start+'&_limit='+limit+'&tsr.division_contains='+division+'&tsr.service_contains='+service+'&value_lte=2&value_gt=0&question.question_type=2&tsr.submittedAt_gte='+before+'&tsr.submittedAt_lte='+after,{
+  return api.get('/answers/?_start='+start+'&_limit='+limit+'&tsr.division_contains='+division+'&tsr.service_contains='+service+'&value_lte=2&value_gt=0&question.question_type=2&tsr.submittedAt_gte='+before+'&tsr.submittedAt_lte='+after+'&_sort=tsr.submittedAt:DESC',{
       }) 
       .then(function( response ){
           return response.data;
@@ -1158,8 +1165,8 @@ export const getQuestionTypes = () => {
   return getAllQuestionTypes()
 }
 
-export const postAnswers = (answers,subs,tsrNo,industry,service,division,importDate) => {
-  return postAnswersToBackend(answers,subs,tsrNo,industry,service,division,importDate)
+export const postAnswers = (answers,subs,tsrNo,industry,service,division,importDate,email) => {
+  return postAnswersToBackend(answers,subs,tsrNo,industry,service,division,importDate,email)
 }
 
 export const postQuestion = (question) => {
@@ -1281,6 +1288,13 @@ export const countMaxDiv = (division) => {
 export const updateAnswerResolution = (answers) => {
   return postResFromApi(answers)
 }
+
+export const postRateApp = (rating) => {
+  rating.value = rating.value.toString();
+  return api.post("/ratings/", rating).then(function (response) {
+    return response.data;
+  });
+};
 
 
 
