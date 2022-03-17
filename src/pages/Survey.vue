@@ -1,6 +1,7 @@
 <template>
   <q-page>
     <div class="q-pa-md">
+      <q-btn @click="showLoading" label="clickme" />
       <q-form @submit="onSubmit" class="q-gutter-md" ref="surveyRefForm">
         <div class="row">
           <q-input
@@ -304,6 +305,7 @@ import {
   reactive,
   onMounted,
   onBeforeMount,
+  onBeforeUnmount,
   watch,
 } from "vue";
 import CustomSurveyField from "../components/CustomSurveyField.vue";
@@ -317,7 +319,7 @@ import {
   checkTSRIfExists,
   postRateApp,
   validateCustomerAPI,
-  getDataFromTsrSys
+  getDataFromTsrSys,
 } from "src/axioshelper.js";
 
 import viewsurveyanswer from "../components/modals/ViewSurveyAnswer.vue";
@@ -328,6 +330,7 @@ export default defineComponent({
   name: "Survey",
   components: { CustomSurveyField },
   setup() {
+    let timer;
     const $q = useQuasar();
     const surveyRefForm = ref(null);
     const questions = ref([]);
@@ -392,6 +395,7 @@ export default defineComponent({
       // tsrDataFromApi.value = await checkTSRsOtherAPI(newValue)
       // tsrDataFromApi.value = tsrDataFromApi.value[0]
       // // { "name": "Machining (Precision)", "div": "PD", "sectionCode": "PDS", "serviceCode": "MAPR", "costCenter": "28" }
+      console.log("HeretsrDataFromApi.value", tsrDataFromApi.value);
       if (tsrDataFromApi.value) {
         industryData.value = tsrDataFromApi.value.indusry;
         serviceData.value = tsrDataFromApi.value.service;
@@ -453,6 +457,25 @@ export default defineComponent({
       return orderBy(displayQuestions.value, orderKey.value);
     });
 
+    function showLoading() {
+      $q.loading.show({
+        message: "Please wait for data to be submitted..",
+        boxClass: "bg-grey-2 text-grey-9",
+        spinnerColor: "primary",
+      });
+    }
+
+    onBeforeUnmount(() => {
+      if (timer !== void 0) {
+        clearTimeout(timer);
+        $q.loading.hide();
+      }
+    });
+
+    function hideLoading() {
+      timer = void 0;
+      $q.loading.hide();
+    }
     // for child questions in a subheader
     function orderByNestedSurveyQuestions(q) {
       // order by position
@@ -535,13 +558,14 @@ export default defineComponent({
             message: "Industry is empty",
           });
         } else {
+          showLoading();
           let a = await postAnswers(
             surveyAnswer.answers,
             subHeaderSurveyAnswer.answers,
             TsrNo.value,
-            industryData.value,
-            serviceData.value,
-            divData.value,
+            tsrDataFromApi.value.industry,
+            tsrDataFromApi.value.service,
+            tsrDataFromApi.value.division,
             "",
             emailCustomer.value
           );
@@ -549,6 +573,7 @@ export default defineComponent({
           // if survey form is accepted notify
           if (a == "200") {
             clearFields();
+            hideLoading();
             $q.notify({
               color: "green-4",
               textColor: "white",
@@ -667,6 +692,7 @@ export default defineComponent({
       sectionData,
       clearFields,
       submitRateAppSurvey,
+      showLoading,
     };
   },
 });
