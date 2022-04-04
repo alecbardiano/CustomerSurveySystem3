@@ -380,7 +380,7 @@
 <script type="text/javascript">
 
   import { defineComponent, ref, reactive, computed, onMounted, watch, onBeforeUnmount } from 'vue'
-  import { getNegativeFeedbackDataRange,getPositiveFeedbackDataRange,countNegativeFeedbackByDateRange,countPositiveFeedbackByDateRange,getDivList, countPositiveFeedback, countNegativeFeedback, totalTsrsCount , totalTsrsCountByYear,getTsrYear, allOverAllRatingsFromApi, getNegativeFeedbackData,getPositiveFeedbackData,countNoFeedback, getNoAnswerFeedbackData,getTSRYearAndMonth,getAnswerBySearch,countAnswerBySearch,getCountServicePerDivision } from 'src/axioshelper.js'
+  import { findOverallPerformanceCenterPercentage,findOverallPerformanceCenter,findNumberCustomer,getNegativeFeedbackDataRange,getPositiveFeedbackDataRange,countNegativeFeedbackByDateRange,countPositiveFeedbackByDateRange,getDivList, countPositiveFeedback, countNegativeFeedback, totalTsrsCount , totalTsrsCountByYear,getTsrYear, allOverAllRatingsFromApi, getNegativeFeedbackData,getPositiveFeedbackData,countNoFeedback, getNoAnswerFeedbackData,getTSRYearAndMonth,getAnswerBySearch,countAnswerBySearch,getCountServicePerDivision } from 'src/axioshelper.js'
   import CardDashboardFeedbackCount from '../components/CardDashboardFeedbackCount.vue'
   import { overAllColumns, overAllRows} from 'src/utils/dataRetrieveTables.js'
   import { Chart, registerables } from 'chart.js'
@@ -607,7 +607,6 @@
 
     async function loadCharts(){
       
-      console.log("rowsnumberOfCustomers 777 pretty boy",rowsnumberOfCustomers.value)
       let dataArr = []
       let custArr = []
       let custArrServiceArea = []
@@ -648,7 +647,6 @@
         keys.shift()  
       }
       
-      console.log("mouthfu;", keys)
       //line graph
       keys.forEach(element => {
         let arr = rowsnumberOfCustomers.value.map(a =>
@@ -701,7 +699,6 @@
       let beforeMom = moment(before).month()
       let currYear = moment(before).year()
       let diffMonths = Math.floor(moment(after).diff(moment(before), 'months', true))
-      console.log("diffmonths", diffMonths)
       
       for(let i=0 ; i<=diffMonths; i++){
         tsrMonth = await getTSRYearAndMonth(beforeMom,currYear)
@@ -739,259 +736,186 @@
       totalAnswerOverall.value = []
       
       totalPerField.value = []
+      let totalPercentRow = 0
 
+
+      buildRowsCustomers()
+      buildRowsOverallPerformance()
 
       
-
-      
-      const mainCounts = {
-          5: 0, 
-          4: 0,
-          3: 0, 
-          2: 0,
-          1: 0,
-          0: 0,
-        };
-
       
       tsrs.value = []
       // let a = await getTsrYear(currentYear.value)
       // console.log("aaaaa", a)
       
       if (yearTsr.value){
-        let tsrMonth
-        let answersOverall
-        for(let i=0 ; i<12; i++){
-          tsrMonth = await getTSRYearAndMonth(i,yearTsr.value)
-          answersOverall = await allOverAllRatingsFromApi(i,yearTsr.value)
-          tsrMonth.forEach(element => {
-            tsrs.value.push(element)
-          });
-          answersOverall.forEach(element => {
-            totalAnswerOverall.value.push(element)
-          });
-          
-        }
+        let before = new Date(yearTsr.value, 0, 1)
+        let after = new Date(yearTsr.value, 11, 31)
+        let arr = await findNumberCustomer(before ,after)
+        rowsnumberOfCustomers.value.forEach(row => {
+          let totalPerMonth = 0
+          arr.forEach(element => {
+          let month = element.monthYear.toString().split('-')[1]
+          if (row.id == month){
+            row[element.keyDiv] = element.countDiv
+            totalPerMonth += element.countDiv
+            }
+          }); 
+          row.total = totalPerMonth
+        })
+        let arr2 = await findOverallPerformanceCenter(before ,after)
+        let arr3 = await findOverallPerformanceCenterPercentage(before ,after)
+        rowsOverallPerformance.value.forEach(row => {
+          let totalPerMonth = 0
+          arr2.forEach(element => {
+          if (row.id == element.value.toString()){
+            row[element.keyDiv] = element.resultPercent.toString() + '%'
+            // totalPerMonth += element.countDiv
+          }
+          }); 
+          arr3.forEach(element3 => {
+          if (row.id == element3.value2.toString()){
+            totalPercentRow += element3.resultPercent
+            row['percentage'] = element3.resultPercent.toString() + '%'
+            row['countOverall'] = parseFloat(element3.resultPercent)
+            // totalPerMonth += element.countDiv
+          }
+          }); 
+        })
       }
       else if(quarterTSR.value){
-        let tsrMonth
-        let answersOverall
-        let quart
+        let after
+        let before
         switch(quarterTSR.value) {
           case 1:
             // code block
-            quart = 0
+            before = new Date(yearTsrQuarter.value, 0, 1)
+            after = new Date(yearTsrQuarter.value, 2, 31)
             break;
           case 2:
             // code block
-            quart = 3
+            before = new Date(yearTsrQuarter.value, 3, 1)
+            after = new Date(yearTsrQuarter.value, 5, 30)
             break;
           case 3:
-            quart = 6
+            before = new Date(yearTsrQuarter.value, 6, 1)
+            after = new Date(yearTsrQuarter.value, 8, 30)
             // code block
             break;
           case 4:
-            quart = 9
+            before = new Date(yearTsrQuarter.value, 9, 1)
+            after = new Date(yearTsrQuarter.value, 11, 31)
             // code block
             break;
           default:
             // code block
         }
-        for(let i=quart ; i<quart+3; i++){
-          tsrMonth = await getTSRYearAndMonth(i,yearTsrQuarter.value)
-          answersOverall = await allOverAllRatingsFromApi(i,yearTsrQuarter.value)
-          tsrMonth.forEach(element => {
-            tsrs.value.push(element)
-          });
-          answersOverall.forEach(element => {
-            totalAnswerOverall.value.push(element)
-          });
-          
-        }
+        // months
+        let arr = await findNumberCustomer(before ,after)
+        rowsnumberOfCustomers.value.forEach(row => {
+          let totalPerMonth = 0
+          arr.forEach(element => {
+          let month = element.monthYear.toString().split('-')[1]
+          if (row.id == month){
+            row[element.keyDiv] = element.countDiv
+            totalPerMonth += element.countDiv
+            }
+          }); 
+          row.total = totalPerMonth
+        })
+        //overall
+        let arr2 = await findOverallPerformanceCenter(before ,after)
+        let arr3 = await findOverallPerformanceCenterPercentage(before ,after)
+        rowsOverallPerformance.value.forEach(row => {
+          let totalPerMonth = 0
+          arr2.forEach(element => {
+          if (row.id == element.value.toString()){
+            row[element.keyDiv] = element.resultPercent.toString() + '%'
+            // totalPerMonth += element.countDiv
+            }
+          }); 
+          arr3.forEach(element3 => {
+          if (row.id == element3.value2.toString()){
+            totalPercentRow += element3.resultPercent
+            row['percentage'] = element3.resultPercent.toString() + '%'
+            row['countOverall'] = parseFloat(element3.resultPercent)
+            // totalPerMonth += element.countDiv
+          }
+          }); 
+        })
       }
       else if(beforeDate.value && afterDate.value){
-        console.log("here oh wtf")
-        await getAllTsrsByYearMonth(beforeDate.value,afterDate.value)
-        console.log("totalAnswerOverall.value.length(",totalAnswerOverall.value.length)
+        let arr = await findNumberCustomer(beforeDate.value ,afterDate.value)
+        rowsnumberOfCustomers.value.forEach(row => {
+          let totalPerMonth = 0
+          arr.forEach(element => {
+          let month = element.monthYear.toString().split('-')[1]
+          if (row.id == month){
+            row[element.keyDiv] = element.countDiv
+            totalPerMonth += element.countDiv
+            }
+          }); 
+          row.total = totalPerMonth
+        })
+        let arr2 = await findOverallPerformanceCenter(beforeDate.value ,afterDate.value)
+        let arr3 = await findOverallPerformanceCenterPercentage(beforeDate.value ,afterDate.value)
+        rowsOverallPerformance.value.forEach(row => {
+          let totalPerMonth = 0
+          arr2.forEach(element => {
+          if (row.id == element.value.toString()){
+            row[element.keyDiv] = element.resultPercent.toString() + '%'
+            // totalPerMonth += element.countDiv
+            }
+          }); 
+          arr3.forEach(element3 => {
+          if (row.id == element3.value2.toString()){
+            totalPercentRow += element3.resultPercent
+            row['percentage'] = element3.resultPercent.toString() + '%'
+            row['countOverall'] = parseFloat(element3.resultPercent)
+            // totalPerMonth += element.countDiv
+          }
+          }); 
+        })
       }
       else{
-        let tsrMonth
-        let answersOverall
-        for(let i=0 ; i<12; i++){
-          tsrMonth = await getTSRYearAndMonth(i,currentYear.value)
-          answersOverall = await allOverAllRatingsFromApi(i,currentYear.value)
-          // console.log("answersOverall",answersOverall)
-          tsrMonth.forEach(element => {
-            tsrs.value.push(element)
-          });
-          answersOverall.forEach(element => {
-            totalAnswerOverall.value.push(element)
-          });
-        }
-        // tsrs.value = await getTsrYear(yearTsr.value)
-        // totalAnswerOverall.value = await allOverAllRatingsFromApi("","",currentYear.value)
         
-      }
-      if(modeDashboard.value != "Date Range"){
-        buildRowsCustomers()
-        var result = _(tsrs.value)
-        .groupBy(v => moment(v.submittedAt).format('MMMM'))
-        .value();
-        // console.log("results", result)
-
-          for (var key in result) {
-              let totalRespondentsPerMonth = 0
-              if (result.hasOwnProperty(key)) {
-                let row = {}
-                let totalPerMonth = 0
-                row['month'] = key
-                // console.log("keys 777", key)
-                
-                
-                let temp = result[key]
-                // console.log("temp", temp)
-                divisionsAndSections.value.forEach(key2 => {
-                  
-                    let stringColField = key2.keyname
-                    // filter all data
-                    let sample = temp.filter((elementTSR) => {
-                    if(elementTSR.division === key2.division && elementTSR.service === key2.service){
-                      // console.log(key2 + ' - ', element )
-                      return elementTSR
-                    }
-                    
-                    })
-                    // console.log("rowsnumberOfCustomers",rowsnumberOfCustomers.value)
-                    let x = rowsnumberOfCustomers.value.find(x => x.month === key);
-                    x[stringColField] = sample.length
-                    totalPerMonth += sample.length
-                })
-                let rowMonth = rowsnumberOfCustomers.value.find(x => x.month === key);
-                // console.log("rowmonth error", rowMonth)
-                rowMonth['total'] = totalPerMonth
-                // console.log("totalpermonth", totalPerMonth)
-                
-
-                
-              }
-          }
-
-      }else{
-        var result = _(tsrs.value)
-        .groupBy(v => moment(v.submittedAt).format('MMMM-YYYY'))
-        .value();
-        let index = 1
-        for (var key in result) {
-            if (result.hasOwnProperty(key)) {
-              let row = {}
-              let totalPerMonth = 0
-              row['month'] = key
-              
-              let temp = result[key]
-              divisionsAndSections.value.forEach(element => {
-                let stringColField = element.keyname
-                  // filter all data
-                  let sample = temp.filter((elementTSR) => {
-                  if(elementTSR.tsrNo){
-                    if(elementTSR.division == element.division && elementTSR.service == element.service){
-                      // console.log("pasok oh loko" )
-                      return elementTSR
-                    }
-                  }
-                  
-                  })
-                  row[stringColField] = sample.length ? sample.length : 0
-                  totalPerMonth += sample.length
-              });
-                  
-              // total horizontal
-              row['total'] = Math.round(totalPerMonth)
-              row['id'] = index+=1
-              // totalPerMonth
-              
-              rowsnumberOfCustomers.value.push(row)
+        let arr = await findNumberCustomer("","")
+        rowsnumberOfCustomers.value.forEach(row => {
+          let totalPerMonth = 0
+          arr.forEach(element => {
+            let month = element.monthYear.toString().split('-')[1]
+            if (row.id == month){
+              row[element.keyDiv] = element.countDiv
+              totalPerMonth += element.countDiv
             }
-        }
-
-      } 
-      
-      buildRowsOverallPerformance()
-
-      console.log("totalAnswerOverall",totalAnswerOverall.value)
-
-      totalAnswerOverall.value = totalAnswerOverall.value.filter(function (el) {
-          return el.tsr != null;
+          }); 
+          row.total = totalPerMonth
+        
+        
         });
-      // total overall 
-      // key is the division
-      // element is the service
-        divisionsAndSections.value.forEach(key => {
-           
-            let stringColField = key.keyname
-            // filter all answer overall specific to tsr
-            let sample = totalAnswerOverall.value.filter((elementTSR) => {
-            if(elementTSR.tsr){
-              // console.log("elementTSR", elementTSR)
-              if(elementTSR.tsr.division == key.division && elementTSR.tsr.service == key.service){
-                return elementTSR
-              }
+        let arr2 = await findOverallPerformanceCenter("","")
+        let arr3 = await findOverallPerformanceCenterPercentage("","")
+        rowsOverallPerformance.value.forEach(row => {
+          let totalPerMonth = 0
+          arr2.forEach(element => {
+          if (row.id == element.value.toString()){
+            row[element.keyDiv] = element.resultPercent.toString() + '%'
+            // totalPerMonth += element.countDiv
             }
-          })
-          
-          // count per service 
-            const counts = {
-              5: 0, 
-              4: 0,
-              3: 0, 
-              2: 0,
-              1: 0,
-              0: 0
-            };
-            for (const element of sample) {
-              
-              let num = element.value
-              if (num == 1){
-                counts[1] +=1
-                mainCounts[1] +=1
-              }else if ( num == 2){
-                counts[2] +=1
-                mainCounts[2] +=1
-              }else if(num ==3 ){
-                counts[3] +=1
-                mainCounts[3] +=1
-              }else if(num == 4){
-                counts[4] +=1
-                mainCounts[4] +=1
-              }else if(num == 5){
-                counts[5] +=1
-                mainCounts[5] +=1
-              }
-              else{
-                counts[0] += 1
-                mainCounts[0] +=1
-              }
-            };
-            // console.log("counts",counts)
-            
-
-            // average per overallperformance value
-            for(let [key2, value] of Object.entries(counts)){
-              // total vertical per service
-              rowsOverallPerformance.value.forEach(function (arrayItem) {
-                if(key2 == arrayItem.id){
-                  value = parseFloat((value/ sample.length) * 100)
-                  if(isNaN(value)){
-                    value = '0%'
-                  }else{
-                    value = value.toFixed(2).toString() + '%'
-                  }
-                  
-                  arrayItem[stringColField] = value
-                }
-                
-                });
-              }
+          }); 
+          arr3.forEach(element3 => {
+          if (row.id == element3.value2.toString()){
+            totalPercentRow += element3.resultPercent
+            row['percentage'] = element3.resultPercent.toString() + '%'
+            row['countOverall'] = parseFloat(element3.resultPercent)
+            // totalPerMonth += element.countDiv
+          }
+          }); 
         })
+        
+      } 
+          
+        
 
          // Number of customers Row generation
         
@@ -1023,25 +947,10 @@
           total['value'] = totalRespondents
           totalActualRespondents.value.push(total)
           
-          
-        
-
 
         // total row add percentage field
-        let totalPercentRow = 0
         
-        rowsOverallPerformance.value.forEach(row => {
-          let res = parseFloat(mainCounts[row.id]/ totalAnswerOverall.value.length * 100)
-          totalPercentRow +=res
-          // console.log("mainco", mainCounts[row.id])
-          // console.log("rowid", row.id)
-          // console.log("totalPercentRow", totalPercentRow)
-          // chartDataModelData.push(mainCounts[row.id])
-          row['countOverall'] = mainCounts[row.id]
-          row['percentage'] = res.toFixed(2).toString() + '%'
-          
-          
-        });
+        // });
         //total
         let tempObj = {}
         tempObj['value'] = totalPercentRow.toFixed(2).toString() + '%'
@@ -1062,14 +971,349 @@
 
           timer = void 0
           $q.loading.hide()
-
-
-
           loadCharts()
+      }
+
+    // async function updateTables(){
+    //   // reset arrays
+
+    //   rowsOverallPerformance.value = []
+    //   rowsnumberOfCustomers.value = []
+    //   totalActualRespondents.value = []
+    //   totalAnswerOverall.value = []
+      
+    //   totalPerField.value = []
+
+
+      
+
+      
+    //   const mainCounts = {
+    //       5: 0, 
+    //       4: 0,
+    //       3: 0, 
+    //       2: 0,
+    //       1: 0,
+    //       0: 0,
+    //     };
+
+      
+    //   tsrs.value = []
+    //   // let a = await getTsrYear(currentYear.value)
+    //   // console.log("aaaaa", a)
+      
+    //   if (yearTsr.value){
+    //     let tsrMonth
+    //     let answersOverall
+    //     for(let i=0 ; i<12; i++){
+    //       tsrMonth = await getTSRYearAndMonth(i,yearTsr.value)
+    //       answersOverall = await allOverAllRatingsFromApi(i,yearTsr.value)
+    //       tsrMonth.forEach(element => {
+    //         tsrs.value.push(element)
+    //       });
+    //       answersOverall.forEach(element => {
+    //         totalAnswerOverall.value.push(element)
+    //       });
+          
+    //     }
+    //   }
+    //   else if(quarterTSR.value){
+    //     let tsrMonth
+    //     let answersOverall
+    //     let quart
+    //     switch(quarterTSR.value) {
+    //       case 1:
+    //         // code block
+    //         quart = 0
+    //         break;
+    //       case 2:
+    //         // code block
+    //         quart = 3
+    //         break;
+    //       case 3:
+    //         quart = 6
+    //         // code block
+    //         break;
+    //       case 4:
+    //         quart = 9
+    //         // code block
+    //         break;
+    //       default:
+    //         // code block
+    //     }
+    //     for(let i=quart ; i<quart+3; i++){
+    //       tsrMonth = await getTSRYearAndMonth(i,yearTsrQuarter.value)
+    //       answersOverall = await allOverAllRatingsFromApi(i,yearTsrQuarter.value)
+    //       tsrMonth.forEach(element => {
+    //         tsrs.value.push(element)
+    //       });
+    //       answersOverall.forEach(element => {
+    //         totalAnswerOverall.value.push(element)
+    //       });
+          
+    //     }
+    //   }
+    //   else if(beforeDate.value && afterDate.value){
+    //     console.log("here oh wtf")
+    //     await getAllTsrsByYearMonth(beforeDate.value,afterDate.value)
+    //     console.log("totalAnswerOverall.value.length(",totalAnswerOverall.value.length)
+    //   }
+    //   else{
+    //     let tsrMonth
+    //     let answersOverall
+    //     for(let i=0 ; i<12; i++){
+    //       tsrMonth = await getTSRYearAndMonth(i,currentYear.value)
+    //       answersOverall = await allOverAllRatingsFromApi(i,currentYear.value)
+    //       // console.log("answersOverall",answersOverall)
+    //       tsrMonth.forEach(element => {
+    //         tsrs.value.push(element)
+    //       });
+    //       answersOverall.forEach(element => {
+    //         totalAnswerOverall.value.push(element)
+    //       });
+    //     }
+    //     // tsrs.value = await getTsrYear(yearTsr.value)
+    //     // totalAnswerOverall.value = await allOverAllRatingsFromApi("","",currentYear.value)
+        
+    //   }
+    //   if(modeDashboard.value != "Date Range"){
+    //     buildRowsCustomers()
+    //     var result = _(tsrs.value)
+    //     .groupBy(v => moment(v.submittedAt).format('MMMM'))
+    //     .value();
+    //     // console.log("results", result)
+
+    //       for (var key in result) {
+    //           let totalRespondentsPerMonth = 0
+    //           if (result.hasOwnProperty(key)) {
+    //             let row = {}
+    //             let totalPerMonth = 0
+    //             row['month'] = key
+    //             // console.log("keys 777", key)
+                
+                
+    //             let temp = result[key]
+    //             // console.log("temp", temp)
+    //             divisionsAndSections.value.forEach(key2 => {
+                  
+    //                 let stringColField = key2.keyname
+    //                 // filter all data
+    //                 let sample = temp.filter((elementTSR) => {
+    //                 if(elementTSR.division === key2.division && elementTSR.service === key2.service){
+    //                   // console.log(key2 + ' - ', element )
+    //                   return elementTSR
+    //                 }
+                    
+    //                 })
+    //                 // console.log("rowsnumberOfCustomers",rowsnumberOfCustomers.value)
+    //                 let x = rowsnumberOfCustomers.value.find(x => x.month === key);
+    //                 x[stringColField] = sample.length
+    //                 totalPerMonth += sample.length
+    //             })
+    //             let rowMonth = rowsnumberOfCustomers.value.find(x => x.month === key);
+    //             // console.log("rowmonth error", rowMonth)
+    //             rowMonth['total'] = totalPerMonth
+    //             // console.log("totalpermonth", totalPerMonth)
+                
+
+                
+    //           }
+    //       }
+
+    //   }else{
+    //     var result = _(tsrs.value)
+    //     .groupBy(v => moment(v.submittedAt).format('MMMM-YYYY'))
+    //     .value();
+    //     let index = 1
+    //     for (var key in result) {
+    //         if (result.hasOwnProperty(key)) {
+    //           let row = {}
+    //           let totalPerMonth = 0
+    //           row['month'] = key
+              
+    //           let temp = result[key]
+    //           divisionsAndSections.value.forEach(element => {
+    //             let stringColField = element.keyname
+    //               // filter all data
+    //               let sample = temp.filter((elementTSR) => {
+    //               if(elementTSR.tsrNo){
+    //                 if(elementTSR.division == element.division && elementTSR.service == element.service){
+    //                   // console.log("pasok oh loko" )
+    //                   return elementTSR
+    //                 }
+    //               }
+                  
+    //               })
+    //               row[stringColField] = sample.length ? sample.length : 0
+    //               totalPerMonth += sample.length
+    //           });
+                  
+    //           // total horizontal
+    //           row['total'] = Math.round(totalPerMonth)
+    //           row['id'] = index+=1
+    //           // totalPerMonth
+              
+    //           rowsnumberOfCustomers.value.push(row)
+    //         }
+    //     }
+
+    //   } 
+      
+    //   buildRowsOverallPerformance()
+
+    //   console.log("totalAnswerOverall",totalAnswerOverall.value)
+
+    //   totalAnswerOverall.value = totalAnswerOverall.value.filter(function (el) {
+    //       return el.tsr != null;
+    //     });
+    //   // total overall 
+    //   // key is the division
+    //   // element is the service
+    //     divisionsAndSections.value.forEach(key => {
+           
+    //         let stringColField = key.keyname
+    //         // filter all answer overall specific to tsr
+    //         let sample = totalAnswerOverall.value.filter((elementTSR) => {
+    //         if(elementTSR.tsr){
+    //           // console.log("elementTSR", elementTSR)
+    //           if(elementTSR.tsr.division == key.division && elementTSR.tsr.service == key.service){
+    //             return elementTSR
+    //           }
+    //         }
+    //       })
+          
+    //       // count per service 
+    //         const counts = {
+    //           5: 0, 
+    //           4: 0,
+    //           3: 0, 
+    //           2: 0,
+    //           1: 0,
+    //           0: 0
+    //         };
+    //         for (const element of sample) {
+              
+    //           let num = element.value
+    //           if (num == 1){
+    //             counts[1] +=1
+    //             mainCounts[1] +=1
+    //           }else if ( num == 2){
+    //             counts[2] +=1
+    //             mainCounts[2] +=1
+    //           }else if(num ==3 ){
+    //             counts[3] +=1
+    //             mainCounts[3] +=1
+    //           }else if(num == 4){
+    //             counts[4] +=1
+    //             mainCounts[4] +=1
+    //           }else if(num == 5){
+    //             counts[5] +=1
+    //             mainCounts[5] +=1
+    //           }
+    //           else{
+    //             counts[0] += 1
+    //             mainCounts[0] +=1
+    //           }
+    //         };
+    //         // console.log("counts",counts)
+            
+
+    //         // average per overallperformance value
+    //         for(let [key2, value] of Object.entries(counts)){
+    //           // total vertical per service
+    //           rowsOverallPerformance.value.forEach(function (arrayItem) {
+    //             if(key2 == arrayItem.id){
+    //               value = parseFloat((value/ sample.length) * 100)
+    //               if(isNaN(value)){
+    //                 value = '0%'
+    //               }else{
+    //                 value = value.toFixed(2).toString() + '%'
+    //               }
+                  
+    //               arrayItem[stringColField] = value
+    //             }
+                
+    //             });
+    //           }
+    //     })
+
+    //      // Number of customers Row generation
+        
+    //     // group by months
+        
+        
+    //     // total Respondents per month
+    //       let totalRespondents = 0
+    //       divisionsAndSections.value.forEach(key => {
+                  
+    //         let stringColField = key.keyname
+    //         let resultTotal = rowsnumberOfCustomers.value.map(a => {
+    //           if(isNaN(a[stringColField])){
+    //               a[stringColField] = 0
+    //           }
+    //           return a[stringColField]
+    //         })
+    //         // console.log("res", resultTotal)
+    //         let atotal = resultTotal.reduce((a, b) => a + b, 0)
+            
+    //         // totalActualRespondents.value[stringColField] = atotal
+    //         let tempObj = {}
+    //         tempObj['value'] = atotal
+    //         totalRespondents += atotal
+    //         totalActualRespondents.value.push(tempObj)
+    //       })
+    //       // total respondents push to last array
+    //       let total = {}
+    //       total['value'] = totalRespondents
+    //       totalActualRespondents.value.push(total)
+          
+          
+        
+
+
+    //     // total row add percentage field
+    //     let totalPercentRow = 0
+        
+    //     rowsOverallPerformance.value.forEach(row => {
+    //       let res = parseFloat(mainCounts[row.id]/ totalAnswerOverall.value.length * 100)
+    //       totalPercentRow +=res
+    //       // console.log("mainco", mainCounts[row.id])
+    //       // console.log("rowid", row.id)
+    //       // console.log("totalPercentRow", totalPercentRow)
+    //       // chartDataModelData.push(mainCounts[row.id])
+    //       row['countOverall'] = mainCounts[row.id]
+    //       row['percentage'] = res.toFixed(2).toString() + '%'
+          
+          
+    //     });
+    //     //total
+    //     let tempObj = {}
+    //     tempObj['value'] = totalPercentRow.toFixed(2).toString() + '%'
+    //     totalPerField.value.push(tempObj)
+    //     // console.log("totalPerField",totalPerField.value)
+
+    //     divisionsAndSections.value.forEach(key => {
+          
+    //         let tempSecDivObj = {}
+    //         let service = key.keyname
+    //         let a = rowsOverallPerformance.value.map(a => a[service]);
+    //         let sum = a.reduce((a, b) => parseFloat(a) + parseFloat(b), 0)
+    //         sum = Math.round(sum)
+    //         tempSecDivObj['value'] = sum.toFixed(2).toString() + '%'
+    //         totalPerField.value.push(tempSecDivObj)
+            
+    //     })
+
+    //       timer = void 0
+    //       $q.loading.hide()
+
+
+
+    //       loadCharts()
           
 
           
-      }
+    //   }
 
       function buildTable(){
         buildColumns()
@@ -1080,11 +1324,19 @@
       function buildRowsOverallPerformance (){
 
         // performance row generation
-        rowsOverallPerformance.value.push({servicearea: "5 - Outstanding" , id: 5,})
-        rowsOverallPerformance.value.push({servicearea: "4 - Very Satisfactory" ,  id: 4 })
-        rowsOverallPerformance.value.push({servicearea: "3 - Satisfactory", id: 3})
-        rowsOverallPerformance.value.push({servicearea: "2 - Fair", id: 2})
-        rowsOverallPerformance.value.push({servicearea: "1 - Poor", id: 1})
+        rowsOverallPerformance.value.push({servicearea: "5 - Outstanding" , id: 5,countOverall:0})
+        rowsOverallPerformance.value.push({servicearea: "4 - Very Satisfactory" ,  id: 4 ,countOverall:0})
+        rowsOverallPerformance.value.push({servicearea: "3 - Satisfactory", id: 3,countOverall:0})
+        rowsOverallPerformance.value.push({servicearea: "2 - Fair", id: 2,countOverall:0})
+        rowsOverallPerformance.value.push({servicearea: "1 - Poor", id: 1,countOverall:0})
+        rowsOverallPerformance.value.forEach(row => {
+          divisionsAndSections.value.forEach(element2 => {
+          let stringColField = element2.keyname
+          row[stringColField] = '0%'
+          row['percentage'] = '0%'
+        }); 
+        })
+        
         // rowsOverallPerformance.value.push({servicearea: "No Response", id: 0})
         
   
@@ -1451,7 +1703,6 @@
         showLoading()
         divisionsAndSections.value = await getDivList()
         divisions.value = await getCountServicePerDivision()
-        console.log("divisionsAndSections",divisionsAndSections.value)
 
         // 
         
@@ -1462,7 +1713,6 @@
         await updateTables()
 
         // yearTsr.value = currentYear.value
-        console.log("last", rowsnumberOfCustomers.value)
       })
 
 

@@ -33,7 +33,6 @@ export default defineComponent({
       const modal = ref(false)
       const maximizedToggle = ref(true)
       function showModal(){
-        console.log("yo")
       }
 
       return{

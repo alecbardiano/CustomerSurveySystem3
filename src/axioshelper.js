@@ -150,8 +150,6 @@ const getAllTSRs = function (start,limit,division,service,beforeDate,afterDate,m
           return api.get('/tsrs?_start='+start+'&_limit='+limit+'&submittedAt_gt='+before+'&submittedAt_lte='+after+'&division='+division+'&service='+service +'&_sort=division,service,submittedAt:DESC')
           .then(function( response ){
               
-              console.log("from axios")
-              console.log(response.data)
               return response.data;
           })
 
@@ -212,8 +210,6 @@ const getAllAnswerSearch = function (searchTsrNo,mode,start,limit){
   // /answers/searchAnswer/:searchTsrNo/:mode/:rowCount/:offset
         .then(function( response ){
             
-            // console.log("from axios")
-            console.log(response.data)
             return response.data;
         })
 
@@ -224,8 +220,6 @@ const getCountAllAnswerSearch = function (searchTsrNo,mode){
   // /answers/searchAnswer/:searchTsrNo/:mode/:rowCount/:offset
         .then(function( response ){
             
-            // console.log("from axios")
-            console.log(response.data)
             return response.data;
         })
 
@@ -432,9 +426,8 @@ const getSectionList = function (division) {
     return api.get('/tsrs/?_limit=-1&division='+ division)
       .then(function( response ){
           let arr = response.data
-          console.log("Arr", arr)
           let result = [...new Set(arr.map(item => item.service))].filter(function(val) { return val !== null; });
-          console.log("res", result)
+          
           return result
     })
 }
@@ -1295,6 +1288,124 @@ export const postRateApp = (rating) => {
     return response.data;
   });
 };
+
+export const findOverallPerfCenter = (before,after) => {
+  console.log("before",before,"after",after)
+  let payload = {
+    beforeVal: '',
+    afterVal: ''
+  }
+  if (before && after){
+    payload.beforeVal = moment(new Date(before),"MM-DD-YYYY")
+    payload.afterVal = moment(new Date(after),"MM-DD-YYYY")
+  }else{
+    payload.beforeVal = moment(new Date(new Date().getFullYear(), 0, 1), "MM-DD-YYYY");
+    payload.afterVal = moment(new Date(new Date().getFullYear(), 11, 31), "MM-DD-YYYY");
+  }
+  console.log('payload',payload)
+  
+
+  return api.get("/tsrs/findOverallCenter/"+payload.beforeVal+'/'+payload.afterVal).then(function (response) {
+    
+    return response.data;
+  });
+ 
+  // return api.get("/tsrs/findOverallCenter",{params: {
+  //   before: payload.beforeVal,
+  //   after: payload.afterVal
+  //   }
+  // }).then(function (response) {
+    
+  //   return response.data;
+  // });
+};
+
+export const findNumberCustomer = (before,after) => {
+  console.log("before",before,"after",after)
+  let payload = {
+    beforeVal: '',
+    afterVal: ''
+  }
+  if (before && after){
+    payload.beforeVal = moment(new Date(before),"MM-DD-YYYY")
+    payload.afterVal = moment(new Date(after),"MM-DD-YYYY")
+  }else{
+    payload.beforeVal = moment(new Date(new Date().getFullYear(), 0, 1), "MM-DD-YYYY");
+    payload.afterVal = moment(new Date(new Date().getFullYear(), 11, 31), "MM-DD-YYYY");
+  }
+  console.log('payload',payload)
+  
+
+  return api.get("/tsrs/findNumberOfCustomers/"+payload.beforeVal+'/'+payload.afterVal).then(function (response) {
+    
+    return response.data;
+  });
+}
+
+export const findOverallPerformanceCenter = (before,after) => {
+  console.log("before",before,"after",after)
+  let payload = {
+    beforeVal: '',
+    afterVal: ''
+  }
+  if (before && after){
+    payload.beforeVal = moment(new Date(before),"MM-DD-YYYY")
+    payload.afterVal = moment(new Date(after),"MM-DD-YYYY")
+  }else{
+    payload.beforeVal = moment(new Date(new Date().getFullYear(), 0, 1), "MM-DD-YYYY");
+    payload.afterVal = moment(new Date(new Date().getFullYear(), 11, 31), "MM-DD-YYYY");
+  }
+  console.log('payload',payload)
+  
+
+  return api.get("/tsrs/findOverallPerformanceCenter/"+payload.beforeVal+'/'+payload.afterVal).then(function (response) {
+    
+    return response.data;
+  });
+}
+
+export const findOverallPerformanceCenterPercentage = (before,after) => {
+  console.log("before",before,"after",after)
+  let payload = {
+    beforeVal: '',
+    afterVal: ''
+  }
+  if (before && after){
+    payload.beforeVal = moment(new Date(before),"MM-DD-YYYY")
+    payload.afterVal = moment(new Date(after),"MM-DD-YYYY")
+  }else{
+    payload.beforeVal = moment(new Date(new Date().getFullYear(), 0, 1), "MM-DD-YYYY");
+    payload.afterVal = moment(new Date(new Date().getFullYear(), 11, 31), "MM-DD-YYYY");
+  }
+  console.log('payload',payload)
+  
+
+  return api.get("/tsrs/findOverallPerformanceCenterPercentage/"+payload.beforeVal+'/'+payload.afterVal).then(function (response) {
+    
+    return response.data;
+  });
+}
+export const findSummaryOfCitizen = (before,after,division,service) => {
+  console.log("before",before,"after",after)
+  let payload = {
+    beforeVal: '',
+    afterVal: ''
+  }
+  if (before && after){
+    payload.beforeVal = moment(new Date(before),"MM-DD-YYYY")
+    payload.afterVal = moment(new Date(after),"MM-DD-YYYY")
+  }else{
+    payload.beforeVal = moment(new Date(new Date().getFullYear(), 0, 1), "MM-DD-YYYY");
+    payload.afterVal = moment(new Date(new Date().getFullYear(), 11, 31), "MM-DD-YYYY");
+  }
+  console.log('payload',payload)
+  
+
+  return api.get("/tsrs/findSummaryOfCitizen/"+payload.beforeVal+'/'+payload.afterVal+'/'+division+'/'+service).then(function (response) {
+    
+    return response.data;
+  });
+}
 
 
 

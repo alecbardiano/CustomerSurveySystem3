@@ -193,7 +193,6 @@ export default defineComponent({
 
     const modeRows = computed(()=> {
       let a = rows.value.map((rest ) => rest)
-      console.log("a",a)
 
       switch (mode.value) {
         case "All Negative Feedbacks":
@@ -208,8 +207,6 @@ export default defineComponent({
         default:
           break;
       }
-      console.log("a",a)
-      console.log("rows.lalsd",rows.value)
       return a
     })
 
@@ -317,7 +314,6 @@ export default defineComponent({
           }
         }else{
           if(beforeDate.value && afterDate.value){
-              console.log
               rows = await getNegativeFeedbackDataResolution(startRow,count,div,serv,beforeDate.value,afterDate.value)
               
             }else{
@@ -338,7 +334,6 @@ export default defineComponent({
 
    async function onRequest(props){
 
-      console.log("props", props)
       const { page, rowsPerPage, sortBy, descending } = props.pagination
       const filter = props.filter
 
@@ -370,9 +365,7 @@ export default defineComponent({
           pagination.value.rowsNumber = x
           const fetchCount = rowsPerPage === 0 ? x : rowsPerPage
           const startRow = (page - 1) * rowsPerPage
-          console.log("eyfilter", startRow,fetchCount)
           const returnedData = await fetchFromServer(startRow, fetchCount, filter, sortBy, descending) 
-          console.log("returnedData",returnedData)
           // fetch data from "server"
           
           // clear out existing data and add new
@@ -380,7 +373,6 @@ export default defineComponent({
           rows.value.splice(0, rows.value.length, ...returnedData)
           
           rows.value  = rows.value.map(card =>  ({
-            // console.log("cardlog", card)
             // may papalitan pa dito ibalik yung q
             // let obj = { 
               value: card.value, 
@@ -399,16 +391,13 @@ export default defineComponent({
           const startRow = (page - 1) * rowsPerPage
           pagination.value.rowsNumber = totalCount
           const fetchCount = rowsPerPage === 0 ? totalCount : rowsPerPage
-          console.log("eytotal", startRow,fetchCount)
           const returnedData = await fetchFromServer(startRow, fetchCount, filter, sortBy, descending) 
-          console.log("returnedData",returnedData)
           // fetch data from "server"
           
           // clear out existing data and add new
           
           rows.value.splice(0, rows.value.length, ...returnedData)
           rows.value  = rows.value.map(card =>  ({
-            // console.log("cardlog", card)
             // may papalitan pa dito ibalik yung q
             // let obj = { 
               value: card.value, 

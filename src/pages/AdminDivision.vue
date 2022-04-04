@@ -236,7 +236,52 @@ export default defineComponent({
 
 
 
+//  async function loadNumbers(){
+//       noPoor.value = 0
+//       noVerySatisfactory.value = 0
+//       noSatisfactory.value = 0
+//       noRespondents.value = 0
+//       noNoOverall.value = 0
 
+//       console.log("hey", division.value)
+//       // tsrs.value = await getTSRs("","",division.value,service.value,beforeDate.value,afterDate.value,3,'')
+//       // console.log("pasok ba", tsrs.value)
+      
+     
+//     for (let j=0; j<orderByPositionQuestions.value.length; j++){
+//       console.log("orderByPositionQuestions.value[j].id",orderByPositionQuestions.value[j].id,orderByPositionQuestions.value[j].label)
+//       // overall rating
+//       // if(orderByPositionQuestions.value[j].id == 12){
+//       //   if(orderByPositionQuestions.value[j])
+//       // }
+//       rowsOverall.value.forEach(function (arrayItem) {
+//         arrayItem[orderByPositionQuestions.value[j].id] ='0%'
+//       });
+//   }
+
+//       console.log("counts", rowsOverall.value)
+//       let arr = await findSummaryOfCitizen(beforeDate.value,afterDate.value,division.value,service.value)
+//         rowsOverall.value.forEach(function (arrayItem) {
+//           console.log("arrayitem", arrayItem)
+//           arr.forEach(element => {
+//             // console.log("ererererer",element)
+//             if(element.value == ''){
+//               element.value = 0
+//             }
+//             if(element.value == arrayItem.id){
+//               arrayItem[element.qID] = element.resultPercent.toString() + '%'
+//             }
+//             // if(element.description)
+//           });
+//             // value = ((value/ dataDivision.length) * 100).toFixed(2)
+//             // if(isNaN(value)){
+//             //   value = '0%'
+//             // }else{
+//             //   value = value.toString() + '%'
+//             // }
+//             // arrayItem[orderByPositionQuestions.value[j].id] = value
+//         });
+//     }
     async function loadNumbers(){
       noPoor.value = 0
       noVerySatisfactory.value = 0
@@ -244,25 +289,23 @@ export default defineComponent({
       noRespondents.value = 0
       noNoOverall.value = 0
 
-      console.log("hey", division.value)
       // tsrs.value = await getTSRs("","",division.value,service.value,beforeDate.value,afterDate.value,3,'')
       // console.log("pasok ba", tsrs.value)
       
      
     for (let j=0; j<orderByPositionQuestions.value.length; j++){
-      console.log("orderByPositionQuestions.value[j].id",orderByPositionQuestions.value[j].id,orderByPositionQuestions.value[j].label)
+      
       // overall rating
       // if(orderByPositionQuestions.value[j].id == 12){
       //   if(orderByPositionQuestions.value[j])
       // }
       let dataDivision = await getOverall(division.value,service.value,orderByPositionQuestions.value[j].id,beforeDate.value,afterDate.value)
-      console.log("dataDivisiondataDivision",dataDivision)
+      
       if(dataDivision.length != 0){
         dataDivision = dataDivision.map(a => a.value)
         dataDivision = dataDivision.map(function (x) { 
           return parseInt(x, 10); 
         });
-        console.log("noRespondents", dataDivision.length)
        
         // dataDivision = dataDivision.filter(function(x) {
         //     if ( x != undefined || x == '' || !isNaN(x)){
@@ -277,12 +320,10 @@ export default defineComponent({
           1:0,
           0:0
         };
-        console.log("datads", dataDivision)
         for (const num of dataDivision) {
           if(orderByPositionQuestions.value[j].id == 12){
              noRespondents.value  +=  1
             if (num == 5|| num == 4){
-              console.log("pasok dito")
               noVerySatisfactory.value+=1
             }else if(num == 3){
               noSatisfactory.value +=1
@@ -296,8 +337,6 @@ export default defineComponent({
             counts[1] +=1
           }
           else if( num == 2){
-            console.log("wew")
-            
             counts[2] +=1
           }
           else if (isNaN(num)){
@@ -308,12 +347,9 @@ export default defineComponent({
           
         }
 
-        console.log("counts", counts)
-
         for(let [key, value] of Object.entries(counts)){
           rowsOverall.value.forEach(function (arrayItem) {
             if(key == arrayItem.id){
-              console.log("value", value)
               value = ((value/ dataDivision.length) * 100).toFixed(2)
               if(isNaN(value)){
                 value = '0%'
@@ -326,7 +362,6 @@ export default defineComponent({
          });
 
         }
-        console.log("rowsoverall", rowsOverall.value)
       }
      }
     }
@@ -355,8 +390,6 @@ export default defineComponent({
       }
 
     function fillSectionList(){
-      console.log("hey", division.value)
-      console.log("hey", divisionsAndSections.value)
       services.value = divisionsAndSections.value.filter(div => div.division == division.value).map(div => div.service)
     }
 
@@ -392,7 +425,6 @@ export default defineComponent({
         
         }
       }
-      console.log(colsOverall.value)
       buildRows()
     }
 
@@ -404,7 +436,6 @@ export default defineComponent({
       rowsOverall.value.push({servicearea: "1 - Poor", id: 1})
       rowsOverall.value.push({servicearea: "No Response", id: 0})
       colsOverall.value.forEach(function(column) {
-        console.log("column", column)
       });
 
       
@@ -420,7 +451,6 @@ export default defineComponent({
         year = moment(new Date()).year() 
       }
       
-      console.log("year",year)
       let data = []
       for(let i=0 ; i<12; i++){
           let dataMonth = await allOverAllRatingsFromApi(i,year)
@@ -435,12 +465,10 @@ export default defineComponent({
       noSatisfactoryTotal.value = 0
       noPoorTotal.value = 0
       noRespondentsTotal.value = 0
-      console.log("data", data)
       data = data.map(a => a.value)
       data.forEach(val => {
         if(val >= 4){
           noVerySatisfactoryTotal.value += 1
-          console.log("nocount",noVerySatisfactoryTotal )
         }else if (val == 3){
           noSatisfactoryTotal.value +=1
         }else if (val == ''){

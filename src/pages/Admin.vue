@@ -283,7 +283,7 @@
 <script>
 // import packages
 import { reactive, defineComponent, ref, onMounted, computed , watch,onBeforeUnmount} from 'vue'
-import { getQuestions,getQuestionsWithoutAns, getTSRs,postAnswers , getOverall,deleteAll,totalTsrsCount, getDivList, totalTsrsCountByYear,getTSRYearAndMonth,getCountServicePerDivision,totalTsrsCountWithDivisions,totalTsrsCountWithDivisionsByYear} from 'src/axioshelper.js'
+import { findOverallPerfCenter,getQuestions,getQuestionsWithoutAns, getTSRs,postAnswers , getOverall,deleteAll,totalTsrsCount, getDivList, totalTsrsCountByYear,getTSRYearAndMonth,getCountServicePerDivision,totalTsrsCountWithDivisions,totalTsrsCountWithDivisionsByYear} from 'src/axioshelper.js'
 import { overAllColumns, overAllRows,numberOfCustomersColumnsData,numberOfCustomersRowsData, summaryPerDivisionRows, summaryPerDivisionColumns  } from 'src/utils/dataRetrieveTables.js'
 import { exportFile, useQuasar} from 'quasar'
 import { xlsx, pdfMake } from 'boot/axios'
@@ -597,41 +597,53 @@ export default defineComponent({
     // console.log("hellodivlistload divisin data", rowsOverall.value)
     // console.log("hellodivlistload divisin data", divlist)
     colsOverall.value.push({ name: 'Score' ,align: 'left', label: 'Score All in Service', field: 'scoreservice' , style:"width: 300px"})
+    dataDivision = await findOverallPerfCenter(beforeDate.value,afterDate.value)
+    // columns generation
     for(let i =0; i<divlist.length; i++){
       colsOverall.value.push({name: divlist[i].division ,align: 'left', label: divlist[i].division, field: divlist[i].division , sortable: true })
-      for (let j=0; j<rowsOverall.value.length; j++){
-        
-        dataDivision = await getOverall(divlist[i].division,"",rowsOverall.value[j].id,beforeDate.value,afterDate.value)
-        if(dataDivision.length != 0){
-          dataDivision = dataDivision.map(a => a.value)
-          dataDivision = dataDivision.map(function (x) { 
-            return parseInt(x, 10); 
-          });
-          dataDivision = dataDivision.filter(function(x) {
-            if ( x != undefined || x == '' || !isNaN(x)){
-              return x
-            }
-          });
-          // console.log("Datadiv", dataDivision)
-          const sum = dataDivision.reduce((a, b) => a + b, 0);
-          // console.log("sum", sum)
-          // console.log("sum", dataDivision)
-          let avg = parseFloat((Math.round((sum/dataDivision.length) * 100) / 100).toFixed(2));
-          if(isNaN(avg)){
-            avg = 0
-          }
-          // console.log("avg",avg)
-          // set divName for mapping of column to row
-          //rows of average
-          rowsOverall.value[j][divlist[i].division] = avg
-          // rowsOverall.value[j].divlist[i] = avg
-        }else{
-          rowsOverall.value[j][divlist[i].division] = 0
-          rowsOverall.value[j]["scoreservice"] = 0
-        }
-      }
     }
+    //   for (let j=0; j<rowsOverall.value.length; j++){
+        
+    //     console.log(dataDivision)
+    //     dataDivision = await getOverall(divlist[i].division,"",rowsOverall.value[j].id,beforeDate.value,afterDate.value)
+    //     if(dataDivision.length != 0){
+    //       dataDivision = dataDivision.map(a => a.value)
+    //       dataDivision = dataDivision.map(function (x) { 
+    //         return parseInt(x, 10); 
+    //       });
+    //       dataDivision = dataDivision.filter(function(x) {
+    //         if ( x != undefined || x == '' || !isNaN(x)){
+    //           return x
+    //         }
+    //       });
+    //       // console.log("Datadiv", dataDivision)
+    //       const sum = dataDivision.reduce((a, b) => a + b, 0);
+    //       // console.log("sum", sum)
+    //       // console.log("sum", dataDivision)
+    //       let avg = ((sum/dataDivision.length) * 100) / 100;
+    //       if(isNaN(avg)){
+    //         avg = 0
+    //       }
+    //       // console.log("avg",avg)
+    //       // set divName for mapping of column to row
+    //       //rows of average
+    //       rowsOverall.value[j][divlist[i].division] = avg
+    //       // rowsOverall.value[j].divlist[i] = avg
+    //     }else{
+    //       rowsOverall.value[j][divlist[i].division] = 0
+    //       rowsOverall.value[j]["scoreservice"] = 0
+    //     }
+    //   }
+    // }
+    for (let i = 0; i<rowsOverall.value.length; i++){
+      let arr = dataDivision.filter(a => a.description === rowsOverall.value[i].dimension)
+      
+      for(let j=0; j<arr.length; j++){
+        rowsOverall.value[i][[arr[j].division]] = parseFloat((arr[j].avgVal).toFixed(2))
+      }
     // score in all service
+      
+    }
     for (let i = 0; i<rowsOverall.value.length; i++){
       const {dimension, id, scoreservice, ...partialObject} = rowsOverall.value[i];
       
@@ -661,10 +673,6 @@ export default defineComponent({
       rowsOverall.value[i]["scoreservice"] = avg
     }
     
-
-    // console.log("roworworworow")
-    // console.log(rowsOverall.value)
-
     overAllAverage.value = await averageLastTable(colsOverall.value,rowsOverall.value)
     // api call from axioshelper
 
@@ -706,7 +714,6 @@ export default defineComponent({
           const rowData = xlsx.utils.sheet_to_json(xlsx.read(migraData, { type: 'binary', cellDates: true }).Sheets['Details of CSF forms'])
           
           let success = await uploadMigrationData(rowData,dot[0])
-          console.log("success,",success)
           if (success == 0){
             $q.notify({
                 message: 'Responses Migrated',

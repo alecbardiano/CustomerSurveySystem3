@@ -28,7 +28,6 @@ export async function loginApi ( { commit }, payload) {
     const response = await api.post('/auth/local', 
       payload)
       .catch((err) => {
-        console.log(err);
       });
  
     if (response && response.data && response.data.user) {
@@ -38,7 +37,6 @@ export async function loginApi ( { commit }, payload) {
         localStorage.setItem("isLoggedIn", "success");
         commit("setUserProfile", response.data)
         localStorage.setItem("user",JSON.stringify(response.data.user))
-        // console.log(response.data, session.claim.auth)
     //    commit('login', { token: response.data.token, refeshToken: response.data.refesh_token, user: response.data.user, authorization: session.claim.auth })
        setAxiosHeaders(response.data.jwt)
       }else{

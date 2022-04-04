@@ -39,7 +39,6 @@ export default defineComponent({
 
     onMounted( () => {
         console.log("mounted")
-        console.log(props)
     })
 
     return{

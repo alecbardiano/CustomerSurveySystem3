@@ -117,8 +117,6 @@ export default defineComponent({
     })
     const answers = ref([])
     const tsrNumberView = computed(() => {
-      // console.log(answers.value[0].tsr.tsrNo)
-      console.log("Tsrsss",answer.value)
       return answer.value.tsr.tsrNo
     })
 
@@ -164,7 +162,6 @@ export default defineComponent({
 
         })
       )
-      console.log("ansArr",ansArr)
       return ansArr
 
 
@@ -177,7 +174,6 @@ export default defineComponent({
     async function onSubmit(){
 
         let suc = await feedbackRefForm.value.validate()
-        console.log("suc",suc)
         if (suc){
             let a = await postResolution()
         }else{
@@ -191,7 +187,6 @@ export default defineComponent({
 
     async function postResolution(){
         let suc = await updateAnswerResolution(resolutionAns.value)
-        console.log("sucss", suc)
         if(suc = 200){
             $q.notify({
             message: 'Resolution Submitted for this TSR',
@@ -210,7 +205,6 @@ export default defineComponent({
     function buildQuestions(){
         // let ansArr = answers.value.map(a => a.question)
       resolutionAns.value = buildResolutionAnswers(answers.value)
-        // console.log(ansArr)
       // questionList.value = questions.filter(item => ansArr.includes(item.id));
 
     }

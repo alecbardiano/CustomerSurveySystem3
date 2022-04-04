@@ -1,7 +1,6 @@
 <template>
   <q-page>
     <div class="q-pa-md">
-      <q-btn @click="showLoading" label="clickme" />
       <q-form @submit="onSubmit" class="q-gutter-md" ref="surveyRefForm">
         <div class="row">
           <q-input
@@ -395,7 +394,7 @@ export default defineComponent({
       // tsrDataFromApi.value = await checkTSRsOtherAPI(newValue)
       // tsrDataFromApi.value = tsrDataFromApi.value[0]
       // // { "name": "Machining (Precision)", "div": "PD", "sectionCode": "PDS", "serviceCode": "MAPR", "costCenter": "28" }
-      console.log("HeretsrDataFromApi.value", tsrDataFromApi.value);
+      
       if (tsrDataFromApi.value) {
         industryData.value = tsrDataFromApi.value.indusry;
         serviceData.value = tsrDataFromApi.value.service;
@@ -412,7 +411,6 @@ export default defineComponent({
         questions.value = await getQuestionsWithoutAns();
         displayQuestions.value = questions.value.filter((Question) => {
           Question.children = questions.value.filter((child) => {
-            // console.log("Question",Question)
             return child.parent === Question.id;
           });
           return Question.parent === null;
@@ -508,22 +506,18 @@ export default defineComponent({
     }
 
     function clearFields() {
-      console.log("Reseting the form");
       TsrNo.value = "";
       emailCustomer.value = "";
       surveyAnswer.answers.forEach((element) => {
-        console.log("111", element);
         element.remarks = "";
         element.value = "";
       });
       subHeaderSurveyAnswer.answers.forEach((element) => {
-        console.log("222", element);
         element.remarks = "";
         element.value = "";
       });
 
-      //Iterate through each object field, key is name of the object field`
-      console.log("surveyRefForm", surveyRefForm.value);
+      //Iterate through each object field, key is name of the object field
       surveyRefForm.value.reset();
     }
 

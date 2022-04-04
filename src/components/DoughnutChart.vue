@@ -11,7 +11,6 @@
     {{data}}
     <br>
      <br> -->
-
      
     <!-- {{selected}} -->
     <DoughnutChart
@@ -89,10 +88,10 @@ export default defineComponent({
                 
                   let sum = 0;
                   let dataArr = props.chartData;
-                  dataArr.map(data => {
-                      sum += data;
-                  });
-                  let percentage = (value*100 / sum).toFixed(2)+"%";
+                //   dataArr.map(data => {
+                //       sum += data;
+                //   });
+                  let percentage = (value).toFixed(2)+"%";
                   return percentage;
 
               
@@ -164,81 +163,3 @@ export default defineComponent({
   },
 });
 </script>
-
-<!--  <template>
-    <p style="color: blue">{{props.chartData}} </p>
-    <p style="color: red">{{data}} </p>
-    <p style="color: red">{{testData1}} </p>
-
-    <br>
-  <DoughnutChart :chartData="getData" />
-  <DoughnutChart :chartData="testData1" />
-  <DoughnutChart :chartData="data" />
-
-</template>
-
-<script lang="ts"> 
-// import { defineComponent, toRefs, reactive, onMounted, ref, watch, computed } from 'vue';
-// import { DoughnutChart } from 'vue-chart-3';
-
-
-
-// export default defineComponent({
-//   name: 'Home',
-//   components: { DoughnutChart },
-//   props:{
-//         chartData:Object,
-//     },
-    
-//   setup(props) {
-//     const testData = {
-//       labels: ['Paris', 'Nîmes', 'Toulon', 'Perpignan', 'Autre'],
-//       datasets: [
-//         {
-//           data: [30, 40, 60, 70, 5],
-//           backgroundColor: ['#77CEFF', '#0079AF', '#123E6B', '#97B0C4', '#A5C8ED'],
-//         },
-//       ],
-//     };
-
-//     const getData = computed( () => {
-//         // store.getters["auth/getUserProfile"]
-//         return data.value
-//     })
-
-//     const data = ref(props.chartData)
-
-    // watch(props.chartData, (newValue, oldValue) => {
-    //     console.log("new watch val", newValue)
-    //     updateChart(newValue)
-    // })
-
-//     function updateChart(newValue){
-//         data.value = newValue
-        
-//     }
-
-
-//     const testData1 = {
-//       labels: ['Paris', 'Nîmes', 'Toulon', 'Perpignan', 'Autre'],
-//       datasets: [
-//         {
-//           data: [30, 40, 60, 70, 5],
-//           backgroundColor: ['#77CEFF', '#0079AF', '#123E6B', '#97B0C4', '#A5C8ED'],
-//         },
-//       ],
-
-//     }
-
-//     onMounted( () => {
-//     //    setQuestionID()
-//     // new Chart(ctx, this.planetChartData);
-    
-
-//     })
-
-//     return { data, props, testData1,getData }
-//     ;
-//   },
-// });
-// </script> -->

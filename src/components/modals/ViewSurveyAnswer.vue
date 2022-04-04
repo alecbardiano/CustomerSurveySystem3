@@ -54,7 +54,6 @@ export default defineComponent({
     // const {id, title} = show;
     // episodes.map(selectFewerProps);
     let headerArray = props.cols.map(({align, sortable,label, ...item}) => item)
-    console.log("header", headerArray)
     // let questionIDArray = props.cols.map(function (el) { return el.field ? el.field: el.id; });
 
 
@@ -63,7 +62,6 @@ export default defineComponent({
     let surveyDetail = ref({})
     let answerObject = JSON.parse(JSON.stringify(props.modelValue.value));
     
-    console.log("ANSWERRR", answerObject)
     for (var key in answerObject) {
       for (let i=0; i < headerArray.length ; i++ ){
          if (key ==  headerArray[i].field){
@@ -81,9 +79,6 @@ export default defineComponent({
   
     onMounted( () => {
       console.log("onmounted")
-      console.log("cols")
-      console.log(headerArray)
-      console.log(props.modelValue.value)
     })
 
     //  const modelObject = computed({

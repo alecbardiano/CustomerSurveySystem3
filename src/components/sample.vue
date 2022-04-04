@@ -40,9 +40,7 @@ export default defineComponent({
 
     const chartDatafromParent = computed({
       get: () => {
-        console.log("get data from computed", props.chartData.datasetsd)
         if (props.chartData) {
-          console.log("get data from computed", props.chartData)
           return props.chartData;
         } else {
           return "";
@@ -95,7 +93,6 @@ export default defineComponent({
     }));
 
     watch(props.chartData, (newValue, oldValue) => {
-        console.log("new watch val", newValue)
         updateChart(newValue)
     })
 
@@ -111,8 +108,6 @@ export default defineComponent({
     }
 
     onMounted( async ()  => {
-       console.log("testData",  testData.value)
-       console.log("testdata1" ,testData1)
 
     //    await axios.request(options2).then(function (response) {
     //     console.log(response.data);

@@ -28,10 +28,6 @@ export default {
 
     function chartConstructor(chartType, chartData, chartOptions) {
         const chartElement = document.querySelector("canvas");
-        console.log( "eyeyeyey" ,chartElement)
-        console.log( "chartType" ,chartType)
-        console.log( "chartData" ,chartData)
-        console.log( "chartOptions" ,chartOptions)
         const chart = new Chart(chartElement, {
         type: chartType,
         data: chartData,

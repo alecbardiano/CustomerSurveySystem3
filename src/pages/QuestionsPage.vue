@@ -271,7 +271,6 @@ export default defineComponent({
       updatePosition.value = params.row.position
       updateParent.value = params.row.parent
       updateQuestionID.value = params.row.id
-      console.log("edit", params.row)
       getQuestionTypesFromApi()
     }
 
@@ -381,7 +380,6 @@ export default defineComponent({
           }
           // else{
             // call
-            console.log("else", question)
             postQuestion(question)
             addQuestionModal.value = false
             onRequest({
@@ -411,14 +409,12 @@ export default defineComponent({
         arr = await getQuestions()
         // order by positions
         arr = orderBy(arr, orderKey.value)
-        console.log("hello from get questions", questions.value)
 
         subHeadersQuestions.value = arr.reduce(function (notEmptyNames, question) { 
             if ((question.question_type.id == 5)) notEmptyNames.push(question)
             return notEmptyNames;
         }, []);
 
-        console.log(" subHeadersQuestions.value",  subHeadersQuestions.value)
 
         return arr
         
@@ -438,7 +434,6 @@ export default defineComponent({
       }
       let count = 0
       questions.value.forEach(question => {
-        console.log("foreach", question.description)
         question.description.toLowerCase()
         if (question.description.includes(filter)) {
           ++count
@@ -481,7 +476,6 @@ export default defineComponent({
         // update rowsCount with appropriate value
 
         questions.value = await getQuestionsWithSubheaderFromApi()
-        console.log("questions", questions.value)
         pagination.value.rowsNumber = getRowsNumberCount(filter)
 
         // get all rows if "All" (0) is selected
@@ -510,13 +504,10 @@ export default defineComponent({
 
   const getQuestionTypesFromApi = async () => {
     // update `props.user` to `user.value` to access the Reference value
-      console.log("here")
       try {
         const newArray = await getQuestionTypes()
-        console.log("newarray", newArray)
         //filter
         const newArray2 = newArray.map(({published_at, submittedAt,updated_at, questions, ...item}) => item)
-        console.log("newarray222", newArray2)
         questionTypes.value = newArray2
         
       }
