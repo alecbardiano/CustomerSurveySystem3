@@ -7,23 +7,57 @@
         <q-rating
               v-model="inputViewModel"
               name="answerRating"
-              size="3.0em"
-              icon="star_border"
-              color="primary"
               :max="5"
+              size="3.0em"
+              color="grey"
               lazy-rules :rules="[val => val == '' || 'Field is required']"
-              inline /> 
+              :color-selected="[
+                [colorRate(inputViewModel), 'grey', 'grey', 'grey', 'grey'],
+                ['grey', colorRate(inputViewModel), 'grey', 'grey', 'grey'],
+                ['grey', 'grey', colorRate(inputViewModel), 'grey', 'grey'],
+                ['grey', 'grey', 'grey', colorRate(inputViewModel), 'grey'],
+                ['grey', 'grey', 'grey', 'grey', colorRate(inputViewModel)]
+              ][inputViewModel ? inputViewModel -1 : 0]"
+              :icon="[
+                'sentiment_very_dissatisfied',
+                'sentiment_dissatisfied',
+                'sentiment_satisfied',
+                'sentiment_satisfied_alt',
+                'sentiment_very_satisfied'
+              ]"
+            >
+              <template v-for="(def, i) in rateDefinitions" :key="`tip-${i+1}`" v-slot:[`tip-${i+1}`]>
+                <q-tooltip>{{ def }}</q-tooltip>
+              </template>
+            </q-rating>
       </div>
 
       <div v-else-if="question_type == 2">
         
           <q-rating
               v-model="inputViewModel"
-              size="3.0em"
-              icon="star_border"
-              color="primary"
               :max="5"
-              inline /> 
+              size="3.0em"
+              color="grey"
+              :color-selected="[
+                [colorRate(inputViewModel), 'grey', 'grey', 'grey', 'grey'],
+                ['grey', colorRate(inputViewModel), 'grey', 'grey', 'grey'],
+                ['grey', 'grey', colorRate(inputViewModel), 'grey', 'grey'],
+                ['grey', 'grey', 'grey', colorRate(inputViewModel), 'grey'],
+                ['grey', 'grey', 'grey', 'grey', colorRate(inputViewModel)]
+              ][inputViewModel ? inputViewModel -1 : 0]"
+              :icon="[
+                'sentiment_very_dissatisfied',
+                'sentiment_dissatisfied',
+                'sentiment_satisfied',
+                'sentiment_satisfied_alt',
+                'sentiment_very_satisfied'
+              ]"
+            >
+              <template v-for="(def, i) in rateDefinitions" :key="`tip-${i+1}`" v-slot:[`tip-${i+1}`]>
+                <q-tooltip>{{ def }}</q-tooltip>
+              </template>
+            </q-rating>
       </div>
     <!-- <div v-else-if="question_type == 4">
         <q-select clearable v-model="inputViewModel" :options="optionval" :label="labelval" lazy-rules :rules="[val => !!val || 'Field is required']" />
@@ -78,10 +112,22 @@ export default {
       },
     });
 
+    function colorRate (rate) {
+      return ['negative', 'deep-orange', 'positive', 'secondary', 'orange'][+rate-1]
+    }
+
+    const rateDefinitions = ['Poor', 'Fair', 'Satisfactory', 'Very Satisfactory', 'Outstanding']
+    function rateDefinition (rate) {
+      return $global.rateDefinitions[+rate-1]
+    }
+
     
     return {
       inputViewModel,
-      props
+      props,
+      colorRate,
+      rateDefinitions
+      
     };
   },
 };

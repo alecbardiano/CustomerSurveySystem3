@@ -22,23 +22,76 @@
           />
         </div>
 
-        <div class="row">
-          <q-input
-            ref="emailRef"
-            filled
-            lazy-rules
-            :rules="[
-              (val) => !!val || 'Field is required',
-              (val) =>
-                /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(val) ||
-                'Field should be a valid email ex. xxxx@mail.com',
-            ]"
-            outlined
-            v-model="emailCustomer"
-            label="Email"
-            style="width: 250px"
-            stack-label
-          />
+        <div class="row inline ">
+          <div class="q-pa-lg">
+            Preferred verification:
+            <q-option-group
+              v-model="group"
+              :options="options"
+              color="primary"
+              inline
+            />
+            
+          </div>
+          <div class="q-pa-lg">
+            <q-input
+              ref="emailRef"
+              v-if="modeValidate==1"
+              filled
+              lazy-rules
+              :rules="[
+                (val) => !!val || 'Field is required',
+                (val) =>
+                  /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(val) ||
+                  'Field should be a valid email ex. xxxx@mail.com',
+              ]"
+              
+              outlined
+              v-model="emailCustomerValidate"
+              :label="selectedLabel"
+              style="width: 250px"
+              stack-label
+            />
+            <q-input
+              ref="emailRef"
+              filled
+              lazy-rules
+              v-else-if="modeValidate==2"
+              :rules="[
+                (val) => !!val || 'Field is required',
+                (val) =>
+                /^(09|\+639)\d{9}$/.test(val) ||
+                'Field should be a valid mobile number ex 09xxxxxxxxx or +639xxxxxxxxx',
+                
+              ]"
+              
+              outlined
+              v-model="emailCustomerValidate"
+              :label="selectedLabel"
+              style="width: 250px"
+              stack-label
+            />
+            <q-input
+              ref="emailRef"
+              filled
+              lazy-rules
+              v-else
+              :rules="[
+                (val) => !!val || 'Field is required',
+                (val) =>
+                /^\(0\d{1,2}\)\d{3}-\d{4}$/.test(val) ||
+                'Field should be a valid mobile number ex (0x)xxx-xxxx or xxxxx-xxxx',
+                
+              ]"
+              
+              outlined
+              v-model="emailCustomerValidate"
+              :label="selectedLabel"
+              style="width: 250px"
+              stack-label
+            />
+          </div>
+          
           <!-- <q-input 
         ref="inputRef"
         filled
@@ -338,7 +391,7 @@ export default defineComponent({
     const lengthQuestions = ref(0);
 
     // TSR data for post Add TSR
-    const emailCustomer = ref(null);
+    const emailCustomerValidate = ref(null);
     const TsrNo = ref(null);
     const serviceData = ref(null);
     const industryData = ref(null);
@@ -349,9 +402,55 @@ export default defineComponent({
     const ratingAfter = ref(null);
     const tsrDataFromApi = ref(null);
 
+    const group = ref('email');
+    const modeValidate = ref(1);
+    const selectedLabel = ref('Email')
+
+    const options = [
+        {
+          label: 'Email',
+          value: 'email'
+        },
+        {
+          label: 'Mobile Number',
+          value: 'mobileNumber'
+        },
+        {
+          label: 'Telephone Number',
+          value: 'telNumber'
+        }
+      ]
+
     const ratingApp = ref({
       value: "",
       remarks: "",
+    });
+
+    
+    watch(group, (newValue, oldValue) => {
+      // checkTSRsOtherAPI(newValue)
+      // check tsr field if valid
+      let retVal
+      switch (newValue) {
+        case 'email':
+          
+          retVal = 'Email'
+          modeValidate.value = 1
+          break;
+        case 'mobileNumber':
+          
+          retVal = 'Mobile Number'
+          modeValidate.value = 2
+          break;
+        case 'telNumber':
+          modeValidate.value = 3
+          retVal = 'Telephone Number'
+          break;
+      
+        default:
+          break;
+      }
+      selectedLabel.value = retVal
     });
 
     watch(TsrNo, (newValue, oldValue) => {
@@ -507,7 +606,7 @@ export default defineComponent({
 
     function clearFields() {
       TsrNo.value = "";
-      emailCustomer.value = "";
+      emailCustomerValidate.value = "";
       surveyAnswer.answers.forEach((element) => {
         element.remarks = "";
         element.value = "";
@@ -539,7 +638,7 @@ export default defineComponent({
         }
       });
 
-      let proceed = await validateCustomerAPI(emailCustomer.value, TsrNo.value);
+      let proceed = await validateCustomerAPI(emailCustomerValidate.value, TsrNo.value,modeValidate.value);
       if (proceed && proceedCheckDivMax) {
         if (
           !tsrDataFromApi.value.industry ||
@@ -561,7 +660,7 @@ export default defineComponent({
             tsrDataFromApi.value.service,
             tsrDataFromApi.value.division,
             "",
-            emailCustomer.value
+            emailCustomerValidate.value
           );
 
           // if survey form is accepted notify
@@ -575,7 +674,20 @@ export default defineComponent({
               message: "Submitted",
             });
             feedbackAfter.value = true;
-          } else {
+            
+          } else if (a == "401" || a == "404" || a == "500") {
+            clearFields();
+            hideLoading();
+            $q.notify({
+              color: "red-5",
+              textColor: "white",
+              icon: "warning",
+              message: "Error in submitting Form",
+            });
+            feedbackAfter.value = true;
+            
+          } 
+          else {
             $q.notify({
               color: "red-5",
               textColor: "white",
@@ -662,7 +774,7 @@ export default defineComponent({
       industry: ref(null),
       comments: ref(null),
       TsrNo,
-      emailCustomer,
+      emailCustomerValidate,
       CustomSurveyField,
       getAllQuestionsFromApi,
       submitSurvey,
@@ -687,6 +799,12 @@ export default defineComponent({
       clearFields,
       submitRateAppSurvey,
       showLoading,
+
+      // option groups verification
+      group,
+      options,
+      selectedLabel,
+      modeValidate
     };
   },
 });

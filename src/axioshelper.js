@@ -1260,9 +1260,9 @@ export const getQuestionByID = (id) => {
       })
 }
 
-export const validateCustomerAPI = (email,tsrNo) => {
+export const validateCustomerAPI = (email,tsrNo,validate) => {
 
-  return api.get('/tsrs/validateSurvey/' + email +'/' + tsrNo)
+  return api.get('/tsrs/validateSurvey/' + email +'/' + tsrNo +'/' + validate )
       .then(function( response ){
           return response.data;
       })
