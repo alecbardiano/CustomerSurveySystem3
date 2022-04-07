@@ -1,56 +1,103 @@
 <template>
-  <div>
-    <DoughnutChart ref="doughnutRef" :chartData="testData" :options="options" />
-    <DoughnutChart ref="doughnutRef2" :chartData="testData1" :options="options" />
-    <button @click="shuffleData">Shuffle</button>
-  </div>
+      <div v-if="question_type == 1">
+          <q-input outlined  v-model="inputViewModel" :label="labelval" style="width: 500px" stack-label />
+      </div>
+      <!-- required overall question rating -->
+      <div v-else-if="props.questionId == 12">
+         <q-rating
+              v-model="inputViewModel"
+              :max="5"
+              size="3.0em"
+              color="grey"
+              :color-selected="[
+                [colorRate(inputViewModel), 'grey', 'grey', 'grey', 'grey'],
+                ['grey', colorRate(inputViewModel), 'grey', 'grey', 'grey'],
+                ['grey', 'grey', colorRate(inputViewModel), 'grey', 'grey'],
+                ['grey', 'grey', 'grey', colorRate(inputViewModel), 'grey'],
+                ['grey', 'grey', 'grey', 'grey', colorRate(inputViewModel)]
+              ][inputViewModel ? inputViewModel -1 : 0]"
+              :icon="[
+                'sentiment_very_dissatisfied',
+                'sentiment_dissatisfied',
+                'sentiment_satisfied',
+                'sentiment_satisfied_alt',
+                'sentiment_very_satisfied'
+              ].reverse()"
+            />
+      </div>
+
+      <div v-else-if="question_type == 2">
+        {{inputViewModel}}
+          <q-rating
+              v-model="inputViewModel"
+              :max="5"
+              size="3.0em"
+              color="grey"
+              :color-selected="[
+                [colorRate(inputViewModel), 'grey', 'grey', 'grey', 'grey'],
+                ['grey', colorRate(inputViewModel), 'grey', 'grey', 'grey'],
+                ['grey', 'grey', colorRate(inputViewModel), 'grey', 'grey'],
+                ['grey', 'grey', 'grey', colorRate(inputViewModel), 'grey'],
+                ['grey', 'grey', 'grey', 'grey', colorRate(inputViewModel)]
+              ][inputViewModel ? inputViewModel -1 : 0]"
+              :icon="[
+                'sentiment_very_dissatisfied',
+                'sentiment_dissatisfied',
+                'sentiment_satisfied',
+                'sentiment_satisfied_alt',
+                'sentiment_very_satisfied'
+              ].reverse()"
+            >
+              <template v-for="(def, i) in rateDefinitions" :key="`tip-${i+1}`" v-slot:[`tip-${i+1}`]>
+                <q-tooltip>{{ def }}</q-tooltip>
+              </template>
+            </q-rating>
+      </div>
+    <!-- <div v-else-if="question_type == 4">
+        <q-select clearable v-model="inputViewModel" :options="optionval" :label="labelval" lazy-rules :rules="[val => !!val || 'Field is required']" />
+    </div> -->
+  
 </template>
+<script type="text/javascript">
+import { computed, onMounted } from "vue";
 
-<script>
-import { shuffle } from 'lodash';
-import { computed, defineComponent, ref, watch, onMounted } from 'vue';
-import { DoughnutChart } from 'vue-chart-3';
-import axios from 'axios'
-
-
-export default defineComponent({
-  name: 'Home',
-  components: { DoughnutChart },
-  props:{
-        chartData:Object,
-    },
+export default {
+   props: {
+    modelValue: Object,
+    question_type: Number,
+    optionval: Array,
+    labelval: String,
+    questionId: Number,
+  },
+ 
+  // props: ['question_type','modelval','optionval','labelval'],
   setup(props, { emit }) {
-    
-    const doughnutRef = ref();
-    const doughnutRef2 = ref();
+    onMounted( () => {
+       setQuestionID()
+    })
 
-
-    // var options2 = {
-    //     method: 'GET',
-    //     url: 'https://weatherapi-com.p.rapidapi.com/sports.json',
-    //     params: {q: 'London'},
-    //     headers: {
-    //         'x-rapidapi-host': 'weatherapi-com.p.rapidapi.com',
-    //         'x-rapidapi-key': '8521fcb5efmshdd290527ad3a118p1f63f9jsnbb898c1d8953'
-    //     }
-    // };
-
+    function setQuestionID (){
+      emit("update:modelValue", {
+            ...props.modelValue,
+            question: props.questionId
+        });
+    }
     
 
 
-    const chartDatafromParent = computed({
+    const inputViewModel = computed({
       get: () => {
-        if (props.chartData) {
-          return props.chartData;
+        if (props.modelValue) {
+          return parseInt(props.modelValue.value);
         } else {
-          return "";
+          return 0;
         }
       },
       set: (value) => {
           if (value){
-            emit("update:chartData", {
-            ...props.chartData,
-            value: value,
+            emit("update:modelValue", {
+            ...props.modelValue,
+            value: value.toString(),
             });
           }else{
             return null
@@ -59,144 +106,26 @@ export default defineComponent({
       },
     });
 
-    const options = ref({
-      responsive: true,
-      plugins: {
-        legend: {
-          position: 'top',
-        },
-        title: {
-          display: true,
-          text: 'Chart.js Doughnut Chart',
-        },
-      },
-    });
-    const testData1 = {
-      labels: ['Paris', 'Nîmes', 'Toulon', 'Perpignan', 'Autre'],
-      datasets: [
-        {
-          data: [30, 40, 60, 70, 5],
-          backgroundColor: ['#77CEFF', '#0079AF', '#123E6B', '#97B0C4', '#A5C8ED'],
-        },
-      ],
+    function colorRate (rate) {
+      console.log('ret',['orange', 'secondary', 'positive', 'deep-orange', 'negative'][+rate-1])
+      return ['negative', 'deep-orange', 'positive', 'secondary', 'orange'].reverse()[+rate-1]
+    }
+
+    const rateDefinitions = ['Poor', 'Fair', 'Satisfactory', 'Very Satisfactory', 'Outstanding'].reverse()
+    function rateDefinition (rate) {
+      return $global.rateDefinitions[+rate-1]
+    }
+
+    
+    return {
+      inputViewModel,
+      props,
+      colorRate,
+      rateDefinitions
+      
     };
-
-
-    const testData = computed(() => ({
-      labels: chartDatafromParent.value.labels,
-      datasets: [
-        {
-          data: chartDatafromParent.value,
-          backgroundColor: ['#77CEFF', '#0079AF', '#123E6B', '#97B0C4', '#A5C8ED'],
-        },
-      ],
-    }));
-
-    watch(props.chartData, (newValue, oldValue) => {
-        updateChart(newValue)
-    })
-
-    function setQuestionID (){
-      emit("update:chartData", {
-            ...props.chartData,
-        });
-    }
-    
-
-    function shuffleData() {
-      data.value = shuffle(data.value);
-    }
-
-    onMounted( async ()  => {
-
-    //    await axios.request(options2).then(function (response) {
-    //     console.log(response.data);
-    //     testData.value.datasets.data = response.data.football
-    //     }).catch(function (error) {
-    //         console.error(error);
-    //     });
-    //    console.log("mounted 2", chartDatafromParent.value)
-    })
-
-    return { testData1, testData, shuffleData, doughnutRef, doughnutRef2, options, props };
   },
-});
+};
 </script>
-
-<!--  <template>
-    <p style="color: blue">{{props.chartData}} </p>
-    <p style="color: red">{{data}} </p>
-    <p style="color: red">{{testData1}} </p>
-
-    <br>
-  <DoughnutChart :chartData="getData" />
-  <DoughnutChart :chartData="testData1" />
-  <DoughnutChart :chartData="data" />
-
-</template>
-
-<script lang="ts"> 
-// import { defineComponent, toRefs, reactive, onMounted, ref, watch, computed } from 'vue';
-// import { DoughnutChart } from 'vue-chart-3';
-
-
-
-// export default defineComponent({
-//   name: 'Home',
-//   components: { DoughnutChart },
-//   props:{
-//         chartData:Object,
-//     },
-    
-//   setup(props) {
-//     const testData = {
-//       labels: ['Paris', 'Nîmes', 'Toulon', 'Perpignan', 'Autre'],
-//       datasets: [
-//         {
-//           data: [30, 40, 60, 70, 5],
-//           backgroundColor: ['#77CEFF', '#0079AF', '#123E6B', '#97B0C4', '#A5C8ED'],
-//         },
-//       ],
-//     };
-
-//     const getData = computed( () => {
-//         // store.getters["auth/getUserProfile"]
-//         return data.value
-//     })
-
-//     const data = ref(props.chartData)
-
-    // watch(props.chartData, (newValue, oldValue) => {
-    //     console.log("new watch val", newValue)
-    //     updateChart(newValue)
-    // })
-
-//     function updateChart(newValue){
-//         data.value = newValue
-        
-//     }
-
-
-//     const testData1 = {
-//       labels: ['Paris', 'Nîmes', 'Toulon', 'Perpignan', 'Autre'],
-//       datasets: [
-//         {
-//           data: [30, 40, 60, 70, 5],
-//           backgroundColor: ['#77CEFF', '#0079AF', '#123E6B', '#97B0C4', '#A5C8ED'],
-//         },
-//       ],
-
-//     }
-
-//     onMounted( () => {
-//     //    setQuestionID()
-//     // new Chart(ctx, this.planetChartData);
-    
-
-//     })
-
-//     return { data, props, testData1,getData }
-//     ;
-//   },
-// });
-// </script> -->
+<style scoped>
+</style>

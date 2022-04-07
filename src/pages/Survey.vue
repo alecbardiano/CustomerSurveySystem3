@@ -79,8 +79,8 @@
               :rules="[
                 (val) => !!val || 'Field is required',
                 (val) =>
-                /^\(0\d{1,2}\)\d{3}-\d{4}$/.test(val) ||
-                'Field should be a valid mobile number ex (0x)xxx-xxxx or xxxxx-xxxx',
+                /^\d{3}-\d{4}$/.test(val) ||
+                'Field should be a valid mobile number ex xxx-xxxx',
                 
               ]"
               
@@ -148,9 +148,35 @@
           <div v-else-if="question.children.length > 0">
             <p class="questions">{{ question.description }}</p>
             <div class="surveyquestions">
-              <h5>Survey Questions</h5>
+              <div class="row inline>">
+                <div class="col-4">
+                  <h5>Survey Questions</h5>
+                </div>
+                <div class="col-4">
+                  <table style="width:100%">
+                      <tr>
+                        <th colspan="6">Legend</th>
+                      </tr>
+                      <tr>
+                        <th>Poor  1</th>
+                        <th>Fair  2</th>
+                        <th>Satisfactory  3</th>
+                        <th>Very Satisfactory  4</th>
+                        <th>Excellent 5</th>
+                      </tr>
+                      <tr>
+                        <th style="width:20%"><q-icon name="sentiment_very_dissatisfied" size="2.0em" /></th>
+                        <th style="width:20%"><q-icon name="sentiment_dissatisfied" size="2.0em" /></th>
+                        <th style="width:20%"><q-icon name="sentiment_satisfied" size="2.0em" /></th>
+                        <th style="width:20%"><q-icon name="sentiment_satisfied_alt" size="2.0em" /></th>
+                        <th style="width:20%"><q-icon name="sentiment_very_satisfied"  size="2.0em"/></th>
+                      </tr>
+                    </table>
+                </div>
+              </div>
 
               <div
+              class="q-pa-md"
                 v-for="(questionSubhead, index) in orderByNestedSurveyQuestions(
                   question.children
                 )"

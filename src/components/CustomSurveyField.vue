@@ -93,10 +93,18 @@ export default {
 
     const inputViewModel = computed({
       get: () => {
-        if (props.modelValue) {
-          return props.modelValue.value;
-        } else {
-          return "";
+        if(props.question_type == 2){
+          if (props.modelValue) {
+            return parseInt(props.modelValue.value);
+          } else {
+            return 0;
+          }
+        }else{
+          if (props.modelValue) {
+            return props.modelValue.value;
+          } else {
+            return '';
+          }
         }
       },
       set: (value) => {
