@@ -99,6 +99,7 @@
         
         /> -->
         </div>
+         
 
         <!-- v-model na kumukuha nung array, array of answers instantiate -->
 
@@ -112,6 +113,8 @@
         <br>
         Section: {{sectionData}}
         </div> -->
+        <div class="row">
+          <div class="col-8">
         <div
           v-for="(question, parent_node_index) in orderByPositionQuestions"
           v-bind:key="question.question"
@@ -119,150 +122,165 @@
           <!-- {{orderByPositionQuestions}} -->
           <!-- {{question}} -->
           <!-- {{ updateCnt(parent_node_index) }} -->
-
-          <div v-if="question.children.length == 0">
-            <div class="row">
+          <div>
+            <div v-if="question.children.length == 0">
+              <div class="row">
+                <p class="questions">{{ question.description }}</p>
+                <!-- add 1 because index is 0 -->
+              </div>
+              <div class="row inline">
+                <div class="inputs">
+                  <!-- {{question}} -->
+                  <CustomSurveyField
+                    v-if="question.id == 3"
+                    v-model="surveyAnswer.answers[parent_node_index]"
+                    :questionId="question.id"
+                    :question_type="question.question_type"
+                    :labelval="question.label"
+                  />
+                  <CustomSurveyField
+                    v-else
+                    v-model="surveyAnswer.answers[parent_node_index]"
+                    :questionId="question.id"
+                    :question_type="question.question_type"
+                    :labelval="question.label"
+                  />
+                </div>
+              </div>
+            </div>
+            <div v-else-if="question.children.length > 0">
               <p class="questions">{{ question.description }}</p>
-              <!-- add 1 because index is 0 -->
-            </div>
-            <div class="row inline">
-              <div class="inputs">
-                <!-- {{question}} -->
-                <CustomSurveyField
-                  v-if="question.id == 3"
-                  v-model="surveyAnswer.answers[parent_node_index]"
-                  :questionId="question.id"
-                  :question_type="question.question_type"
-                  :labelval="question.label"
-                />
-                <CustomSurveyField
-                  v-else
-                  v-model="surveyAnswer.answers[parent_node_index]"
-                  :questionId="question.id"
-                  :question_type="question.question_type"
-                  :labelval="question.label"
-                />
-              </div>
-            </div>
-          </div>
-          <div v-else-if="question.children.length > 0">
-            <p class="questions">{{ question.description }}</p>
-            <div class="surveyquestions">
-              <div class="row inline>">
-                <div class="col-4">
-                  <h5>Survey Questions</h5>
+              <div class="surveyquestions">
+                <div class="row inline>">
+                  <div class="col-4">
+                    <h5>Survey Questions</h5>
+                  </div>
+                
                 </div>
-                <div class="col-4">
-                  <table style="width:100%">
-                      <tr>
-                        <th colspan="6">Legend</th>
-                      </tr>
-                      <tr>
-                        <th>Poor  1</th>
-                        <th>Fair  2</th>
-                        <th>Satisfactory  3</th>
-                        <th>Very Satisfactory  4</th>
-                        <th>Excellent 5</th>
-                      </tr>
-                      <tr>
-                        <th style="width:20%"><q-icon name="sentiment_very_dissatisfied" size="2.0em" /></th>
-                        <th style="width:20%"><q-icon name="sentiment_dissatisfied" size="2.0em" /></th>
-                        <th style="width:20%"><q-icon name="sentiment_satisfied" size="2.0em" /></th>
-                        <th style="width:20%"><q-icon name="sentiment_satisfied_alt" size="2.0em" /></th>
-                        <th style="width:20%"><q-icon name="sentiment_very_satisfied"  size="2.0em"/></th>
-                      </tr>
-                    </table>
-                </div>
-              </div>
 
-              <div
-              class="q-pa-md"
-                v-for="(questionSubhead, index) in orderByNestedSurveyQuestions(
-                  question.children
-                )"
-                v-bind:key="questionSubhead.id"
-              >
-                <!-- {{ updateCnt(parent_node_index) }} -->
-                <!-- {{questionSubhead}} -->
-                <!-- {{questionSubhead}} -->
-                <!-- {{questionSubhead}} -->
-                <!-- {{ orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.subheader.length, 0)+ index }} -->
-                <div class="row">
-                  <div class="col-4 col-md-4">
-                    <p class="questions">
-                      {{ index + 1 }}. {{ questionSubhead.description }}
-                    </p>
-                  </div>
-                  <div class="row inline">
-                    <div class="inputs">
-                      <!-- <div v-if="questionSubhead.id == 12">
-                          <CustomSurveyField v-model="subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index]" :questionId="questionSubhead.id" lazy-rules :rules="[val => val == '' || 'Field is required']"  :question_type="questionSubhead.question_type.id"  :labelval="questionSubhead.label" />
-                        </div> -->
-                      <!-- indexing in nested v-model of surveyanswer -->
-                      <!-- {{orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index}} -->
-                      <!-- {{subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index]}} -->
-                      <CustomSurveyField
-                        v-model="
-                          subHeaderSurveyAnswer.answers[
-                            orderByPositionQuestions
-                              .slice(0, parent_node_index)
-                              .reduce(
-                                (total, qs) => (total += qs.children.length),
-                                0
-                              ) + index
-                          ]
-                        "
-                        :questionId="questionSubhead.id"
-                        :question_type="questionSubhead.question_type"
-                        :labelval="questionSubhead.label"
-                      />
+                <div
+                class="q-pa-md"
+                  v-for="(questionSubhead, index) in orderByNestedSurveyQuestions(
+                    question.children
+                  )"
+                  v-bind:key="questionSubhead.id"
+                >
+                  <!-- {{ updateCnt(parent_node_index) }} -->
+                  <!-- {{questionSubhead}} -->
+                  <!-- {{questionSubhead}} -->
+                  <!-- {{questionSubhead}} -->
+                  <!-- {{ orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.subheader.length, 0)+ index }} -->
+                  <div class="row">
+                    <div class="col-4 col-md-4">
+                      <p class="questions">
+                        {{ index + 1 }}. {{ questionSubhead.description }}
+                      </p>
                     </div>
-                    <div>
-                      <!-- {{subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index]}} -->
-                      <q-input
-                        v-if="
-                          subHeaderSurveyAnswer.answers[
-                            orderByPositionQuestions
-                              .slice(0, parent_node_index)
-                              .reduce(
-                                (total, qs) => (total += qs.children.length),
-                                0
-                              ) + index
-                          ].value < 3 &&
-                          subHeaderSurveyAnswer.answers[
-                            orderByPositionQuestions
-                              .slice(0, parent_node_index)
-                              .reduce(
-                                (total, qs) => (total += qs.children.length),
-                                0
-                              ) + index
-                          ].value != ''
-                        "
-                        v-model="
-                          subHeaderSurveyAnswer.answers[
-                            orderByPositionQuestions
-                              .slice(0, parent_node_index)
-                              .reduce(
-                                (total, qs) => (total += qs.children.length),
-                                0
-                              ) + index
-                          ].remarks
-                        "
-                        outlined
-                        label="Remarks:"
-                        style="width: 300px"
-                        stack-label
-                        lazy-rules
-                        :rules="[(val) => !!val || 'Field is required']"
-                      />
-                      <!-- <q-input v-if="subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index].value < 3 && subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index].value != ''" v-model="subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index].remarks" outlined label="Remarks:" 
-                        /> -->
+                    <div class="row inline">
+                      <div class="inputs">
+                        <!-- <div v-if="questionSubhead.id == 12">
+                            <CustomSurveyField v-model="subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index]" :questionId="questionSubhead.id" lazy-rules :rules="[val => val == '' || 'Field is required']"  :question_type="questionSubhead.question_type.id"  :labelval="questionSubhead.label" />
+                          </div> -->
+                        <!-- indexing in nested v-model of surveyanswer -->
+                        <!-- {{orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index}} -->
+                        <!-- {{subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index]}} -->
+                        <CustomSurveyField
+                          v-model="
+                            subHeaderSurveyAnswer.answers[
+                              orderByPositionQuestions
+                                .slice(0, parent_node_index)
+                                .reduce(
+                                  (total, qs) => (total += qs.children.length),
+                                  0
+                                ) + index
+                            ]
+                          "
+                          :questionId="questionSubhead.id"
+                          :question_type="questionSubhead.question_type"
+                          :labelval="questionSubhead.label"
+                        />
+                      </div>
+                      <div>
+                        <!-- {{subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index]}} -->
+                        <q-input
+                          v-if="
+                            subHeaderSurveyAnswer.answers[
+                              orderByPositionQuestions
+                                .slice(0, parent_node_index)
+                                .reduce(
+                                  (total, qs) => (total += qs.children.length),
+                                  0
+                                ) + index
+                            ].value < 3 &&
+                            subHeaderSurveyAnswer.answers[
+                              orderByPositionQuestions
+                                .slice(0, parent_node_index)
+                                .reduce(
+                                  (total, qs) => (total += qs.children.length),
+                                  0
+                                ) + index
+                            ].value != ''
+                          "
+                          v-model="
+                            subHeaderSurveyAnswer.answers[
+                              orderByPositionQuestions
+                                .slice(0, parent_node_index)
+                                .reduce(
+                                  (total, qs) => (total += qs.children.length),
+                                  0
+                                ) + index
+                            ].remarks
+                          "
+                          outlined
+                          label="Remarks:"
+                          style="width: 300px"
+                          stack-label
+                          lazy-rules
+                          :rules="[(val) => !!val || 'Field is required']"
+                        />
+                        <!-- <q-input v-if="subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index].value < 3 && subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index].value != ''" v-model="subHeaderSurveyAnswer.answers[orderByPositionQuestions.slice(0, parent_node_index).reduce((total, qs)=>total+=qs.children.length, 0)+ index].remarks" outlined label="Remarks:" 
+                          /> -->
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+        </div>
+          </div>
+          <div class="col-4">
+          <table style="width:70%">
+              <tr>
+                <th colspan="6">Legend</th>
+              </tr>
+              <tr>
+                <th>Rating</th>
+                <th>Smiley</th>
+              </tr>
+              
+              <tr >
+                <th>Poor - 1</th>
+                <th><q-icon name="sentiment_very_dissatisfied" size="2.0em" /></th>
+              </tr>
+              <tr>
+                <th>Fair - 2</th>
+                <th><q-icon name="sentiment_dissatisfied" size="2.0em" /></th>
+              </tr>
+              <tr>
+                <th>Satisfactory - 3</th>
+                <th><q-icon name="sentiment_satisfied" size="2.0em" /></th>
+              </tr>
+              <tr>
+                <th>Very Satisfactory - 4</th>
+                <th><q-icon name="sentiment_satisfied_alt"  size="2.0em"/></th>
+              </tr>
+              <tr>
+                <th>Excellent - 5</th>
+                <th><q-icon name="sentiment_very_satisfied"  size="2.0em"/></th>
+              </tr>
+            </table>
+        </div>
         </div>
         <div class="row justify-end">
           <q-dialog v-model="prompt">
@@ -476,6 +494,7 @@ export default defineComponent({
         default:
           break;
       }
+      emailCustomerValidate.value=''
       selectedLabel.value = retVal
     });
 
@@ -665,7 +684,31 @@ export default defineComponent({
       });
 
       let proceed = await validateCustomerAPI(emailCustomerValidate.value, TsrNo.value,modeValidate.value);
-      if (proceed && proceedCheckDivMax) {
+      if(proceed == '403'){
+        $q.notify({
+              color: "red-5",
+              textColor: "white",
+              icon: "warning",
+              message: "You are not authorized to submit a survey ",
+            }); 
+      }
+      if(proceed == '400'){
+        $q.notify({
+              color: "red-5",
+              textColor: "white",
+              icon: "warning",
+              message: "Duplicate TSR",
+            }); 
+      }
+      else if(proceedCheckDivMax == '403'){
+        $q.notify({
+              color: "red-5",
+              textColor: "white",
+              icon: "warning",
+              message: "You are not authorized to submit a survey ",
+            }); 
+      }
+      else if (proceed && proceedCheckDivMax) {
         if (
           !tsrDataFromApi.value.industry ||
           tsrDataFromApi.value.industry == ""
@@ -688,6 +731,7 @@ export default defineComponent({
             "",
             emailCustomerValidate.value
           );
+          console.log("aaaaa",a)
 
           // if survey form is accepted notify
           if (a == "200") {
@@ -701,34 +745,34 @@ export default defineComponent({
             });
             feedbackAfter.value = true;
             
-          } else if (a == "401" || a == "404" || a == "500") {
-            clearFields();
+          } else if (a == "401" || a == "404") {
             hideLoading();
             $q.notify({
               color: "red-5",
               textColor: "white",
               icon: "warning",
-              message: "Error in submitting Form",
+              message: "Error in submitting Form, Please check connection",
             });
-            feedbackAfter.value = true;
             
-          } 
-          else {
+          }
+          else if ( a == "500") {
+            hideLoading();
             $q.notify({
               color: "red-5",
               textColor: "white",
               icon: "warning",
-              message: "TSR already answered",
+              message: "TSR-No is Duplicate",
             });
+            
           }
         }
-      } else {
+      }else{
         $q.notify({
-          color: "red-5",
-          textColor: "white",
-          icon: "warning",
-          message: "Feedback invalid ",
-        });
+              color: "red-5",
+              textColor: "white",
+              icon: "warning",
+              message: "Verification error",
+            });
       }
 
       // post answers and children/subheader answers

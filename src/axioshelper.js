@@ -479,7 +479,7 @@ const getAnswersForOverall = function (division,service,questionID,beforeDate,af
     
 
 }
- 
+let status;
 const postAnswersToBackend = async function(answers,subheaderans,tsrNo,industry,service,division,dateImport,email) {
   
   let errorMessage = ""
@@ -508,7 +508,6 @@ try {
   }
   
   await api.post("/tsrs", tsr)
-  
   .then(response => { 
     tsrId = response.data.id
     resultTsr = response.data
@@ -518,10 +517,10 @@ try {
     if (error.response) {
       // Request made and server responded
       
-      console.log(error.response.data);
       console.log(error.response.status);
       console.log(error.response.headers);
-      return error.response.status
+      status = error.response.status
+      
       
     } else if (error.request) {
       // The request was made but no response was received
@@ -531,6 +530,9 @@ try {
       console.log('Error', error.message);
     }
   })
+  if(status){
+    return status
+  }
   for (const answer of answers) {
     console.log("tsrsrsts", tsrId)
     // console.log("from axioss sssssdsd23232", answer)
