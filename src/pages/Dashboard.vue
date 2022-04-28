@@ -297,9 +297,11 @@
           <q-td >
              Target No. of Respondents
           </q-td>
-          <q-td >
-             {{}}
-          </q-td>
+          <q-td style="text-align: center" v-bind:key="column.key" v-for="(column) in totalActualRespondents">
+              {{column.value}}
+              <!-- {{ column[key] }}  -->
+               <!-- <p v-if="column.value != 0  "></p>  -->
+          </q-td> 
         </q-tr>
         <q-tr>
           <q-td >
