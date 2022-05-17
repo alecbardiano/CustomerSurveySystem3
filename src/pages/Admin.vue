@@ -89,7 +89,7 @@
               label="Generate PDF Report"
               class="q-mt-md"
               color="primary"
-              @click="generatePDF()"
+              @click="numberOfCustomerDialog=true"
               style="margin-left: 15px"
           />
           <!-- <q-btn
@@ -260,6 +260,92 @@
     <viewsurveyanswer v-model="tsrData" :cols="cols"></viewsurveyanswer>
   </q-dialog>
 
+<q-form @submit="generatePDFValidation" class="q-gutter-md" ref="addInputNumberofCustomersForm">
+  <q-dialog :maximized="maximizedToggle" v-model="numberOfCustomerDialog" persistent >
+    
+       <q-card class="bg-primary text-white">
+        <q-bar>
+          <q-space />
+
+          <q-btn dense flat icon="minimize" @click="maximizedToggle = false" :disable="!maximizedToggle">
+            <q-tooltip v-if="maximizedToggle" class="bg-white text-primary">Minimize</q-tooltip>
+          </q-btn>
+          <q-btn dense flat icon="crop_square" @click="maximizedToggle = true" :disable="maximizedToggle">
+            <q-tooltip v-if="!maximizedToggle" class="bg-white text-primary">Maximize</q-tooltip>
+          </q-btn>
+          <q-btn dense flat icon="close" v-close-popup>
+            <q-tooltip class="bg-white text-primary">Close</q-tooltip>
+          </q-btn>
+        </q-bar>
+
+        <q-card-section>
+          <div class="text-h6">Enter Number of Customers Actual Served</div>
+        </q-card-section>
+
+        <q-card-section>
+           <q-table
+              :rows="rowsnumberOfCustomers"
+              :columns="colsnumberOfCustomers"
+              row-key="col1"
+              separator="cell"
+              :rows-per-page-options="[0]"
+            >
+            <template  v-slot:header>
+                <q-tr>
+                  <q-th key="Month" style="width: 250px" class="primary"></q-th>
+                  <q-th v-for="(col) in divisions" v-bind:key="col.name" v-bind:colspan="col.count"> {{col.division}}</q-th>
+                  <!-- <q-th key="Total" style="width: 250px" class="primary"></q-th> -->
+                </q-tr>
+                <q-tr>
+                  <q-th  v-for="col in colsnumberOfCustomers"  v-bind:key="col.name" class="bg-light-9 black-white" > {{col.name}}</q-th>
+                  
+                </q-tr>
+                
+                
+              
+          </template>
+
+              <template v-slot:bottom-row>
+                
+                <q-tr>
+                  <q-td >
+                    Total Actual No. of Customers Served
+                  </q-td> 
+                  <q-td style="text-align: center" v-bind:key="column.key" v-for="(column,index) in divisioAndSectionList.length">
+                      
+                       <q-input filled v-model="totalActualArray[index]" label="Actual Number of Customers Served" :rules="[val => !!val || 'Field is required']" />
+                  </q-td> 
+                </q-tr>
+                <q-tr>
+                  <q-td >
+                    Target No. of Respondents
+                  </q-td>
+                  <q-td style="text-align: center" v-bind:key="column.key" v-for="(column,index) in divisioAndSectionList.length">
+                      
+                       <q-input filled v-model="targetNoRespondents[index]" label="Target Number" :rules="[val => !!val || 'Field is required']" />
+                  </q-td> 
+                </q-tr>
+                <q-tr>
+                  <q-td >
+                    Percentage
+                  </q-td>
+                </q-tr>
+             
+
+              </template>
+                
+            </q-table>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Generate PDF Report" class="bg-white text-black" icon-right="notes" @click="generatePDFValidation()" color="black" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+  </q-form>
+
+
+
 
   <!-- upload dialog -->
   <q-dialog v-model="uploadDialog" >
@@ -303,6 +389,9 @@ export default defineComponent({
   setup () {
   let timer
   const store = useStore();
+  
+  const targetNoRespondents = ref([])
+  const totalActualArray = ref([])
 
   const visibleColumns = ref([ "tsrNo", "division", "service", "industry", "Overall Rating","publishedDate"])
   const divisioAndSectionList = ref([])
@@ -320,9 +409,12 @@ export default defineComponent({
   const beforeDate = ref('')
   const afterDate = ref('')
   const dateform = ref(null)
+  const rowsnumberOfCustomers = ref([])
+  const colsnumberOfCustomers = ref([])
 
   const prompt = ref(false)
   const uploadDialog = ref(false)
+  const numberOfCustomerDialog = ref(false)
 
   let today = Date.now();
   today = moment().year()
@@ -338,6 +430,7 @@ export default defineComponent({
   const questions = ref([])
     
   const tsrList = ref ([])
+  const maximizedToggle = ref(true)
 
   // survey row data tables 
   const rows = ref([])
@@ -393,7 +486,7 @@ export default defineComponent({
     
   // })
 
-  
+  const addInputNumberofCustomersForm = ref(null)
   
   
 
@@ -857,6 +950,7 @@ export default defineComponent({
         }
       // number of customers table
       else if(mode == 4){
+        console.log("Data",data)
         let copyColumns = columns.map(a => a);
         let arrFirstHeader = []
         // first header
@@ -1239,7 +1333,7 @@ export default defineComponent({
 
     // Number of Customers and CSM Respondents Per Service Area
     numberOfCustomersColumns.value = numberOfCustomersColumnsData(divisioAndSectionList.value)
-    numberOfCustomersRows.value = numberOfCustomersRowsData(divisioAndSectionList.value,alltsrs)
+    numberOfCustomersRows.value = numberOfCustomersRowsData(divisioAndSectionList.value,alltsrs,targetNoRespondents.value,totalActualArray.value)
     
     // Summary of Citizen/Client Satisfaction Survey CCSS Rating
     summaryQuestionPerDivisionCols.value = summaryPerDivisionColumns(orderByPositionQuestions.value)
@@ -1628,16 +1722,31 @@ export default defineComponent({
     }catch (err){
       console.log("error", error)
     }
-    
+
+  
+    colsnumberOfCustomers.value.push({
+      name: '',
+      align: 'left',
+      label: '',
+      field: 'month',
+      sortable: true
+    })
     // filters
     divisioAndSectionList.value = await getDivList()
+    divisioAndSectionList.value.forEach(element => {
+          let stringColField = element.keyname
+          let col = { name: element.service, align: 'center', label: element.service, field: stringColField, sortable: true }
+          // columns for overallperformance
+          // columns for number of customers
+          colsnumberOfCustomers.value.push(col)
+        }); 
     divisionsWithServ.value = [...new Set(divisioAndSectionList.value.map(a => a.division))]
 
     // count of services per division
     divisions.value = await getCountServicePerDivision()
     let a = await getQuestionsWithoutAns()
 
-    // console.log("A",a )
+    console.log("A",colsnumberOfCustomers.value )
     // console.log("questions.value",questions.value)
     // divisions.value = divisions.value.map( item => item.division)
 
@@ -1763,6 +1872,19 @@ export default defineComponent({
         for (const arrayItem of finalArrObj) {
           let answers = []
           // console.log("arrayitem", arrayItem)
+          if(arrayItem.division === 'ATD'){
+            let tempTsrNo = 'MIRDC-'
+            let dateTSR = moment(arrayItem.submittedAt).format('MMYYYY')
+            let tempCurrentTSR = arrayItem.tsrNo
+            arrayItem.tsrNo = tempTsrNo + dateTSR.toString() + '-' + tempCurrentTSR
+          }
+          else{
+            let dateTSR = moment(arrayItem.submittedAt).format('YY')
+            let tempCurrentTSR = arrayItem.tsrNo
+            arrayItem.tsrNo = dateTSR.toString() + '-' + tempCurrentTSR
+          }
+          
+          
           let resCode = await postAnswers(answers,arrayItem.answers,arrayItem.tsrNo,arrayItem.industry,arrayItem.service,arrayItem.division,arrayItem.submittedAt,"")
           if (resCode != '200'){
             
@@ -1898,6 +2020,23 @@ export default defineComponent({
       return avgArrayWithKeys
 
     }
+  
+  function generatePDFValidation(){
+    addInputNumberofCustomersForm.value.validate().then((success) => {
+      if(success){
+        generatePDF()
+      }else{
+        $q.notify({
+          color: 'red-5',
+            textColor: 'white',
+            icon: 'warning',
+            message: 'Fill up all the necessary fields'
+          })
+      }
+    })
+
+    
+  }
 
   async function onRequest(props) {
 
@@ -1992,6 +2131,8 @@ export default defineComponent({
       
   }
     return {
+      rowsnumberOfCustomers,
+      colsnumberOfCustomers,
       rowsTable,
       rowsFilter,
       answers,
@@ -2055,7 +2196,14 @@ export default defineComponent({
         return finalAverageDataRow.value.filter(a => a.visible)
       }),
       toggles,
-      userLoggedin
+      userLoggedin,
+      numberOfCustomerDialog,
+      divisioAndSectionList,
+      targetNoRespondents,
+      totalActualArray,
+      generatePDFValidation,
+      addInputNumberofCustomersForm,
+      maximizedToggle
     }
   }
   

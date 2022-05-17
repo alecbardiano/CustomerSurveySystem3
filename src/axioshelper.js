@@ -544,10 +544,15 @@ try {
         tsr_q_id: tsrId +'_' +answer.question,
         tsrNo: tsrNo
       }
-      let val = parseInt(ans.value) 
-      if(val <= 2){
-        flagNegative = 1
+      if (ans.value === 0){
+        val = ''
+      }else{
+        let val = parseInt(ans.value) 
+        if(val <= 2){
+          flagNegative = 1
+        }
       }
+      
 
       await api.post("/answers", ans)
     }

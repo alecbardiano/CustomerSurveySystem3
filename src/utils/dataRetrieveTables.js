@@ -198,8 +198,14 @@ function buildNumberOfCustomersColumns (divisionsAndSections){
       })
     return cols
 }
-function buildNumberOfCustomersRows (divisionsAndSections, tsrList){
+function buildNumberOfCustomersRows (divisionsAndSections, tsrList,target,actualServed){
   let rowsnumberOfCustomers = []
+  let maptarget = target.map(function (x) { 
+    return parseInt(x, 10); 
+  });
+  let mapactualServed = actualServed.map(function (x) { 
+    return parseInt(x, 10); 
+  });
   // tsrList.value
 
     tsrList = orderBy(tsrList,'submittedAt', 'asc')
@@ -242,22 +248,90 @@ function buildNumberOfCustomersRows (divisionsAndSections, tsrList){
         }
         
         // total per service
-        let arrTotal = {}
-        let totalOfTotals = 0
-        divisionsAndSections.forEach(element => {
-          let stringColField = element.keyname
-          let sample = filterMyArr(rowsnumberOfCustomers, stringColField)
-          let sum = sample.reduce((a, b) => a + b, 0)
+        let totalActualRespondentsArr = []
+        
+        let arrStrings = ['Total Actual Respondents','Total Actual Number of Customers Served','Target Number of Respondents','Percentage (Actual Number of Respondents vs Target Number of Respondents']
+        for (let index = 0; index < 4; index++) {
+          let arrTotal = {}
+          let totalOfTotals = 0
           
-          arrTotal[stringColField] = sum
-          // total vertical per service
-          arrTotal["month"] = "Total Actual Respondents"
-          totalOfTotals += sum
-        });
-           
-          //  totalActualRespondents.push(arrTotal)
-        arrTotal['total'] = totalOfTotals
-        rowsnumberOfCustomers.push(arrTotal)
+          divisionsAndSections.forEach(element => {
+              let stringColField = element.keyname
+              let sum = 0
+              if (index === 0) {
+                let sample = filterMyArr(rowsnumberOfCustomers, stringColField)
+                sum = sample.reduce((a, b) => a + b, 0)
+                totalActualRespondentsArr.push(sum)
+                arrTotal[stringColField] = sum
+              }else if(index === 1){
+                console.log("actual",actualServed)
+                let index2 = 0
+                divisionsAndSections.forEach(element => {
+                  let stringColField = element.keyname
+                    // filter all data
+                    arrTotal[stringColField] = actualServed[index2]
+                    
+                    index2+=1
+                });
+                sum = mapactualServed.reduce((a, b) => a + b, 0)
+                
+              }
+              else if(index === 2){
+                console.log("actual",target)
+                let index2 = 0
+                divisionsAndSections.forEach(element => {
+                  let stringColField = element.keyname
+                    // filter all data
+                    arrTotal[stringColField] = target[index2]
+                    index2+=1
+                });
+                sum = maptarget.reduce((a, b) => a + b, 0)
+                
+              }
+              else if(index === 3){
+                console.log("actual",target)
+                let index2 = 0
+                divisionsAndSections.forEach(element => {
+                  let stringColField = element.keyname
+                    // filter all data
+                    if(totalActualRespondentsArr[index2] != 0 && target[index2] != 0 ){
+                      arrTotal[stringColField] = (totalActualRespondentsArr[index2]/target[index2] * 100).toFixed(2).toString() + '%'
+                    }else{
+                      arrTotal[stringColField] = '0%'
+                    }
+                    
+                    index2+=1
+                });
+                sum = maptarget.reduce((a, b) => a + b, 0)
+                
+              }
+              
+              // total vertical per service
+              if(index === 0){
+                totalOfTotals += sum
+              }else{
+                totalOfTotals = sum
+              }
+              
+            });
+            arrTotal["month"] = arrStrings[index]
+         
+                
+              //  totalActualRespondents.push(arrTotal)
+              console.log("totalActualRespondentsArr[totalActualRespondentsArr.length-1]",totalActualRespondentsArr[totalActualRespondentsArr.length-1])
+              console.log("target[target.length-1]",target[target.length-1])
+            if(index === 3){
+              
+              let finalTotaltotalActualRespondents = totalActualRespondentsArr.reduce((a, b) => a + b, 0)
+              let finalTotalTargetNumberofRespondents = maptarget.reduce((a, b) => a + b, 0)
+              arrTotal['total'] = (finalTotaltotalActualRespondents/finalTotalTargetNumberofRespondents * 100).toFixed(2).toString() + '%'
+            }else{
+              arrTotal['total'] = totalOfTotals
+            }
+            
+            rowsnumberOfCustomers.push(arrTotal)
+          
+        }
         // total actual respondents
       // let tot = {}
       // tot["value"] = totalRespondentsPerMonth
@@ -398,7 +472,7 @@ export const numberOfCustomersColumnsData= (div) => {
     return buildNumberOfCustomersColumns(div)
 }
 
-export const numberOfCustomersRowsData = (div,tsr) => {
-  return buildNumberOfCustomersRows(div,tsr)
+export const numberOfCustomersRowsData = (div,tsr,target,actualServed) => {
+  return buildNumberOfCustomersRows(div,tsr,target,actualServed)
 }
   

@@ -279,6 +279,7 @@
           <q-td>
             Total Actual Respondents
           </q-td>
+        
           <q-td style="text-align: center" v-bind:key="column.key" v-for="(column) in totalActualRespondents">
               {{column.value}}
               <!-- {{ column[key] }}  -->
@@ -289,26 +290,37 @@
           <q-td >
             Total Actual No. of Customers Served
           </q-td>
-          <q-td >
-             {{}}
-          </q-td>
-        </q-tr>
-        <q-tr>
-          <q-td >
-             Target No. of Respondents
-          </q-td>
-          <q-td style="text-align: center" v-bind:key="column.key" v-for="(column) in totalActualRespondents">
-              {{column.value}}
-              <!-- {{ column[key] }}  -->
-               <!-- <p v-if="column.value != 0  "></p>  -->
-          </q-td> 
-        </q-tr>
-        <q-tr>
-          <q-td >
-             Percentage
+          <q-td style="text-align: center" v-bind:key="column.key" v-for="(column,index) in divisionsAndSections.length">
+              <q-input filled v-model.number="totalActualArray[index]" label="Actual No. Of Customers Served" />
           </q-td>
           <q-td>
-             {{}}
+            {{totalActualArray.reduce((a, b) => a + b, 0)}}
+          </q-td>
+        </q-tr>
+        <q-tr>
+          <q-td >
+             Target No. of Respondents 
+          </q-td>
+          <q-td style="text-align: center" v-bind:key="column.key" v-for="(column,index) in divisionsAndSections.length">
+              <q-input filled v-model.number="targetNoRespondents[index]" label="Target" />
+          </q-td>
+          <q-td>
+            {{targetNoRespondents.reduce((a, b) => a + b, 0)}}
+          </q-td>
+        </q-tr>
+        <q-tr>
+          <q-td >
+             Percentage 
+          </q-td>
+         <q-td style="text-align: center" v-bind:key="column.key" v-for="(column,index) in totalActualRespondents">
+              <!-- {{ percentageAns(targetNoRespondents[index],column.value) }} -->
+              <div v-if="targetNoRespondents[index]">{{ ((( column.value/ targetNoRespondents[index] ) * 100).toFixed(2).toString() + '%' )}} </div>
+             
+              <div v-else-if="index === totalActualRespondents.length-1"> {{ computedTotalPercentage }}</div> 
+              <div v-else> 0% </div>
+              <!-- {{sumArray(targetNoRespondents)}} -->
+              <!-- {{ column[key] }}  -->
+               <!-- <p v-if="column.value != 0  "></p>  -->
           </q-td>
         </q-tr>
 
@@ -414,7 +426,17 @@
     },
     
     setup() {
-      const dataValues = ref([30, 40, 60, 70, 5]);
+      
+      const computedTotalPercentage = computed( () =>{
+        let arr = targetNoRespondents.value.reduce((a, b) => a + b, 0)
+        if(arr <= 0){
+          return '0%'
+        }else{
+          return ((totalActualRespondents.value[totalActualRespondents.value.length-1].value / arr) *100).toFixed(2).toString() + '%'
+        }
+        
+        // return 1
+      }) 
       const totalNegative = ref(0);
       const totalPositive = ref(0);
       const totalNoFeedback = ref(0);
@@ -422,6 +444,9 @@
       const tsrs = ref([])
       const totalAnswerOverall = ref([])
       const totalNoResponse = ref(0)
+
+      const targetNoRespondents = ref([])
+      const totalActualArray = ref([])
 
       const mode = ref(null)
 
@@ -451,6 +476,8 @@
         
         
       })
+
+
 
 
 
@@ -499,15 +526,7 @@
       
       const columns = ref([])
 
-      const store = useStore();
 
-      const getterUser = computed(() => store.getters["auth/getUserProfile"]);
-
-
-
-    //   fullName: function () {
-    //   return this.firstName + ' ' + this.lastName
-    // }
 
       // bottom row overall performance
       const totalPerField = ref([])
@@ -939,10 +958,13 @@
             let atotal = resultTotal.reduce((a, b) => a + b, 0)
             
             // totalActualRespondents.value[stringColField] = atotal
-            let tempObj = {}
+            let tempObj = {value: 0}
+            targetNoRespondents.value.push(0)
+            totalActualArray.value.push(0)
             tempObj['value'] = atotal
             totalRespondents += atotal
             totalActualRespondents.value.push(tempObj)
+            
           })
           // total respondents push to last array
           let total = {}
@@ -1424,6 +1446,7 @@
       }
 
 
+
       async function callCardData(mode){
 
         // build columns card data
@@ -1714,6 +1737,7 @@
 
         await updateTables()
 
+
         // yearTsr.value = currentYear.value
       })
 
@@ -1774,7 +1798,10 @@
         quarterOptions,
         quarterTSR,
 
-        submitDate
+        submitDate,
+        targetNoRespondents,
+        totalActualArray,
+        computedTotalPercentage
       };
     },
   }
