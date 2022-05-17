@@ -543,7 +543,7 @@ export default defineComponent({
 
     watch(TsrNo, (newValue, oldValue) => {
       // checkTSRsOtherAPI(newValue)
-      // check tsr field if valid
+      // check a field if valid
       const pattern =
         /^[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}$/;
       if (pattern.test(newValue)) {
