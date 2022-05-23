@@ -108,7 +108,7 @@
             />
           </div>
         </div>
-        <div id="legendPanel" v-if="!$q.platform.is.mobile">
+        <div id="legendPanel">
           <table>
             <tr>
               <th colspan="2">Legend</th>
@@ -140,8 +140,6 @@
               <th><q-icon name="sentiment_very_satisfied" size="2.0em" /></th>
             </tr>
           </table>
-        </div>
-        <div v-else>
         </div>
 
         <!-- v-model na kumukuha nung array, array of answers instantiate -->
@@ -543,7 +541,7 @@ export default defineComponent({
 
     watch(TsrNo, (newValue, oldValue) => {
       // checkTSRsOtherAPI(newValue)
-      // check a field if valid
+      // check tsr field if valid
       const pattern =
         /^[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}$/;
       if (pattern.test(newValue)) {
@@ -898,17 +896,51 @@ export default defineComponent({
     }
 
     async function onDecode (content) {
-      if (/^[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}$/.test(content)){
-        TsrNo.value = content
-        showQRStream.value = false
+      if(content){
+        let splitContent = content.split('|')
+        if(splitContent.length > 0){
+          if (/^[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}$/.test(splitContent[0])){
+              TsrNo.value = splitContent[0]
+              switch (modeValidate.value) {
+                case 1:
+                  emailCustomerValidate.value = splitContent[1]
+                  break;
+                case 2:
+                  emailCustomerValidate.value = splitContent[1]
+                  break;
+                case 3:
+                  emailCustomerValidate.value = splitContent[2]
+                  break;
+                default:
+                  break;
+              }
+              showQRStream.value = false
+            }else{
+              $q.notify({
+                color: "red-5",
+                textColor: "white",
+                icon: "warning",
+                message: "QR invalid",
+              });
+            }
+          
+        }
       }else{
-        $q.notify({
-          color: "red-5",
-          textColor: "white",
-          icon: "warning",
-          message: "QR invalid",
-        });
-      }
+        if (/^[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}$/.test(splitContent[0])){
+            TsrNo.value = splitContent[0]
+            showQRStream.value = false
+          }else{
+            $q.notify({
+              color: "red-5",
+              textColor: "white",
+              icon: "warning",
+              message: "QR invalid",
+            });
+          }
+        }
+      
+      
+     
       
       pause()
       await timeout(500)
@@ -985,6 +1017,10 @@ export default defineComponent({
 });
 // vanilla
 let lastScrollTop = 0;
+setTimeout(function() {
+    document.getElementById("legendPanel").style.visibility = "hidden";
+}, 2000); // <-- time in milliseconds
+
 document.addEventListener(
   "scroll",
   function () {
@@ -1004,6 +1040,10 @@ document.addEventListener(
       document.getElementById("legendPanel").style.opacity = "1";
       document.getElementById("legendPanel").style.transition =
         "visibility 0s, opacity 0.5s linear";
+      setTimeout(function() {
+          document.getElementById("legendPanel").style.visibility = "hidden";
+      }, 2000); // <-- time in milliseconds
+
 
       // upscroll code
       // document.getElementById("toolbar").style.top = "-50px";
@@ -1041,7 +1081,7 @@ span {
   position: fixed;
   top: 40px;
   right: 0;
-  height: 150px;
+  height: 70px;
   visibility: visible;
 }
 .scan-confirmation {
@@ -1055,4 +1095,7 @@ span {
   flex-flow: row nowrap;
   justify-content: center;
 }
+
+
+
 </style>
