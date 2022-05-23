@@ -929,19 +929,15 @@ export default defineComponent({
         }
       }else{
         console.log("content, 1st else", content)
-        if (/^[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}$/.test(splitContent[0])){
-            TsrNo.value = splitContent[0]
-            showQRStream.value = false
-          }else{
-            console.log("content, 2nd else", content)
-            $q.notify({
-              color: "red-5",
-              textColor: "white",
-              icon: "warning",
-              message: "QR invalid",
-            });
-          }
-        }
+        console.log("content, 2nd else", content)
+        $q.notify({
+          color: "red-5",
+          textColor: "white",
+          icon: "warning",
+          message: "QR Empty",
+        });
+      }
+        
       
       
      
