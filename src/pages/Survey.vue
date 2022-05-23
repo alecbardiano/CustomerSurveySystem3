@@ -896,13 +896,11 @@ export default defineComponent({
     }
 
     async function onDecode (content) {
-      console.log("splitContent",splitContent)
-      console.log("splitContent222",splitContent[0])
+      console.log("content,", content)
       if(content){
         let splitContent = content.split('|')
         if(splitContent.length > 0){
           if (/^[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}$/.test(splitContent[0])){
-              
               TsrNo.value = splitContent[0]
               switch (modeValidate.value) {
                 case 1:
@@ -919,8 +917,7 @@ export default defineComponent({
               }
               showQRStream.value = false
             }else{
-              console.log("splitContent",splitContent)
-              console.log("splitContent222",splitContent[0])
+              console.log("content,", splitContent[0])
               $q.notify({
                 color: "red-5",
                 textColor: "white",
@@ -931,13 +928,20 @@ export default defineComponent({
           
         }
       }else{
-          $q.notify({
-            color: "red-5",
-            textColor: "white",
-            icon: "warning",
-            message: "QR Empty",
-        })
-      }
+        console.log("content, 1st else", content)
+        if (/^[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}-[a-zA-Z0-9_]{0,8}$/.test(splitContent[0])){
+            TsrNo.value = splitContent[0]
+            showQRStream.value = false
+          }else{
+            console.log("content, 2nd else", content)
+            $q.notify({
+              color: "red-5",
+              textColor: "white",
+              icon: "warning",
+              message: "QR invalid",
+            });
+          }
+        }
       
       
      
